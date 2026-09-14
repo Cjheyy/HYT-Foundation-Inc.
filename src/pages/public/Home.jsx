@@ -183,8 +183,9 @@ export function Home() {
           
           <div className="gallery-grid">
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">🎓</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/summit.jpg')} alt="Youth Leadership Summit 2026" /> */}
+                <div className="gallery-placeholder">Gallery Image 1</div>
               </div>
               <div className="gallery-caption">
                 <h4>Youth Leadership Summit 2026</h4>
@@ -193,8 +194,9 @@ export function Home() {
             </div>
             
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">💼</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/ojt.jpg')} alt="OJT Partnership Program" /> */}
+                <div className="gallery-placeholder">Gallery Image 2</div>
               </div>
               <div className="gallery-caption">
                 <h4>OJT Partnership Program</h4>
@@ -203,8 +205,9 @@ export function Home() {
             </div>
             
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">🌟</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/skills.jpg')} alt="Skills Training Workshop" /> */}
+                <div className="gallery-placeholder">Gallery Image 3</div>
               </div>
               <div className="gallery-caption">
                 <h4>Skills Training Workshop</h4>
@@ -213,8 +216,9 @@ export function Home() {
             </div>
             
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">🤝</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/outreach.jpg')} alt="Community Outreach Program" /> */}
+                <div className="gallery-placeholder">Gallery Image 4</div>
               </div>
               <div className="gallery-caption">
                 <h4>Community Outreach Program</h4>
@@ -223,8 +227,9 @@ export function Home() {
             </div>
             
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">🏆</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/awards.jpg')} alt="Excellence Awards Ceremony" /> */}
+                <div className="gallery-placeholder">Gallery Image 5</div>
               </div>
               <div className="gallery-caption">
                 <h4>Excellence Awards Ceremony</h4>
@@ -233,8 +238,9 @@ export function Home() {
             </div>
             
             <div className="gallery-item">
-              <div className="gallery-placeholder">
-                <div className="gallery-icon">🚀</div>
+              <div className="gallery-image">
+                {/* Add your image here: <img src={require('../../assets/gallery/innovation.jpg')} alt="Innovation Showcase" /> */}
+                <div className="gallery-placeholder">Gallery Image 6</div>
               </div>
               <div className="gallery-caption">
                 <h4>Innovation Showcase</h4>
