@@ -1,0 +1,32 @@
+.announcements-page {
+  min-height: 100vh;
+}
+
+.announcements-list {
+  display: grid;
+  gap: 16px;
+}
+
+.announcement-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.announcement-card-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.announcement-card-content {
+  font-size: 15px;
+  color: var(--muted-text);
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.announcement-card-date {
+  font-size: 13px;
+  color: var(--muted-text);
+}

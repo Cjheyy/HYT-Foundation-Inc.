@@ -1,0 +1,36 @@
+.admin-students-page {
+  min-height: 100vh;
+}
+
+.students-search {
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.students-list {
+  display: grid;
+  gap: 16px;
+}
+
+.student-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.student-card-info {
+  flex: 1;
+}
+
+.student-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.student-card-details {
+  font-size: 14px;
+  color: var(--muted-text);
+  display: grid;
+  gap: 4px;
+}

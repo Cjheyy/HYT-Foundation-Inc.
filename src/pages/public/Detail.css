@@ -1,0 +1,152 @@
+.detail-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.not-found {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.not-found h2 {
+  margin-bottom: 20px;
+  color: var(--dark-text);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detail-header {
+  margin-bottom: 8px;
+}
+
+.detail-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.detail-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+}
+
+.detail-org {
+  font-size: 18px;
+  color: var(--primary-orange);
+  font-weight: 500;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 16px;
+}
+
+.subsection-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+.detail-description {
+  font-size: 16px;
+  color: var(--muted-text);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.detail-list {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.detail-list li {
+  font-size: 15px;
+  color: var(--muted-text);
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.thrusts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-sidebar {
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+.sidebar-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 20px;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 13px;
+  color: var(--muted-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 15px;
+  color: var(--dark-text);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .detail-page {
+    padding: 20px;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-title {
+    font-size: 28px;
+  }
+
+  .detail-org {
+    font-size: 16px;
+  }
+
+  .detail-sidebar {
+    position: static;
+  }
+}

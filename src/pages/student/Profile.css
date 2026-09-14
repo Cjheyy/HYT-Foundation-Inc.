@@ -1,0 +1,33 @@
+.profile-page {
+  max-width: 800px;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.profile-form {
+  display: grid;
+  gap: 20px;
+}
+
+.profile-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .profile-form-row {
+    grid-template-columns: 1fr;
+  }
+}

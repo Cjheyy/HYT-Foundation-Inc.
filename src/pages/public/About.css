@@ -1,0 +1,178 @@
+.about-page {
+  min-height: 100vh;
+}
+
+.page-hero {
+  background: linear-gradient(135deg, rgba(39, 158, 182, 0.1), rgba(213, 113, 86, 0.1));
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 16px;
+}
+
+.page-subtitle {
+  font-size: 18px;
+  color: var(--muted-text);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.content-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 20px;
+}
+
+.content-text {
+  font-size: 16px;
+  color: var(--muted-text);
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+.content-text.large {
+  font-size: 18px;
+  text-align: center;
+}
+
+.info-card {
+  position: sticky;
+  top: 100px;
+}
+
+.card-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 12px;
+}
+
+.card-text {
+  font-size: 15px;
+  color: var(--muted-text);
+  line-height: 1.7;
+}
+
+.thrusts-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.thrust-item {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.thrust-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-orange), var(--strong-orange));
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.thrust-content {
+  flex: 1;
+}
+
+.thrust-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+}
+
+.thrust-description {
+  font-size: 15px;
+  color: var(--muted-text);
+  line-height: 1.7;
+}
+
+.offer-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.offer-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.offer-description {
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.7;
+  text-align: center;
+}
+
+.commitment-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .page-hero {
+    padding: 40px 20px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .info-card {
+    position: static;
+  }
+
+  .thrusts-list {
+    grid-template-columns: 1fr;
+  }
+
+  .thrust-item {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .thrust-number {
+    margin: 0 auto;
+  }
+
+  .thrust-content {
+    text-align: center;
+  }
+}

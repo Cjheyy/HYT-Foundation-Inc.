@@ -1,0 +1,55 @@
+.attendance-page {
+  min-height: 100vh;
+}
+
+.attendance-content {
+  display: grid;
+  gap: 24px;
+}
+
+.attendance-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.attendance-details {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.attendance-today-info {
+  margin-bottom: 16px;
+  color: var(--muted-text);
+}
+
+.attendance-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.attendance-history-item {
+  padding: 12px;
+  background: var(--background);
+  border-radius: 8px;
+}
+
+.attendance-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.attendance-history-date {
+  font-weight: 600;
+}
+
+.attendance-history-time {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.attendance-empty {
+  color: var(--muted-text);
+}

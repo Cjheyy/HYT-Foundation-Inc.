@@ -1,0 +1,91 @@
+/* Logo Styles - Consistent across all pages */
+
+/* Header Logo */
+.header-logo {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.header-logo:hover {
+  transform: scale(1.05);
+}
+
+/* Footer Logo */
+.footer-logo-image {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+/* Sidebar Logo (Portal Layouts) */
+.sidebar-logo-image {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Auth Pages Logo */
+.auth-logo-image {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  margin: 0 auto 1.5rem;
+  display: block;
+}
+
+/* Logo Container */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive Logo Sizes */
+@media (max-width: 1024px) {
+  .header-logo {
+    height: 50px;
+  }
+  
+  .sidebar-logo-image {
+    height: 45px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-logo {
+    height: 45px;
+  }
+  
+  .footer-logo-image {
+    height: 70px;
+  }
+  
+  .sidebar-logo-image {
+    height: 40px;
+  }
+  
+  .auth-logo-image {
+    height: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-logo {
+    height: 40px;
+  }
+  
+  .footer-logo-image {
+    height: 60px;
+  }
+  
+  .sidebar-logo-image {
+    height: 35px;
+  }
+  
+  .auth-logo-image {
+    height: 60px;
+  }
+}

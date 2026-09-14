@@ -1,0 +1,41 @@
+.requirements-page {
+  min-height: 100vh;
+}
+
+.requirements-list {
+  display: grid;
+  gap: 16px;
+}
+
+.requirement-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.requirement-card-info {
+  flex: 1;
+}
+
+.requirement-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.requirement-card-description {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.requirement-admin-remarks {
+  font-size: 13px;
+  color: #DC2626;
+  margin-top: 8px;
+}
+
+.requirement-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

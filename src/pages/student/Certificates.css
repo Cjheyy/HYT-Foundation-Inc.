@@ -1,0 +1,38 @@
+.certificates-page {
+  min-height: 100vh;
+}
+
+.certificates-list {
+  display: grid;
+  gap: 16px;
+}
+
+.certificate-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.certificate-card-info {
+  flex: 1;
+}
+
+.certificate-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.certificate-card-details {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted-text);
+  margin-bottom: 12px;
+}
+
+.certificate-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

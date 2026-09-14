@@ -1,0 +1,53 @@
+.applications-page {
+  min-height: 100vh;
+}
+
+.applications-list {
+  display: grid;
+  gap: 16px;
+}
+
+.application-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.application-card-info {
+  flex: 1;
+}
+
+.application-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.application-card-date {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.application-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.application-accepted-notice {
+  padding: 12px;
+  background: #D1FAE5;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.application-accepted-notice strong {
+  color: #065F46;
+}
+
+.application-accepted-notice p {
+  color: #065F46;
+  font-size: 14px;
+  margin-top: 4px;
+}

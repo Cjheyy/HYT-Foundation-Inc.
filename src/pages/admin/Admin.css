@@ -1,0 +1,127 @@
+/* Common Admin Page Styles */
+.admin-page {
+  min-height: 100vh;
+}
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.admin-list {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.admin-card-info {
+  flex: 1;
+}
+
+.admin-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.admin-card-subtitle {
+  color: var(--primary-orange);
+  margin-bottom: 4px;
+}
+
+.admin-card-description {
+  color: var(--muted-text);
+  margin-top: 8px;
+}
+
+.admin-card-meta {
+  font-size: 14px;
+  color: var(--muted-text);
+  margin-top: 8px;
+}
+
+.admin-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-stat-box {
+  text-align: center;
+  padding: 12px;
+  background: var(--background);
+  border-radius: 8px;
+}
+
+.admin-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.admin-stat-label {
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+.admin-detail-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.admin-review-modal {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.admin-form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-empty-state {
+  text-align: center;
+  color: var(--muted-text);
+}
+
+@media (max-width: 768px) {
+  .admin-grid-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-card-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-card-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+}

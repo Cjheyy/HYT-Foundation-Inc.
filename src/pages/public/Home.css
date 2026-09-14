@@ -1,0 +1,378 @@
+.home-page {
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.hero {
+  background: linear-gradient(135deg, rgba(39, 158, 182, 0.1), rgba(213, 113, 86, 0.1));
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-size: 20px;
+  color: var(--muted-text);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Sections */
+.section {
+  padding: 80px 20px;
+}
+
+.section.bg-white {
+  background: white;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 48px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 12px;
+}
+
+.section-subtitle {
+  font-size: 18px;
+  color: var(--muted-text);
+}
+
+/* Features */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.feature-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--dark-text);
+}
+
+.feature-description {
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.6;
+}
+
+/* Thrusts */
+.thrusts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 20px;
+}
+
+.thrust-card {
+  text-align: center;
+}
+
+.thrust-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 12px;
+  color: white;
+}
+
+.thrust-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+
+/* Cards */
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--dark-text);
+}
+
+.card-org {
+  font-size: 14px;
+  color: var(--teal);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.card-description {
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.card-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 13px;
+  color: var(--muted-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Stats */
+.stats-section {
+  background: linear-gradient(135deg, var(--teal), var(--light-cyan));
+  color: white;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 40px;
+}
+
+.stat-card {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* Journey Timeline */
+.journey-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.journey-step {
+  text-align: center;
+}
+
+.step-number {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-orange), var(--strong-orange));
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.step-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--dark-text);
+}
+
+.step-description {
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.6;
+}
+
+/* CTA Section */
+.cta-section {
+  background: linear-gradient(135deg, rgba(213, 113, 86, 0.1), rgba(243, 219, 110, 0.1));
+  text-align: center;
+}
+
+.cta-content {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.cta-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 16px;
+}
+
+.cta-text {
+  font-size: 18px;
+  color: var(--muted-text);
+  margin-bottom: 32px;
+}
+
+.cta-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero {
+    padding: 60px 20px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+  }
+
+  .section {
+    padding: 60px 20px;
+  }
+
+  .section-title {
+    font-size: 28px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+  }
+
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+  }
+
+  .journey-timeline {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .cta-title {
+    font-size: 28px;
+  }
+
+  .cta-text {
+    font-size: 16px;
+  }
+}
+
+/* Gallery */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+}
+
+.gallery-item {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.gallery-placeholder {
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, var(--very-light-cyan), var(--background));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 3px solid var(--primary-orange);
+}
+
+.gallery-icon {
+  font-size: 64px;
+  opacity: 0.5;
+}
+
+.gallery-caption {
+  padding: 20px;
+}
+
+.gallery-caption h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+}
+
+.gallery-caption p {
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .gallery-placeholder {
+    aspect-ratio: 16 / 9;
+  }
+  
+  .gallery-icon {
+    font-size: 48px;
+  }
+}

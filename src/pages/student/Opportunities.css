@@ -1,0 +1,62 @@
+.student-opportunities-page {
+  min-height: 100vh;
+}
+
+.opportunities-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.opportunities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.opportunity-card-badges {
+  margin-bottom: 12px;
+}
+
+.opportunity-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.opportunity-card-org {
+  color: var(--primary-orange);
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.opportunity-card-description {
+  color: var(--muted-text);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.opportunity-card-meta {
+  font-size: 13px;
+  color: var(--muted-text);
+  margin-bottom: 16px;
+}
+
+.opportunity-card-meta > div {
+  margin-bottom: 4px;
+}
+
+.opportunity-apply-button {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .opportunities-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunities-grid {
+    grid-template-columns: 1fr;
+  }
+}

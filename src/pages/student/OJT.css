@@ -1,0 +1,72 @@
+.ojt-page {
+  min-height: 100vh;
+}
+
+.ojt-content {
+  display: grid;
+  gap: 24px;
+}
+
+.ojt-details-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.ojt-details-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.ojt-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ojt-hour-stat {
+  text-align: center;
+  padding: 16px;
+  background: var(--background);
+  border-radius: 8px;
+}
+
+.ojt-hour-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.ojt-hour-value.verified {
+  color: #10B981;
+}
+
+.ojt-hour-value.pending {
+  color: #F59E0B;
+}
+
+.ojt-hour-value.remaining {
+  color: var(--primary-orange);
+}
+
+.ojt-hour-label {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.ojt-completion-notice {
+  background: #D1FAE5;
+  border: 2px solid #10B981;
+}
+
+.ojt-completion-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #065F46;
+  margin-bottom: 8px;
+}
+
+.ojt-completion-text {
+  color: #065F46;
+}
