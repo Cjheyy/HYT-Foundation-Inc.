@@ -6,24 +6,24 @@
 
 :root {
   /* Colors from HYT Logo */
-  --primary-orange: #E8763B;
-  --strong-orange: #D65A2F;
-  --yellow: #F4D35E;
-  --teal: #0FA3B1;
+  --primary-orange: #D57156;
+  --strong-orange: #E8763B;
+  --yellow: #F3DB6E;
+  --teal: #279EB6;
   --light-cyan: #5BC0C8;
   --very-light-cyan: #B4E5F1;
   --white: #FFFFFF;
   --background: #F9FBFC;
-  --dark-text: #2D3047;
+  --dark-text: #1F2937;
   --muted-text: #6B7280;
   --border: #E5E7EB;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.16);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -31,6 +31,7 @@ body {
   background-color: var(--background);
   color: var(--dark-text);
   line-height: 1.6;
+  scroll-behavior: smooth;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -71,42 +72,63 @@ input, textarea, select {
 
 /* Buttons */
 .btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: none;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-primary {
-  background: var(--primary-orange);
+  background: linear-gradient(135deg, #D57156 0%, #E8763B 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(213, 113, 86, 0.3);
 }
 
 .btn-primary:hover {
-  background: var(--strong-orange);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(213, 113, 86, 0.4);
 }
 
 .btn-secondary {
-  background: var(--teal);
+  background: linear-gradient(135deg, #279EB6 0%, #5BC0C8 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(39, 158, 182, 0.3);
 }
 
 .btn-secondary:hover {
-  background: #1d7a8d;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(39, 158, 182, 0.4);
 }
 
 .btn-outline {
-  background: transparent;
+  background: white;
   border: 2px solid var(--primary-orange);
   color: var(--primary-orange);
 }
@@ -114,6 +136,7 @@ input, textarea, select {
 .btn-outline:hover {
   background: var(--primary-orange);
   color: white;
+  transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -122,35 +145,41 @@ input, textarea, select {
 }
 
 .btn-ghost:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(213, 113, 86, 0.1);
 }
 
 .btn-success {
-  background: #10B981;
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-success:hover {
-  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
 }
 
 .btn-danger {
-  background: #EF4444;
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-danger:hover {
-  background: #DC2626;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
 }
 
 .btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 10px;
 }
 
 .btn-lg {
-  padding: 14px 28px;
-  font-size: 16px;
+  padding: 16px 32px;
+  font-size: 17px;
+  border-radius: 14px;
 }
 
 .btn:disabled {
@@ -159,17 +188,23 @@ input, textarea, select {
   transform: none !important;
 }
 
+.btn:active {
+  transform: scale(0.98);
+}
+
 /* Cards */
 .card {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
   box-shadow: var(--shadow);
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(229, 231, 235, 0.5);
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .card-clickable {
@@ -177,8 +212,9 @@ input, textarea, select {
 }
 
 .card-clickable:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
+  border-color: rgba(213, 113, 86, 0.3);
 }
 
 /* Form Elements */
