@@ -15,11 +15,13 @@ export function StudentProfile() {
     fullName: currentUser?.fullName || '',
     studentId: currentUser?.studentId || '',
     email: currentUser?.email || '',
+    birthday: currentUser?.birthday || '',
+    age: currentUser?.age || '',
+    address: currentUser?.address || '',
     school: currentUser?.school || '',
     course: currentUser?.course || '',
     yearLevel: currentUser?.yearLevel || '',
-    contactNumber: currentUser?.contactNumber || '',
-    address: currentUser?.address || ''
+    contactNumber: currentUser?.contactNumber || ''
   });
   
   const [isEditing, setIsEditing] = useState(false);
@@ -28,6 +30,19 @@ export function StudentProfile() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Auto-calculate age from birthday
+    if (name === 'birthday' && value) {
+      const birthDate = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      setFormData(prev => ({ ...prev, age: age.toString(), birthday: value }));
+    }
+    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -97,6 +112,36 @@ export function StudentProfile() {
           />
 
           <Input
+            label="Birthday"
+            type="date"
+            name="birthday"
+            value={formData.birthday}
+            onChange={handleChange}
+            disabled={!isEditing}
+            max={new Date().toISOString().split('T')[0]}
+            required
+          />
+
+          <Input
+            label="Age"
+            type="number"
+            name="age"
+            value={formData.age}
+            disabled
+            help="Auto-calculated from birthday"
+          />
+
+          <Input
+            label="Address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            disabled={!isEditing}
+            placeholder="Complete address"
+            required
+          />
+
+          <Input
             label="School"
             name="school"
             value={formData.school}
@@ -130,14 +175,6 @@ export function StudentProfile() {
             disabled={!isEditing}
           />
 
-          <Input
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            disabled={!isEditing}
-          />
-
           {isEditing && (
             <div className="profile-actions">
               <Button type="submit">Save Changes</Button>
@@ -150,11 +187,13 @@ export function StudentProfile() {
                     fullName: currentUser?.fullName || '',
                     studentId: currentUser?.studentId || '',
                     email: currentUser?.email || '',
+                    birthday: currentUser?.birthday || '',
+                    age: currentUser?.age || '',
+                    address: currentUser?.address || '',
                     school: currentUser?.school || '',
                     course: currentUser?.course || '',
                     yearLevel: currentUser?.yearLevel || '',
-                    contactNumber: currentUser?.contactNumber || '',
-                    address: currentUser?.address || ''
+                    contactNumber: currentUser?.contactNumber || ''
                   });
                 }}
               >

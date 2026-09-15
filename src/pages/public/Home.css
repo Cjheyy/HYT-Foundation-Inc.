@@ -98,8 +98,10 @@
 /* Thrusts */
 .thrusts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .thrust-card {
@@ -122,6 +124,32 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--dark-text);
+}
+
+/* Responsive for tablets */
+@media (max-width: 768px) {
+  .thrusts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Responsive for mobile */
+@media (max-width: 480px) {
+  .thrusts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .thrust-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+  
+  .thrust-name {
+    font-size: 14px;
+  }
 }
 
 /* Cards */
@@ -162,29 +190,51 @@
 
 /* Stats */
 .stats-section {
-  background: linear-gradient(135deg, var(--teal), var(--light-cyan));
+
   color: white;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 40px;
+  gap: 24px;
 }
 
 .stat-card {
   text-align: center;
+  padding: 32px 24px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-orange);
 }
 
 .stat-value {
   font-size: 48px;
   font-weight: 700;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--primary-orange), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-value {
+  transform: scale(1.1);
 }
 
 .stat-label {
   font-size: 16px;
-  opacity: 0.9;
+  color: var(--muted-text);
+  font-weight: 500;
 }
 
 /* Journey Timeline */

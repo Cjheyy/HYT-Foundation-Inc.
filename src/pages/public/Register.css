@@ -264,3 +264,42 @@
 .no-match-text {
   color: #EF4444;
 }
+
+/* ID Format Info Box */
+.id-format-info {
+  padding: 12px;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--dark-text);
+  margin: -0.5rem 0;
+}
+
+.id-format-info strong {
+  color: var(--teal);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.id-format-info small {
+  color: var(--muted-text);
+  font-style: italic;
+}
+
+/* Terms Link */
+.terms-link {
+  background: none;
+  border: none;
+  color: var(--primary-orange);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.terms-link:hover {
+  color: var(--teal);
+}
