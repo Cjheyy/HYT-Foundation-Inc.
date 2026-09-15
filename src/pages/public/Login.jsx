@@ -14,6 +14,7 @@ export function Login() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    accountType: '', // 'trainee' or 'ojt-student'
     email: '',
     password: ''
   });
@@ -31,6 +32,7 @@ export function Login() {
 
   const validate = () => {
     const newErrors = {};
+    if (!formData.accountType) newErrors.accountType = 'Please select account type';
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
     return newErrors;
@@ -103,6 +105,41 @@ export function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label className="form-label">Login as *</label>
+                <div className="account-type-selection">
+                  <label className="account-type-card">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="trainee"
+                      checked={formData.accountType === 'trainee'}
+                      onChange={handleChange}
+                    />
+                    <div className="account-type-content">
+                      <div className="account-type-icon">🎓</div>
+                      <div className="account-type-label">Trainee</div>
+                    </div>
+                  </label>
+                  <label className="account-type-card">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="ojt-student"
+                      checked={formData.accountType === 'ojt-student'}
+                      onChange={handleChange}
+                    />
+                    <div className="account-type-content">
+                      <div className="account-type-icon">💼</div>
+                      <div className="account-type-label">OJT Student</div>
+                    </div>
+                  </label>
+                </div>
+                {errors.accountType && (
+                  <div className="form-error">{errors.accountType}</div>
+                )}
+              </div>
+
               <Input
                 label="Email Address"
                 type="email"

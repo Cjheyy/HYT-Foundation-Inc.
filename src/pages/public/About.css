@@ -1,76 +1,160 @@
 .about-page {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
+/* Hero Section */
 .page-hero {
-  background: linear-gradient(135deg, rgba(39, 158, 182, 0.1), rgba(213, 113, 86, 0.1));
-  padding: 60px 20px;
+  background: linear-gradient(135deg, #279EB6 0%, #D57156 100%);
+  padding: 100px 20px 80px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(243, 219, 110, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(39, 158, 182, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(213, 113, 86, 0.15) 0%, transparent 50%);
+  animation: heroGlow 15s ease-in-out infinite;
+}
+
+@keyframes heroGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .page-title {
-  font-size: 42px;
-  font-weight: 700;
-  color: var(--dark-text);
-  margin-bottom: 16px;
+  font-size: 48px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 20px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-subtitle {
-  font-size: 18px;
-  color: var(--muted-text);
-  max-width: 700px;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 800px;
   margin: 0 auto;
+  line-height: 1.7;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out 0.2s backwards;
+}
+
+/* Content Sections */
+.section {
+  padding: 80px 20px;
+}
+
+.section.bg-white {
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
 }
 
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 48px;
   align-items: start;
 }
 
 .content-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--dark-text);
-  margin-bottom: 20px;
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #D57156 0%, #279EB6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 24px;
+  position: relative;
+  display: inline-block;
+}
+
+.content-title::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #D57156, #F3DB6E);
+  border-radius: 2px;
 }
 
 .content-text {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--muted-text);
   line-height: 1.8;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .content-text.large {
-  font-size: 18px;
+  font-size: 20px;
   text-align: center;
+  font-weight: 400;
+  max-width: 900px;
+  margin: 0 auto 20px;
 }
 
 .info-card {
   position: sticky;
   top: 100px;
+  padding: 32px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 2px solid rgba(229, 231, 235, 0.5);
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(213, 113, 86, 0.15);
+  border-color: rgba(213, 113, 86, 0.3);
 }
 
 .card-heading {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--dark-text);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .card-text {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--muted-text);
   line-height: 1.7;
 }
 
+/* Thrusts List */
 .thrusts-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  max-width: 1100px;
+  gap: 32px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -78,20 +162,73 @@
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding: 28px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.thrust-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #D57156, #279EB6, #F3DB6E);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+}
+
+.thrust-item:hover::before {
+  transform: scaleX(1);
+}
+
+.thrust-item:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(213, 113, 86, 0.2);
+  border-color: rgba(213, 113, 86, 0.3);
 }
 
 .thrust-number {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-orange), var(--strong-orange));
+  background: linear-gradient(135deg, #D57156 0%, #F3DB6E 100%);
   color: white;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(213, 113, 86, 0.4);
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.thrust-number::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D57156, #F3DB6E);
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 0.4s ease;
+}
+
+.thrust-item:hover .thrust-number {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.5);
+}
+
+.thrust-item:hover .thrust-number::after {
+  opacity: 0.6;
 }
 
 .thrust-content {
@@ -99,60 +236,191 @@
 }
 
 .thrust-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--dark-text);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .thrust-description {
+  font-size: 16px;
+  color: var(--muted-text);
+  line-height: 1.7;
+}
+
+/* Offer Cards */
+.offer-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.offer-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.offer-description {
+  font-size: 16px;
+  color: var(--muted-text);
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* Hover effect for cards containing offers */
+.features-grid .feature-card:hover .offer-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* Commitment Content */
+.commitment-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Stats Grid in About */
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin: 60px 0;
+}
+
+.about-stat-box {
+  text-align: center;
+  padding: 40px 24px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 2px solid rgba(229, 231, 235, 0.5);
+  transition: all 0.3s ease;
+}
+
+.about-stat-box:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.2);
+  border-color: rgba(213, 113, 86, 0.3);
+}
+
+.about-stat-value {
+  font-size: 44px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #D57156 0%, #279EB6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.about-stat-label {
+  font-size: 15px;
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+/* Team Section */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+
+.team-card {
+  text-align: center;
+  padding: 32px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.team-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 12px 40px rgba(213, 113, 86, 0.2);
+  border-color: rgba(213, 113, 86, 0.3);
+}
+
+.team-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D57156 0%, #279EB6 100%);
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 40px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(213, 113, 86, 0.4);
+  transition: all 0.3s ease;
+}
+
+.team-card:hover .team-avatar {
+  transform: scale(1.1);
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.5);
+}
+
+.team-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 6px;
+}
+
+.team-role {
+  font-size: 14px;
+  color: var(--primary-orange);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.team-bio {
   font-size: 15px;
   color: var(--muted-text);
   line-height: 1.7;
 }
 
-.offer-icon {
-  font-size: 40px;
-  margin-bottom: 16px;
-  text-align: center;
-}
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .thrusts-list {
+    gap: 24px;
+  }
 
-.offer-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--dark-text);
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.offer-description {
-  font-size: 14px;
-  color: var(--muted-text);
-  line-height: 1.7;
-  text-align: center;
-}
-
-.commitment-content {
-  max-width: 800px;
-  margin: 0 auto;
+  .about-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
   .page-hero {
-    padding: 40px 20px;
+    padding: 70px 20px 60px;
   }
 
   .page-title {
-    font-size: 32px;
+    font-size: 36px;
   }
 
   .page-subtitle {
-    font-size: 16px;
+    font-size: 18px;
+  }
+
+  .section {
+    padding: 60px 20px;
+  }
+
+  .content-title {
+    font-size: 28px;
   }
 
   .content-grid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 40px;
   }
 
   .info-card {
@@ -161,18 +429,60 @@
 
   .thrusts-list {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .thrust-item {
     flex-direction: column;
     gap: 16px;
+    text-align: center;
   }
 
   .thrust-number {
     margin: 0 auto;
   }
 
-  .thrust-content {
-    text-align: center;
+  .about-stats {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: 40px 0;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 28px;
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+  }
+
+  .content-title {
+    font-size: 24px;
+  }
+
+  .content-text {
+    font-size: 15px;
+  }
+
+  .thrust-title {
+    font-size: 20px;
+  }
+
+  .thrust-description {
+    font-size: 15px;
+  }
+
+  .thrust-item {
+    padding: 20px;
+  }
+
+  .about-stat-value {
+    font-size: 36px;
   }
 }

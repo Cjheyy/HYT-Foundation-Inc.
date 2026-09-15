@@ -4,13 +4,12 @@ import { useApp } from '../../context/AppContext';
 import { register } from '../../services/authService';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
-import { Select } from '../../components/Select';
 import { Button } from '../../components/Button';
 import { TermsModal } from '../../components/TermsModal';
 import { showToast } from '../../utils/notifications';
 import { validateEmail } from '../../utils/helpers';
 import hytLogo from '../../assets/HYT.png';
-import { qcSchools, validateStudentId } from '../../data/qcSchools';
+import { qcSchools } from '../../data/qcSchools';
 import './Register.css';
 import '../../components/Logo.css';
 
@@ -18,9 +17,10 @@ export function Register() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    accountType: '', // 'trainee' or 'ojt-student'
     fullName: '',
     school: '',
-    studentId: '',
+    requiredHours: '',
     email: '',
     birthday: '',
     age: '',
@@ -65,7 +65,7 @@ export function Register() {
     if (name === 'school') {
       const school = qcSchools.find(s => s.id === value);
       setSelectedSchool(school);
-      setFormData(prev => ({ ...prev, school: value, studentId: '' }));
+      setFormData(prev => ({ ...prev, school: value }));
     }
     
     // Auto-calculate age from birthday
@@ -92,14 +92,19 @@ export function Register() {
   const validate = () => {
     const newErrors = {};
     
+    if (!formData.accountType) newErrors.accountType = 'Please select account type';
+    
     if (!formData.fullName) newErrors.fullName = 'Full name is required';
     
-    if (!formData.school) newErrors.school = 'Please select your school';
-    
-    if (!formData.studentId) {
-      newErrors.studentId = 'Student ID is required';
-    } else if (formData.school && !validateStudentId(formData.school, formData.studentId)) {
-      newErrors.studentId = `Invalid ID format. Expected: ${selectedSchool?.description || 'Valid student ID'}`;
+    // Only validate school and required hours for OJT students
+    if (formData.accountType === 'ojt-student') {
+      if (!formData.school) newErrors.school = 'Please select your school';
+      
+      if (!formData.requiredHours) {
+        newErrors.requiredHours = 'Required OJT hours is required';
+      } else if (formData.requiredHours < 1 || formData.requiredHours > 2000) {
+        newErrors.requiredHours = 'Hours must be between 1 and 2000';
+      }
     }
     
     if (!formData.birthday) {
@@ -169,8 +174,9 @@ export function Register() {
         fullName: formData.fullName,
         firstName: names[0],
         lastName: names.slice(1).join(' ') || names[0],
-        school: selectedSchool?.name || formData.school,
-        studentId: formData.studentId,
+        accountType: formData.accountType,
+        school: formData.accountType === 'ojt-student' ? (selectedSchool?.name || formData.school) : null,
+        requiredHours: formData.accountType === 'ojt-student' ? parseInt(formData.requiredHours) : null,
         birthday: formData.birthday,
         age: formData.age,
         address: formData.address,
@@ -211,6 +217,43 @@ export function Register() {
             )}
 
             <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label className="form-label">Account Type *</label>
+                <div className="account-type-selection">
+                  <label className="account-type-card">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="trainee"
+                      checked={formData.accountType === 'trainee'}
+                      onChange={handleChange}
+                    />
+                    <div className="account-type-content">
+                      <div className="account-type-icon">🎓</div>
+                      <div className="account-type-label">Trainee</div>
+                      <div className="account-type-desc">Skills training and workshops</div>
+                    </div>
+                  </label>
+                  <label className="account-type-card">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="ojt-student"
+                      checked={formData.accountType === 'ojt-student'}
+                      onChange={handleChange}
+                    />
+                    <div className="account-type-content">
+                      <div className="account-type-icon">💼</div>
+                      <div className="account-type-label">OJT Student</div>
+                      <div className="account-type-desc">On-the-job training / Internship</div>
+                    </div>
+                  </label>
+                </div>
+                {errors.accountType && (
+                  <div className="form-error">{errors.accountType}</div>
+                )}
+              </div>
+
               <Input
                 label="Full Name"
                 name="fullName"
@@ -220,41 +263,46 @@ export function Register() {
                 required
               />
 
-              <Select
-                label="School"
-                name="school"
-                value={formData.school}
-                onChange={handleChange}
-                error={errors.school}
-                required
-              >
-                <option value="">Select your school</option>
-                {qcSchools.map(school => (
-                  <option key={school.id} value={school.id}>
-                    {school.name}
-                  </option>
-                ))}
-              </Select>
+              {formData.accountType === 'ojt-student' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">
+                      School <span className="required">*</span>
+                    </label>
+                    <select
+                      name="school"
+                      value={formData.school}
+                      onChange={handleChange}
+                      className={`form-select ${errors.school ? 'error' : ''}`}
+                      required
+                    >
+                      <option value="">Select your school</option>
+                      {qcSchools.map(school => (
+                        <option key={school.id} value={school.id}>
+                          {school.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.school && (
+                      <div className="form-error">{errors.school}</div>
+                    )}
+                  </div>
 
-              {selectedSchool && (
-                <div className="id-format-info">
-                  <strong>Student ID Format:</strong> {selectedSchool.idFormat}
-                  <br />
-                  <small>Example: {selectedSchool.example}</small>
-                </div>
+                  <Input
+                    label="Required OJT Hours"
+                    type="number"
+                    name="requiredHours"
+                    value={formData.requiredHours}
+                    onChange={handleChange}
+                    error={errors.requiredHours}
+                    placeholder="e.g., 486"
+                    min="1"
+                    max="2000"
+                    help="Total hours required by your school"
+                    required
+                  />
+                </>
               )}
-
-              <Input
-                label="Student ID"
-                name="studentId"
-                value={formData.studentId}
-                onChange={handleChange}
-                error={errors.studentId}
-                placeholder={selectedSchool ? selectedSchool.example : "Enter your student ID"}
-                disabled={!formData.school}
-                help={selectedSchool ? selectedSchool.description : "Please select your school first"}
-                required
-              />
 
               <Input
                 label="Birthday"

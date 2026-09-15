@@ -193,3 +193,80 @@
 .password-toggle:hover {
   opacity: 1;
 }
+
+
+/* Account Type Selection for Login */
+.account-type-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.account-type-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: white;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+.account-type-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.account-type-content {
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.account-type-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.account-type-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+.account-type-card:hover {
+  border-color: var(--primary-orange);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(213, 113, 86, 0.2);
+}
+
+.account-type-card:hover .account-type-icon {
+  transform: scale(1.15);
+}
+
+.account-type-card input[type="radio"]:checked ~ .account-type-content {
+  background: linear-gradient(135deg, rgba(213, 113, 86, 0.1), rgba(39, 158, 182, 0.1));
+}
+
+.account-type-card:has(input[type="radio"]:checked) {
+  border-color: var(--primary-orange);
+  border-width: 3px;
+  box-shadow: 0 8px 24px rgba(213, 113, 86, 0.3);
+}
+
+.account-type-card:has(input[type="radio"]:checked) .account-type-label {
+  color: var(--primary-orange);
+}
+
+.account-type-card:has(input[type="radio"]:checked) .account-type-icon {
+  transform: scale(1.1);
+}
+
+@media (max-width: 480px) {
+  .account-type-selection {
+    grid-template-columns: 1fr;
+  }
+}
