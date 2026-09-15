@@ -1,0 +1,120 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                   WHERE TO PUT YOUR IMAGES                       ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📁 FOLDER STRUCTURE:
+───────────────────────────────────────────────────────────────────
+
+hyt-foundation/
+├── public/
+│   ├── images/
+│   │   └── gallery/          ← PUT YOUR PHOTOS HERE! 📸
+│   │       ├── photo1.jpg
+│   │       ├── photo2.jpg
+│   │       ├── photo3.jpg
+│   │       └── ... (up to 10 photos)
+│   └── videos/
+└── src/
+    ├── data/
+    │   └── galleryData.js    ← EDIT THIS FILE! ✏️
+    └── pages/
+
+═══════════════════════════════════════════════════════════════════
+
+📝 FILE TO EDIT:
+───────────────────────────────────────────────────────────────────
+
+Location: src/data/galleryData.js
+
+Current content (lines with 🔴 need to be changed):
+
+export const galleryItems = [
+  {
+    id: 1,
+    title: "Youth Leadership Summit 2026",
+    description: "50+ young leaders trained",
+    image: "https://images.unsplash.com/..."  🔴 CHANGE THIS!
+  },
+  {
+    id: 2,
+    title: "OJT Partnership Program",
+    description: "200+ students placed",
+    image: "https://images.unsplash.com/..."  🔴 CHANGE THIS!
+  },
+  // ... 8 more items
+];
+
+═══════════════════════════════════════════════════════════════════
+
+✅ CHANGE TO:
+───────────────────────────────────────────────────────────────────
+
+export const galleryItems = [
+  {
+    id: 1,
+    title: "Youth Leadership Summit 2026",
+    description: "50+ young leaders trained",
+    image: "/images/gallery/photo1.jpg"  ✅ LIKE THIS!
+  },
+  {
+    id: 2,
+    title: "OJT Partnership Program",
+    description: "200+ students placed",
+    image: "/images/gallery/photo2.jpg"  ✅ LIKE THIS!
+  },
+  // ... continue for all 10
+];
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 QUICK STEPS:
+───────────────────────────────────────────────────────────────────
+
+1. Open File Explorer
+2. Navigate to: hyt-foundation\public\images\gallery
+3. Copy your 10 photos there
+4. Open: hyt-foundation\src\data\galleryData.js in VS Code
+5. Change each "image:" line to point to your photos
+6. Save the file (Ctrl + S)
+7. Refresh browser (Ctrl + F5)
+8. Done! 🎉
+
+═══════════════════════════════════════════════════════════════════
+
+💡 TIPS:
+───────────────────────────────────────────────────────────────────
+
+✓ Image names: Use simple names (no spaces!)
+   ✅ Good: photo1.jpg, event-2024.jpg, summit.jpg
+   ❌ Bad: my photo 1.jpg, Event (2024).jpg
+
+✓ Image size: Keep under 500KB each
+   - Right-click photo → Properties → Check size
+   - Use online compressor if needed: tinypng.com
+
+✓ Image format: JPG or PNG
+   ✅ Good: .jpg, .jpeg, .png
+   ❌ Bad: .webp, .gif, .bmp
+
+✓ Path format: Must start with /images/gallery/
+   ✅ Good: "/images/gallery/photo.jpg"
+   ❌ Bad: "images/gallery/photo.jpg" (missing /)
+   ❌ Bad: "/public/images/gallery/photo.jpg" (has /public)
+
+═══════════════════════════════════════════════════════════════════
+
+📧 NEED HELP?
+───────────────────────────────────────────────────────────────────
+
+Can't find the folders?
+→ Make sure you're in the hyt-foundation project folder!
+
+Images not showing?
+→ Check the filename matches exactly (case-sensitive!)
+→ Hard refresh: Ctrl + F5
+
+Still using Unsplash photos?
+→ Make sure you saved galleryData.js
+→ Restart the server: Stop (Ctrl+C) then "npm start"
+
+═══════════════════════════════════════════════════════════════════

@@ -1,0 +1,264 @@
+/* Gallery Card */
+.gallery-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none;
+}
+
+.gallery-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(39, 158, 182, 0.2);
+}
+
+.gallery-card:focus {
+  outline: 3px solid #279EB6;
+  outline-offset: 4px;
+}
+
+.gallery-card:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.gallery-card:active {
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* Image Container */
+.gallery-card-image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2f7 100%);
+}
+
+.gallery-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gallery-card:hover .gallery-card-image {
+  transform: scale(1.08);
+}
+
+/* Placeholder for missing images */
+.gallery-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gallery-card:hover .gallery-card-placeholder {
+  transform: scale(1.08);
+}
+
+.gallery-card-placeholder-icon {
+  font-size: 64px;
+  opacity: 0.6;
+}
+
+/* Overlay */
+.gallery-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-card:hover .gallery-card-overlay {
+  opacity: 1;
+}
+
+/* Play Button */
+.gallery-card-play-button {
+  margin-bottom: 12px;
+  animation: scaleIn 0.3s ease-out;
+  transition: transform 0.2s ease;
+}
+
+.gallery-card:hover .gallery-card-play-button {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.play-icon {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+}
+
+.gallery-card:hover .play-icon {
+  transform: scale(1.05);
+}
+
+/* Play Label */
+.gallery-card-play-label {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+  animation: fadeInUp 0.3s ease-out 0.1s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Card Content */
+.gallery-card-content {
+  padding: 20px;
+}
+
+.gallery-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  transition: color 0.2s ease;
+}
+
+.gallery-card:hover .gallery-card-title {
+  color: #279EB6;
+}
+
+.gallery-card-description {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .gallery-card {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .gallery-card:hover {
+    transform: none;
+  }
+
+  .gallery-card:active {
+    transform: none;
+  }
+
+  .gallery-card-image,
+  .gallery-card-placeholder {
+    transition: none;
+  }
+
+  .gallery-card:hover .gallery-card-image,
+  .gallery-card:hover .gallery-card-placeholder {
+    transform: none;
+  }
+
+  .gallery-card-play-button,
+  .gallery-card-play-label {
+    animation: none !important;
+  }
+
+  .play-icon {
+    transition: none;
+  }
+
+  .gallery-card:hover .play-icon {
+    transform: none;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .gallery-card-content {
+    padding: 16px;
+  }
+
+  .gallery-card-title {
+    font-size: 16px;
+  }
+
+  .gallery-card-description {
+    font-size: 13px;
+  }
+
+  .gallery-card-play-button svg {
+    width: 56px;
+    height: 56px;
+  }
+
+  .gallery-card-play-label {
+    font-size: 14px;
+  }
+
+  /* Show play icon on mobile even without hover */
+  .gallery-card .gallery-card-overlay {
+    opacity: 0.7;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-card-content {
+    padding: 14px;
+  }
+
+  .gallery-card-title {
+    font-size: 15px;
+  }
+
+  .gallery-card-description {
+    font-size: 12px;
+  }
+
+  .gallery-card-play-button svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .gallery-card-play-label {
+    font-size: 13px;
+  }
+}

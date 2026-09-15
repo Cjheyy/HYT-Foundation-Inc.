@@ -20,11 +20,9 @@
 .page-title {
   font-size: 28px;
   font-weight: 800;
-  background: linear-gradient(135deg, #D57156 0%, #279EB6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1a1a1a;
   margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .admin-list {

@@ -1,0 +1,143 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              📸 ADD YOUR PHOTOS HERE! 📸                         ║
+╚══════════════════════════════════════════════════════════════════╝
+
+🎯 FOLDER LOCATION:
+───────────────────────────────────────────────────────────────────
+
+hyt-foundation/
+└── src/
+    └── assets/
+        └── gallery/     ← PUT YOUR 10 PHOTOS HERE! 📸
+
+═══════════════════════════════════════════════════════════════════
+
+📋 REQUIRED FILENAMES (Must be exact!):
+───────────────────────────────────────────────────────────────────
+
+1.  youth-summit.jpg       - Youth Leadership Summit 2026
+2.  ojt.jpg                - OJT Partnership Program  
+3.  workshop.jpg           - Skills Training Workshop
+4.  outreach.jpg           - Community Outreach Program
+5.  awards.jpg             - Excellence Awards Ceremony
+6.  empowerment.jpg        - Youth Empowerment Event
+7.  career.jpg             - Career Development Forum
+8.  achievement.jpg        - Student Achievement Awards
+9.  partnership.jpg        - Community Partnership Launch
+10. innovation.jpg         - Innovation Showcase
+
+═══════════════════════════════════════════════════════════════════
+
+✅ SUPER SIMPLE STEPS:
+───────────────────────────────────────────────────────────────────
+
+1. Get 10 photos from your phone/computer
+2. Rename them to match the list above (exact names!)
+3. Copy all 10 photos to: src/assets/gallery/
+4. Refresh browser (Ctrl + F5)
+5. Done! Photos appear in slider! 🎉
+
+═══════════════════════════════════════════════════════════════════
+
+📸 IMAGE SPECS:
+───────────────────────────────────────────────────────────────────
+
+✓ Format: JPG or PNG
+✓ Size: Under 500KB each
+✓ Dimensions: 800x1200 pixels (portrait/vertical)
+✓ Quality: Clear, well-lit photos
+✓ Content: HYT Foundation events, students, activities
+
+═══════════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT - Filename Rules:
+───────────────────────────────────────────────────────────────────
+
+✅ CORRECT:
+   youth-summit.jpg      (lowercase, hyphen, .jpg)
+   ojt.jpg               (lowercase, .jpg)
+
+❌ WRONG:
+   Youth-Summit.jpg      (capital letters)
+   youth summit.jpg      (space instead of hyphen)
+   youth-summit.JPG      (uppercase extension)
+   youth_summit.jpg      (underscore instead of hyphen)
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 QUICK TIP:
+───────────────────────────────────────────────────────────────────
+
+Don't have 10 photos ready?
+→ Use the same photo for all 10 temporarily!
+→ Just copy 1 photo and rename it 10 times
+→ Replace with real photos later
+
+Example:
+1. Copy your 1 photo
+2. Paste it 10 times
+3. Rename each to: youth-summit.jpg, ojt.jpg, etc.
+4. Works perfectly for testing!
+
+═══════════════════════════════════════════════════════════════════
+
+💡 HELPFUL TOOLS:
+───────────────────────────────────────────────────────────────────
+
+Compress large photos: https://tinypng.com/
+Free stock photos: https://unsplash.com/
+Batch rename files: Use "Rename" in Windows Explorer
+- Select all files
+- Right-click → Rename
+- Type new name, it adds numbers automatically
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 YOUR FILES SHOULD LOOK LIKE THIS:
+───────────────────────────────────────────────────────────────────
+
+hyt-foundation/src/assets/gallery/
+├── youth-summit.jpg      ✅
+├── ojt.jpg               ✅
+├── workshop.jpg          ✅
+├── outreach.jpg          ✅
+├── awards.jpg            ✅
+├── empowerment.jpg       ✅
+├── career.jpg            ✅
+├── achievement.jpg       ✅
+├── partnership.jpg       ✅
+└── innovation.jpg        ✅
+
+═══════════════════════════════════════════════════════════════════
+
+📞 TROUBLESHOOTING:
+───────────────────────────────────────────────────────────────────
+
+❓ Images not showing?
+   → Check filenames match exactly (case-sensitive!)
+   → Make sure files are in src/assets/gallery/ folder
+   → Try hard refresh: Ctrl + F5
+   → Check console for errors: F12
+
+❓ Build error?
+   → Make sure ALL 10 files exist
+   → Check file extensions are .jpg or .png
+   → Restart dev server: Ctrl+C, then "npm start"
+
+❓ Slider shows broken images?
+   → Verify files are in correct folder
+   → Check filenames have no typos
+   → Ensure file extensions match (.jpg not .JPG)
+
+═══════════════════════════════════════════════════════════════════
+
+✨ THAT'S IT!
+───────────────────────────────────────────────────────────────────
+
+Just put 10 photos in src/assets/gallery/ with correct names!
+
+No coding needed! 
+No configuration needed!
+Just drag, drop, rename, refresh! 🎉
+
+═══════════════════════════════════════════════════════════════════

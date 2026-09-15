@@ -2,6 +2,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, EffectCoverflow, Pagination } from 'swiper/modules';
+import { galleryItems } from '../../data/galleryData';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/pagination';
 import './Home.css';
 
 export function Home() {
@@ -171,7 +179,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* Accomplishments Gallery */}
+      {/* Accomplishments Gallery - Swiper Slider */}
       <section className="section bg-white">
         <div className="container">
           <div className="section-header">
@@ -181,73 +189,43 @@ export function Home() {
             </p>
           </div>
           
-          <div className="gallery-grid">
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/summit.jpg')} alt="Youth Leadership Summit 2026" /> */}
-                <div className="gallery-placeholder">Gallery Image 1</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>Youth Leadership Summit 2026</h4>
-                <p>50+ young leaders trained in community development</p>
-              </div>
-            </div>
-            
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/ojt.jpg')} alt="OJT Partnership Program" /> */}
-                <div className="gallery-placeholder">Gallery Image 2</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>OJT Partnership Program</h4>
-                <p>200+ students placed in quality internships</p>
-              </div>
-            </div>
-            
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/skills.jpg')} alt="Skills Training Workshop" /> */}
-                <div className="gallery-placeholder">Gallery Image 3</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>Skills Training Workshop</h4>
-                <p>100+ youth upskilled in technology and entrepreneurship</p>
-              </div>
-            </div>
-            
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/outreach.jpg')} alt="Community Outreach Program" /> */}
-                <div className="gallery-placeholder">Gallery Image 4</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>Community Outreach Program</h4>
-                <p>30+ communities served through youth volunteers</p>
-              </div>
-            </div>
-            
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/awards.jpg')} alt="Excellence Awards Ceremony" /> */}
-                <div className="gallery-placeholder">Gallery Image 5</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>Excellence Awards Ceremony</h4>
-                <p>150+ certificates awarded to outstanding students</p>
-              </div>
-            </div>
-            
-            <div className="gallery-item">
-              <div className="gallery-image">
-                {/* Add your image here: <img src={require('../../assets/gallery/innovation.jpg')} alt="Innovation Showcase" /> */}
-                <div className="gallery-placeholder">Gallery Image 6</div>
-              </div>
-              <div className="gallery-caption">
-                <h4>Innovation Showcase</h4>
-                <p>25+ youth-led projects presented to industry partners</p>
-              </div>
-            </div>
-          </div>
+          <Swiper
+            effect={'coverflow'}
+            grabCursor={true}
+            centeredSlides={true}
+            slidesPerView={'auto'}
+            loop={true}
+            coverflowEffect={{
+              rotate: 50,
+              stretch: 0,
+              depth: 100,
+              modifier: 1,
+              slideShadows: true,
+            }}
+            autoplay={{
+              delay: 2000,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: false,
+            }}
+            speed={800}
+            pagination={{
+              clickable: true,
+            }}
+            modules={[Autoplay, EffectCoverflow, Pagination]}
+            className="accomplishments-swiper"
+          >
+            {galleryItems.map((item) => (
+              <SwiperSlide key={item.id}>
+                <div className="swiper-slide-content">
+                  <img src={item.image} alt={item.title} />
+                  <div className="swiper-slide-caption">
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </section>
 
