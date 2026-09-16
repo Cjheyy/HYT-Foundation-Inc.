@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
@@ -10,6 +10,7 @@ import './Profile.css';
 export function StudentProfile() {
   const { state, dispatch } = useApp();
   const { currentUser } = state;
+  const fileInputRef = useRef(null);
   
   const [formData, setFormData] = useState({
     fullName: currentUser?.fullName || '',
@@ -21,11 +22,13 @@ export function StudentProfile() {
     school: currentUser?.school || '',
     course: currentUser?.course || '',
     yearLevel: currentUser?.yearLevel || '',
-    contactNumber: currentUser?.contactNumber || ''
+    contactNumber: currentUser?.contactNumber || '',
+    profilePicture: currentUser?.profilePicture || null
   });
   
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
+  const [imagePreview, setImagePreview] = useState(currentUser?.profilePicture || null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,6 +48,39 @@ export function StudentProfile() {
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image size should be less than 5MB', 'error');
+        return;
+      }
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setFormData(prev => ({ ...prev, profilePicture: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, profilePicture: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -78,6 +114,55 @@ export function StudentProfile() {
           <h2 className="section-title">Personal Information</h2>
           {!isEditing && (
             <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+          )}
+        </div>
+
+        {/* Profile Picture Section */}
+        <div className="profile-picture-section">
+          <div className="profile-picture-container">
+            {imagePreview ? (
+              <img 
+                src={imagePreview} 
+                alt="Profile" 
+                className="profile-picture-preview"
+              />
+            ) : (
+              <div className="profile-picture-placeholder">
+                <span>{currentUser?.fullName?.charAt(0) || '?'}</span>
+              </div>
+            )}
+          </div>
+          
+          {isEditing && (
+            <div className="profile-picture-actions">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: 'none' }}
+                id="profile-picture-input"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {imagePreview ? 'Change Picture' : 'Upload Picture'}
+              </Button>
+              {imagePreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRemoveImage}
+                >
+                  Remove Picture
+                </Button>
+              )}
+              <p className="profile-picture-help">
+                Max size: 5MB. Formats: JPG, PNG, GIF
+              </p>
+            </div>
           )}
         </div>
 
@@ -183,6 +268,7 @@ export function StudentProfile() {
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
+                  setImagePreview(currentUser?.profilePicture || null);
                   setFormData({
                     fullName: currentUser?.fullName || '',
                     studentId: currentUser?.studentId || '',
@@ -193,7 +279,8 @@ export function StudentProfile() {
                     school: currentUser?.school || '',
                     course: currentUser?.course || '',
                     yearLevel: currentUser?.yearLevel || '',
-                    contactNumber: currentUser?.contactNumber || ''
+                    contactNumber: currentUser?.contactNumber || '',
+                    profilePicture: currentUser?.profilePicture || null
                   });
                 }}
               >

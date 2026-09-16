@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectCoverflow, Pagination } from 'swiper/modules';
+import { GalleryModal } from '../../components/GalleryModal';
 import { galleryItems } from '../../data/galleryData';
 
 // Import Swiper styles
@@ -16,8 +18,22 @@ export function Home() {
   const navigate = useNavigate();
   const { state } = useApp();
   const { opportunities } = state;
+  const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const publishedOpportunities = opportunities.filter(o => o.status === 'Published').slice(0, 3);
+
+  const handleSlideClick = (item) => {
+    setSelectedGalleryItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => {
+      setSelectedGalleryItem(null);
+    }, 300);
+  };
 
   const thrusts = [
     { name: 'Education', icon: '📚', color: '#279EB6' },
@@ -216,11 +232,18 @@ export function Home() {
           >
             {galleryItems.map((item) => (
               <SwiperSlide key={item.id}>
-                <div className="swiper-slide-content">
+                <div 
+                  className="swiper-slide-content"
+                  onClick={() => handleSlideClick(item)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img src={item.image} alt={item.title} />
                   <div className="swiper-slide-caption">
                     <h3>{item.title}</h3>
                     <p>{item.description}</p>
+                  </div>
+                  <div className="swiper-slide-overlay">
+                    <span className="view-details-btn">View Details</span>
                   </div>
                 </div>
               </SwiperSlide>
@@ -228,6 +251,13 @@ export function Home() {
           </Swiper>
         </div>
       </section>
+
+      {/* Gallery Modal */}
+      <GalleryModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        galleryItem={selectedGalleryItem}
+      />
 
       {/* Youth Journey */}
       <section className="section bg-white">

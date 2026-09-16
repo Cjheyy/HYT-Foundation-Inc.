@@ -175,7 +175,12 @@ export function Login() {
                 <Link to="/forgot-password" className="link">Forgot password?</Link>
               </div>
 
-              <Button type="submit" disabled={loading} style={{ width: '100%' }}>
+              <Button 
+                type="submit" 
+                disabled={loading} 
+                className="login-submit-button"
+                style={{ width: '100%', fontSize: '18px', padding: '16px', fontWeight: '700' }}
+              >
                 {loading ? 'Logging in...' : 'Login'}
               </Button>
             </form>

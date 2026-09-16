@@ -270,3 +270,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Enhanced Login Button */
+.login-submit-button {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(213, 113, 86, 0.35) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.login-submit-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.login-submit-button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.45) !important;
+}
+
+.login-submit-button:hover::before {
+  left: 100%;
+}
+
+.login-submit-button:active {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(213, 113, 86, 0.35) !important;
+}
+
+.login-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}

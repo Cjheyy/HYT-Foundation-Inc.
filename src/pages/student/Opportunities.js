@@ -8,6 +8,7 @@ import { Select } from '../../components/Select';
 import { Badge } from '../../components/Badge';
 import { EmptyState } from '../../components/EmptyState';
 import { OPPORTUNITY_CATEGORIES } from '../../utils/helpers';
+import { filterOpportunitiesByAccountType } from '../../data/opportunitiesData';
 import './Opportunities.css';
 
 export function StudentOpportunities() {
@@ -18,7 +19,13 @@ export function StudentOpportunities() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  const publishedOpportunities = opportunities.filter(o => o.status === 'Published');
+  // Filter opportunities based on user's account type
+  const accountTypeFilteredOpps = filterOpportunitiesByAccountType(
+    opportunities,
+    currentUser?.accountType
+  );
+
+  const publishedOpportunities = accountTypeFilteredOpps.filter(o => o.status === 'Published');
   const myApplicationIds = applications
     .filter(app => app.studentId === currentUser?.id)
     .map(app => app.opportunityId);
