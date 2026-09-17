@@ -1,9 +1,20 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { 
-  loadFromLocalStorage, 
-  saveToLocalStorage,
-  initializeData 
-} from '../services/storageService';
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import { getCurrentUser } from '../services/authService';
+import { supabase } from '../config/supabase';
+import {
+  getUsers,
+  getPrograms,
+  getOpportunities,
+  getApplications,
+  getOjtRecords,
+  getAttendance,
+  getDailyReports,
+  getRequirements,
+  getCertificates,
+  getAnnouncements,
+  getNotifications,
+  getSettings
+} from '../services/supabaseService';
 
 const AppContext = createContext();
 
@@ -20,18 +31,17 @@ const initialState = {
   certificates: [],
   announcements: [],
   notifications: [],
-  settings: {}
+  settings: {},
+  loading: true
 };
 
 function appReducer(state, action) {
   switch (action.type) {
-    // Auth actions
     case 'SET_CURRENT_USER':
-      return { ...state, currentUser: action.payload };
+      return { ...state, currentUser: action.payload, loading: false };
     case 'LOGOUT':
-      return { ...state, currentUser: null };
+      return { ...initialState, loading: false };
     
-    // User actions
     case 'SET_USERS':
       return { ...state, users: action.payload };
     case 'ADD_USER':
@@ -45,7 +55,6 @@ function appReducer(state, action) {
         currentUser: state.currentUser?.id === action.payload.id ? action.payload : state.currentUser
       };
     
-    // Program actions
     case 'SET_PROGRAMS':
       return { ...state, programs: action.payload };
     case 'ADD_PROGRAM':
@@ -63,7 +72,6 @@ function appReducer(state, action) {
         programs: state.programs.filter(program => program.id !== action.payload)
       };
     
-    // Opportunity actions
     case 'SET_OPPORTUNITIES':
       return { ...state, opportunities: action.payload };
     case 'ADD_OPPORTUNITY':
@@ -81,7 +89,6 @@ function appReducer(state, action) {
         opportunities: state.opportunities.filter(opp => opp.id !== action.payload)
       };
     
-    // Application actions
     case 'SET_APPLICATIONS':
       return { ...state, applications: action.payload };
     case 'ADD_APPLICATION':
@@ -94,7 +101,6 @@ function appReducer(state, action) {
         )
       };
     
-    // Requirements actions
     case 'SET_REQUIREMENTS':
       return { ...state, requirements: action.payload };
     case 'ADD_REQUIREMENT':
@@ -107,7 +113,6 @@ function appReducer(state, action) {
         )
       };
     
-    // Attendance actions
     case 'SET_ATTENDANCE':
       return { ...state, attendance: action.payload };
     case 'ADD_ATTENDANCE':
@@ -120,7 +125,6 @@ function appReducer(state, action) {
         )
       };
     
-    // Daily Report actions
     case 'SET_DAILY_REPORTS':
       return { ...state, dailyReports: action.payload };
     case 'ADD_DAILY_REPORT':
@@ -133,7 +137,6 @@ function appReducer(state, action) {
         )
       };
     
-    // OJT Record actions
     case 'SET_OJT_RECORDS':
       return { ...state, ojtRecords: action.payload };
     case 'ADD_OJT_RECORD':
@@ -146,7 +149,6 @@ function appReducer(state, action) {
         )
       };
     
-    // Certificate actions
     case 'SET_CERTIFICATES':
       return { ...state, certificates: action.payload };
     case 'ADD_CERTIFICATE':
@@ -159,7 +161,6 @@ function appReducer(state, action) {
         )
       };
     
-    // Announcement actions
     case 'SET_ANNOUNCEMENTS':
       return { ...state, announcements: action.payload };
     case 'ADD_ANNOUNCEMENT':
@@ -177,7 +178,6 @@ function appReducer(state, action) {
         announcements: state.announcements.filter(ann => ann.id !== action.payload)
       };
     
-    // Notification actions
     case 'SET_NOTIFICATIONS':
       return { ...state, notifications: action.payload };
     case 'ADD_NOTIFICATION':
@@ -190,9 +190,11 @@ function appReducer(state, action) {
         )
       };
     
-    // Bulk data load
+    case 'SET_SETTINGS':
+      return { ...state, settings: action.payload };
+    
     case 'LOAD_DATA':
-      return { ...state, ...action.payload };
+      return { ...state, ...action.payload, loading: false };
     
     default:
       return state;
@@ -201,31 +203,177 @@ function appReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Load data from localStorage on mount
+  // Initialize app
   useEffect(() => {
-    const savedData = loadFromLocalStorage();
-    if (savedData) {
-      dispatch({ type: 'LOAD_DATA', payload: savedData });
-    } else {
-      // Initialize with demo data
-      const initialData = initializeData();
-      dispatch({ type: 'LOAD_DATA', payload: initialData });
+    let mounted = true;
+
+    async function init() {
+      try {
+        const user = await getCurrentUser();
+        
+        if (mounted) {
+          if (user) {
+            dispatch({ type: 'SET_CURRENT_USER', payload: user });
+            await fetchAllData(user);
+          } else {
+            dispatch({ type: 'SET_CURRENT_USER', payload: null });
+          }
+          setAuthInitialized(true);
+        }
+      } catch (error) {
+        console.error('Init error:', error);
+        if (mounted) {
+          dispatch({ type: 'SET_CURRENT_USER', payload: null });
+          setAuthInitialized(true);
+        }
+      }
     }
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Save to localStorage whenever state changes
+  // Listen to auth changes
   useEffect(() => {
-    if (state.users.length > 0) { // Only save if data is loaded
-      saveToLocalStorage(state);
+    if (!supabase) {
+      console.warn('Supabase not initialized - skipping auth listener');
+      return;
     }
-  }, [state]);
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const user = await getCurrentUser();
+        dispatch({ type: 'SET_CURRENT_USER', payload: user });
+        if (user) await fetchAllData(user);
+      } else if (event === 'SIGNED_OUT') {
+        dispatch({ type: 'LOGOUT' });
+      }
+    });
 
-  return (
-    <AppContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AppContext.Provider>
-  );
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Fetch all data from Supabase
+  async function fetchAllData(user) {
+    try {
+      if (user.role === 'ADMIN') {
+        // Admin sees everything
+        const [
+          users,
+          programs,
+          opportunities,
+          applications,
+          ojtRecords,
+          attendance,
+          dailyReports,
+          requirements,
+          certificates,
+          announcements,
+          settings
+        ] = await Promise.all([
+          getUsers(),
+          getPrograms(),
+          getOpportunities(),
+          getApplications(),
+          getOjtRecords(),
+          getAttendance(),
+          getDailyReports(),
+          getRequirements(),
+          getCertificates(),
+          getAnnouncements(),
+          getSettings()
+        ]);
+
+        dispatch({
+          type: 'LOAD_DATA',
+          payload: {
+            users,
+            programs,
+            opportunities,
+            applications,
+            ojtRecords,
+            attendance,
+            dailyReports,
+            requirements,
+            certificates,
+            announcements,
+            settings
+          }
+        });
+      } else {
+        // Students see limited data
+        const [programs, opportunities, announcements, settings] = await Promise.all([
+          getPrograms(),
+          getOpportunities(),
+          getAnnouncements(),
+          getSettings()
+        ]);
+
+        // Student-specific data
+        const applications = await getApplications();
+        const myApplications = applications.filter(a => a.userId === user.id);
+        
+        const ojtRecords = await getOjtRecords();
+        const myOjtRecords = ojtRecords.filter(o => o.studentId === user.id);
+        
+        const attendance = await getAttendance();
+        const myAttendance = attendance.filter(a => a.studentId === user.id);
+        
+        const dailyReports = await getDailyReports();
+        const myReports = dailyReports.filter(r => r.studentId === user.id);
+        
+        const requirements = await getRequirements();
+        const myRequirements = requirements.filter(r => r.studentId === user.id);
+        
+        const certificates = await getCertificates();
+        const myCertificates = certificates.filter(c => c.studentId === user.id);
+        
+        const notifications = await getNotifications(user.id);
+
+        dispatch({
+          type: 'LOAD_DATA',
+          payload: {
+            users: [user],
+            programs,
+            opportunities,
+            applications: myApplications,
+            ojtRecords: myOjtRecords,
+            attendance: myAttendance,
+            dailyReports: myReports,
+            requirements: myRequirements,
+            certificates: myCertificates,
+            announcements,
+            notifications,
+            settings
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Fetch data error:', error);
+    }
+  }
+
+  const refreshData = async () => {
+    if (state.currentUser) {
+      await fetchAllData(state.currentUser);
+    }
+  };
+
+  const value = {
+    state,
+    dispatch,
+    refreshData,
+    authInitialized
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {
@@ -235,3 +383,5 @@ export function useApp() {
   }
   return context;
 }
+
+export default AppContext;

@@ -5,13 +5,12 @@ import { login } from '../../services/authService';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
-import { showToast } from '../../utils/notifications';
 import hytLogo from '../../assets/HYT.png';
 import './Login.css';
 import '../../components/Logo.css';
 
 export function Login() {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     accountType: '', // 'trainee' or 'ojt-student'
@@ -32,7 +31,7 @@ export function Login() {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.accountType) newErrors.accountType = 'Please select account type';
+    // Only validate email and password - accountType is optional for ADMIN
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
     return newErrors;
@@ -40,6 +39,11 @@ export function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear any previous errors
+    setErrors({});
+    
+    // Validate only email and password
     const newErrors = validate();
     
     if (Object.keys(newErrors).length > 0) {
@@ -50,42 +54,30 @@ export function Login() {
     setLoading(true);
 
     try {
-      const user = login(formData.email, formData.password, state.users);
+      // Step 1: Authenticate with Supabase (credentials only)
+      // Step 2: authService will fetch user role and handle bypass logic
+      const user = await login(formData.email, formData.password, formData.accountType);
       
       if (user) {
         dispatch({ type: 'SET_CURRENT_USER', payload: user });
-        showToast('Login successful!', 'success');
         
-        // Redirect based on role
-        if (user.role === 'STUDENT') {
-          navigate('/student');
-        } else if (user.role === 'ADMIN') {
-          navigate('/admin');
+        // Automatic dashboard redirection based on role
+        if (user.role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (user.role === 'OJT/Intern') {
+          navigate('/student/dashboard');
+        } else if (user.role === 'Trainee') {
+          navigate('/trainee/dashboard');
+        } else {
+          // Fallback for unknown roles
+          navigate('/');
         }
-      } else {
-        setErrors({ general: 'Invalid email or password' });
       }
     } catch (error) {
-      setErrors({ general: error.message });
+      console.error('Login error:', error);
+      setErrors({ general: error.message || 'Login failed. Please check your credentials.' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = (role) => {
-    const demoCredentials = {
-      STUDENT: { email: 'christian.jay@hyt-demo.com', password: 'demo123' },
-      ADMIN: { email: 'admin@hyt-foundation.org', password: 'admin123' }
-    };
-
-    const creds = demoCredentials[role];
-    setFormData(creds);
-    
-    const user = login(creds.email, creds.password, state.users);
-    if (user) {
-      dispatch({ type: 'SET_CURRENT_USER', payload: user });
-      showToast('Demo login successful!', 'success');
-      navigate(role === 'STUDENT' ? '/student' : '/admin');
     }
   };
 
@@ -106,7 +98,7 @@ export function Login() {
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="form-group">
-                <label className="form-label">Login as *</label>
+                <label className="form-label">Login as (Optional for Admin)</label>
                 <div className="account-type-selection">
                   <label className="account-type-card">
                     <input
@@ -135,9 +127,9 @@ export function Login() {
                     </div>
                   </label>
                 </div>
-                {errors.accountType && (
-                  <div className="form-error">{errors.accountType}</div>
-                )}
+                <p className="form-hint" style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  Admin users can login without selecting an account type
+                </p>
               </div>
 
               <Input
@@ -184,27 +176,6 @@ export function Login() {
                 {loading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
-
-            <div className="auth-divider">
-              <span>Demo Accounts</span>
-            </div>
-
-            <div className="demo-buttons">
-              <Button 
-                variant="outline" 
-                onClick={() => handleDemoLogin('STUDENT')}
-                style={{ width: '100%' }}
-              >
-                Login as Student (Demo)
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleDemoLogin('ADMIN')}
-                style={{ width: '100%' }}
-              >
-                Login as Admin (Demo)
-              </Button>
-            </div>
 
             <div className="auth-footer">
               Don't have an account? <Link to="/register" className="link-primary">Create Account</Link>

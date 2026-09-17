@@ -26,6 +26,14 @@ export function verifyLocation(userLat, userLon, workplaceLat, workplaceLon, rad
 }
 
 export function verifySchedule(timeIn, workSchedule) {
+  // Safety check - prevent undefined errors
+  if (!workSchedule || !workSchedule.days || !workSchedule.timeIn) {
+    return {
+      valid: false,
+      message: 'Work schedule not configured'
+    };
+  }
+
   const now = new Date(timeIn);
   const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
   
@@ -34,6 +42,14 @@ export function verifySchedule(timeIn, workSchedule) {
     return {
       valid: false,
       message: 'Not a scheduled work day'
+    };
+  }
+  
+  // Safety check for timeIn.start and timeIn.end
+  if (!workSchedule.timeIn.start || !workSchedule.timeIn.end) {
+    return {
+      valid: false,
+      message: 'Work schedule time window not configured'
     };
   }
   

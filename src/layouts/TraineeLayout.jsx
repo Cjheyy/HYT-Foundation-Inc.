@@ -5,7 +5,7 @@ import hytLogo from '../assets/HYT.png';
 import './PortalLayout.css';
 import '../components/Logo.css';
 
-export function AdminLayout({ children }) {
+export function TraineeLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { state, dispatch } = useApp();
   const { currentUser } = state;
@@ -22,18 +22,15 @@ export function AdminLayout({ children }) {
   };
 
   const navItems = [
-    { path: '/admin', label: 'Dashboard', icon: '📊' },
-    { path: '/admin/students', label: 'Students', icon: '👥' },
-    { path: '/admin/programs', label: 'Programs', icon: '📚' },
-    { path: '/admin/opportunities', label: 'Opportunities', icon: '🎯' },
-    { path: '/admin/applications', label: 'Applications', icon: '📝' },
-    { path: '/admin/attendance-verification', label: 'Attendance Verification', icon: '✓' },
-    { path: '/admin/ot-approvals', label: 'OT Approvals', icon: '⏰' },
-    { path: '/admin/report-approvals', label: 'Report Approvals', icon: '📋' },
-    { path: '/admin/requirements', label: 'Requirements', icon: '📄' },
-    { path: '/admin/certificates', label: 'Certificates', icon: '🏆' },
-    { path: '/admin/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/admin/reports', label: 'Reports', icon: '📈' }
+    { path: '/trainee/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/trainee/profile', label: 'My Profile', icon: '👤' },
+    { path: '/trainee/programs', label: 'Programs', icon: '📚' },
+    { path: '/trainee/opportunities', label: 'Opportunities', icon: '🎯' },
+    { path: '/trainee/applications', label: 'My Applications', icon: '📝' },
+    { path: '/trainee/requirements', label: 'Requirements', icon: '📄' },
+    { path: '/trainee/attendance', label: 'Attendance', icon: '✓' },
+    { path: '/trainee/certificates', label: 'Certificates', icon: '🏆' },
+    { path: '/trainee/announcements', label: 'Announcements', icon: '📢' }
   ];
 
   return (
@@ -52,12 +49,12 @@ export function AdminLayout({ children }) {
         </div>
 
         <div className="sidebar-user">
-          <div className="user-avatar admin">
-            {currentUser?.firstName?.charAt(0) || 'A'}
+          <div className="user-avatar">
+            {currentUser?.firstName?.charAt(0) || 'T'}
           </div>
           <div className="user-info">
             <div className="user-name">{currentUser?.fullName}</div>
-            <div className="user-role">Administrator</div>
+            <div className="user-role">Trainee</div>
           </div>
         </div>
 
@@ -91,7 +88,7 @@ export function AdminLayout({ children }) {
           >
             ☰
           </button>
-          <div className="header-title">Admin Portal</div>
+          <div className="header-title">Trainee Portal</div>
           <div className="header-user">
             {currentUser?.fullName}
           </div>

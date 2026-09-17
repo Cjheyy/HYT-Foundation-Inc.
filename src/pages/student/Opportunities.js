@@ -8,7 +8,6 @@ import { Select } from '../../components/Select';
 import { Badge } from '../../components/Badge';
 import { EmptyState } from '../../components/EmptyState';
 import { OPPORTUNITY_CATEGORIES } from '../../utils/helpers';
-import { filterOpportunitiesByAccountType } from '../../data/opportunitiesData';
 import './Opportunities.css';
 
 export function StudentOpportunities() {
@@ -19,11 +18,25 @@ export function StudentOpportunities() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Filter opportunities based on user's account type
-  const accountTypeFilteredOpps = filterOpportunitiesByAccountType(
-    opportunities,
-    currentUser?.accountType
-  );
+  // Filter based on account type
+  const accountTypeFilteredOpps = opportunities.filter(opp => {
+    if (!currentUser) return false;
+    
+    // Admin sees all
+    if (currentUser.role === 'ADMIN') return true;
+    
+    // OJT Student sees all
+    if (currentUser.accountType === 'OJT Student') return true;
+    
+    // Training student sees: Internship, OJT, Youth Program, Training (except OJT-specific)
+    if (currentUser.accountType === 'Training') {
+      if (['Internship', 'OJT', 'Youth Program'].includes(opp.category)) return true;
+      if (opp.category === 'Training' && opp.restrictedTo !== 'OJT') return true;
+      return false;
+    }
+    
+    return false;
+  });
 
   const publishedOpportunities = accountTypeFilteredOpps.filter(o => o.status === 'Published');
   const myApplicationIds = applications

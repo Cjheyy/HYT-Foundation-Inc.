@@ -11,10 +11,12 @@ export function ProtectedRoute({ children, requiredRole }) {
 
   if (requiredRole && currentUser.role !== requiredRole) {
     // Redirect to appropriate dashboard based on role
-    if (currentUser.role === 'STUDENT') {
-      return <Navigate to="/student" replace />;
-    } else if (currentUser.role === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
+    if (currentUser.role === 'ADMIN') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (currentUser.role === 'OJT/Intern') {
+      return <Navigate to="/student/dashboard" replace />;
+    } else if (currentUser.role === 'Trainee') {
+      return <Navigate to="/trainee/dashboard" replace />;
     }
     return <Navigate to="/" replace />;
   }

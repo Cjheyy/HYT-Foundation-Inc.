@@ -41,10 +41,16 @@ export function PublicHeader() {
                 className="btn btn-primary btn-sm"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  if (currentUser.role === 'STUDENT') {
-                    navigate('/student');
+                  // Dynamic routing based on user role
+                  if (currentUser.role === 'ADMIN') {
+                    navigate('/admin/dashboard');
+                  } else if (currentUser.role === 'OJT/Intern') {
+                    navigate('/student/dashboard');
+                  } else if (currentUser.role === 'Trainee') {
+                    navigate('/trainee/dashboard');
                   } else {
-                    navigate('/admin');
+                    // Fallback for unknown roles
+                    navigate('/');
                   }
                 }}
               >

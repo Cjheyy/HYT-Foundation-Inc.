@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { register } from '../../services/authService';
+import { register, getCurrentUser } from '../../services/authService';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { TermsModal } from '../../components/TermsModal';
-import { showToast } from '../../utils/notifications';
 import { validateEmail } from '../../utils/helpers';
 import hytLogo from '../../assets/HYT.png';
 import { qcSchools } from '../../data/qcSchools';
@@ -14,7 +13,7 @@ import './Register.css';
 import '../../components/Logo.css';
 
 export function Register() {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     accountType: '', // 'trainee' or 'ojt-student'
@@ -174,28 +173,44 @@ export function Register() {
         fullName: formData.fullName,
         firstName: names[0],
         lastName: names.slice(1).join(' ') || names[0],
-        accountType: formData.accountType,
+        accountType: formData.accountType, // 'trainee' or 'ojt-student' - will be mapped to role in authService
         school: formData.accountType === 'ojt-student' ? (selectedSchool?.name || formData.school) : null,
         requiredHours: formData.accountType === 'ojt-student' ? parseInt(formData.requiredHours) : null,
         birthday: formData.birthday,
-        age: formData.age,
+        age: parseInt(formData.age),
         address: formData.address,
         course: '',
         yearLevel: '',
         contactNumber: ''
       };
 
-      const newUser = register(userData, state.users);
-      dispatch({ type: 'ADD_USER', payload: newUser });
+      // Call Supabase register function (handles mapping to correct role)
+      const result = await register(userData);
       
-      // Auto login
-      const { password, ...userWithoutPassword } = newUser;
-      dispatch({ type: 'SET_CURRENT_USER', payload: userWithoutPassword });
-      
-      showToast('Account created successfully!', 'success');
-      navigate('/student');
+      if (result.needsEmailConfirmation) {
+        // Email confirmation required - show message and redirect to login
+        navigate('/login');
+      } else {
+        // Auto-login successful - redirect to appropriate dashboard
+        const user = await getCurrentUser();
+        if (user) {
+          dispatch({ type: 'SET_CURRENT_USER', payload: user });
+          
+          // Redirect based on role
+          if (user.role === 'Trainee') {
+            navigate('/trainee/dashboard');
+          } else if (user.role === 'OJT/Intern') {
+            navigate('/student/dashboard');
+          } else {
+            navigate('/');
+          }
+        } else {
+          navigate('/login');
+        }
+      }
     } catch (error) {
-      setErrors({ general: error.message });
+      console.error('Registration error:', error);
+      setErrors({ general: error.message || 'Registration failed. Please try again.' });
     } finally {
       setLoading(false);
     }
