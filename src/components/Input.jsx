@@ -24,6 +24,9 @@ export function Input({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        onPaste={props.onPaste}
+        onCopy={props.onCopy}
+        onCut={props.onCut}
         required={required}
         disabled={disabled}
         className={`form-input ${className} ${error ? 'error' : ''}`}

@@ -12,6 +12,28 @@
   gap: 16px;
 }
 
+.progress-cell {
+  min-width: 150px;
+  color: #6B7280;
+  font-size: 12px;
+}
+
+.progress-track {
+  width: 150px;
+  height: 7px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #E5E7EB;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #667eea, #10B981);
+  transition: width 300ms ease;
+}
+
 .student-card-content {
   display: flex;
   justify-content: space-between;

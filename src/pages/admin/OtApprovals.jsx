@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
+import { supabase } from '../../config/supabase';
+import { isPendingApplicationStatus } from '../../services/supabaseService';
+import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
@@ -13,6 +17,7 @@ import { toast } from 'react-toastify';
 import './Admin.css';
 
 export function OtApprovals() {
+  const { refreshData } = useApp();
   const [otRequests, setOtRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -25,6 +30,19 @@ export function OtApprovals() {
 
   useEffect(() => {
     loadOtRequests();
+    let timer;
+    const refresh = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(loadOtRequests, 120);
+    };
+    const channel = supabase
+      ?.channel(`admin-ot-approvals-${Date.now()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ot_requests' }, refresh)
+      .subscribe();
+    return () => {
+      window.clearTimeout(timer);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadOtRequests = async () => {
@@ -58,6 +76,8 @@ export function OtApprovals() {
       toast.success('✅ OT request approved! Hours added to student record.');
       setShowModal(false);
       await loadOtRequests();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Approve error:', error);
       toast.error(error.message || 'Failed to approve OT request');
@@ -81,6 +101,8 @@ export function OtApprovals() {
       toast.success('OT request rejected');
       setShowModal(false);
       await loadOtRequests();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Reject error:', error);
       toast.error(error.message || 'Failed to reject OT request');
@@ -97,7 +119,7 @@ export function OtApprovals() {
     }
   };
 
-  const pendingRequests = otRequests.filter(req => req.status === 'Pending');
+  const pendingRequests = otRequests.filter((request) => isPendingApplicationStatus(request.status));
 
   if (loading) {
     return (
@@ -190,7 +212,7 @@ export function OtApprovals() {
           <h2 className="card-title">Recently Processed</h2>
         </div>
 
-        {otRequests.filter(req => req.status !== 'Pending').length > 0 ? (
+        {otRequests.filter((request) => !isPendingApplicationStatus(request.status)).length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
@@ -204,7 +226,7 @@ export function OtApprovals() {
               </thead>
               <tbody>
                 {otRequests
-                  .filter(req => req.status !== 'Pending')
+                  .filter((request) => !isPendingApplicationStatus(request.status))
                   .slice(0, 10)
                   .map((request) => (
                     <tr key={request.id}>

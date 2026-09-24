@@ -1,0 +1,197 @@
+/* AttendanceReview.css */
+
+.attendance-review-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pending-summary-card {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 2px solid #F59E0B;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.pending-count {
+  font-size: 48px;
+  font-weight: 700;
+  color: #F59E0B;
+  line-height: 1;
+}
+
+.pending-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 4px;
+}
+
+.pending-description {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+/* Table enhancements for attendance review */
+.data-table tbody tr:hover {
+  background-color: #F9FAFB;
+}
+
+.duration-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.hours-display {
+  font-weight: 600;
+  font-size: 15px;
+  color: #10B981;
+}
+
+.progress-impact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.progress-before-after {
+  color: #6B7280;
+}
+
+.progress-increase {
+  color: #10B981;
+  font-weight: 600;
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* Empty state */
+.empty-state-review {
+  text-align: center;
+  padding: 48px 24px;
+  color: #9CA3AF;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #1F2937;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #6B7280;
+}
+
+/* Modal content styling */
+.approval-details {
+  padding: 12px;
+  background: #F3F4F6;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.approval-details div {
+  margin-bottom: 4px;
+}
+
+.approval-details div:last-child {
+  margin-bottom: 0;
+}
+
+.approval-impact-list {
+  margin-left: 20px;
+  font-size: 14px;
+  color: #6B7280;
+  list-style: none;
+  padding: 0;
+}
+
+.approval-impact-list li {
+  margin-bottom: 6px;
+  padding-left: 8px;
+}
+
+.rejection-details {
+  padding: 12px;
+  background: #FEE2E2;
+  border-radius: 8px;
+  border-left: 4px solid #EF4444;
+  margin: 12px 0;
+}
+
+.rejection-warning {
+  color: #991B1B;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.form-textarea-rejection {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-textarea-rejection:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea-rejection.error {
+  border-color: #EF4444;
+  border-width: 2px;
+}
+
+.form-error-message {
+  color: #EF4444;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .data-table {
+    font-size: 13px;
+  }
+  
+  .action-buttons-group {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .pending-count {
+    font-size: 36px;
+  }
+  
+  .pending-label {
+    font-size: 16px;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .data-table {
+    min-width: 1000px;
+  }
+}

@@ -5,6 +5,8 @@ import { PublicHeader } from './components/PublicHeader';
 import { PublicFooter } from './components/PublicFooter';
 import { StudentLayout } from './layouts/StudentLayout';
 import { AdminLayout } from './layouts/AdminLayout';
+import { ScrollToTop } from './components/ScrollToTop';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -19,6 +21,8 @@ import { Impact } from './pages/public/Impact';
 import { Contact } from './pages/public/Contact';
 import { Login } from './pages/public/Login';
 import { Register } from './pages/public/Register';
+import { ForgotPassword } from './pages/public/ForgotPassword';
+import { ResetPassword } from './pages/public/ResetPassword';
 
 // Student pages
 import { StudentDashboard } from './pages/student/Dashboard';
@@ -50,8 +54,10 @@ import { AdminCertificates } from './pages/admin/Certificates';
 import { AdminAnnouncements } from './pages/admin/Announcements';
 import { AdminReports } from './pages/admin/Reports';
 import { AttendanceVerification } from './pages/admin/AttendanceVerification';
+import { AttendanceReview } from './pages/admin/AttendanceReview';
 import { OtApprovals } from './pages/admin/OtApprovals';
 import { ReportApprovals } from './pages/admin/ReportApprovals';
+import { ApplicationReview } from './pages/admin/ApplicationReview';
 
 function PublicLayout({ children }) {
   return (
@@ -65,9 +71,11 @@ function PublicLayout({ children }) {
 
 function App() {
   return (
-    <AppProvider>
-      <BrowserRouter>
-        <Routes>
+    <ErrorBoundary>
+      <AppProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
           <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
@@ -79,6 +87,8 @@ function App() {
           <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
           <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
           <Route path="/register" element={<PublicLayout><Register /></PublicLayout>} />
+          <Route path="/forgot-password" element={<PublicLayout><ForgotPassword /></PublicLayout>} />
+          <Route path="/reset-password" element={<PublicLayout><ResetPassword /></PublicLayout>} />
 
           {/* Student Routes (OJT/Intern) */}
           <Route path="/student/dashboard" element={
@@ -270,6 +280,11 @@ function App() {
               <AdminLayout><AttendanceVerification /></AdminLayout>
             </ProtectedRoute>
           } />
+          <Route path="/admin/attendance-review" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><AttendanceReview /></AdminLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/admin/ot-approvals" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><OtApprovals /></AdminLayout>
@@ -278,6 +293,11 @@ function App() {
           <Route path="/admin/report-approvals" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><ReportApprovals /></AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/application-review" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><ApplicationReview /></AdminLayout>
             </ProtectedRoute>
           } />
 
@@ -298,6 +318,7 @@ function App() {
         />
       </BrowserRouter>
     </AppProvider>
+    </ErrorBoundary>
   );
 }
 

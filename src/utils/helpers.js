@@ -54,9 +54,27 @@ export function getStatusColor(status) {
     // Requirement statuses
     'Required': 'gray',
     'Submitted': 'blue',
-    'Approved': 'green',
     
-    // Attendance statuses
+    // Attendance statuses - State Machine
+    'CLOCKED_IN': 'blue',          // State 1: Active timer
+    'PENDING_CLOCK_IN': 'yellow',
+    'PENDING_CLOCK_OUT': 'yellow',
+    'PENDING_OUT': 'yellow',
+    'PENDING_REVIEW': 'yellow',
+    'PENDING_APPROVAL': 'yellow',
+    'PENDING': 'yellow',
+    'Pending': 'yellow',
+    'Clocked In': 'blue',
+    'In Progress': 'blue',
+    'Pending Approval': 'yellow',
+    'APPROVED': 'green',            // State 3A: Admin approved
+    'Approved': 'green',
+    'REJECTED': 'red',              // State 3B: Admin rejected
+    'VOID': 'gray',                 // Voided (no clock-out)
+    'Void': 'gray',
+    
+    // Legacy attendance statuses (for backwards compatibility)
+    'IN_PROGRESS': 'blue',
     'Pending Verification': 'yellow',
     'Verified': 'green',
     'Active': 'green',
@@ -80,7 +98,8 @@ export function getStatusColor(status) {
     'Available': 'green'
   };
   
-  return statusColors[status] || 'gray';
+  const rawStatus = String(status ?? '');
+  return statusColors[rawStatus] || statusColors[rawStatus.toUpperCase()] || statusColors[rawStatus.toLowerCase()] || 'gray';
 }
 
 export function calculateDaysCompleted(startDate) {

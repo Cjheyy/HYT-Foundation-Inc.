@@ -1,303 +1,364 @@
-import { supabase, toCamelCase } from '../config/supabase';
+import { supabase, toCamelCase, toSnakeCase } from '../config/supabase';
 import { toast } from 'react-toastify';
+import { isApprovedAccountStatus, normalizeRole, normalizeStatus, SAFE_USER_COLUMNS } from './supabaseService';
 
-// ============================================
-// REGISTER - Sign up new user
-// ============================================
+const AUTH_MARKER_KEY = 'hyt.auth.last-user-id';
+
+const requireSupabase = () => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Check your environment variables.');
+  }
+  return supabase;
+};
+
+const rememberUser = (userId) => {
+  try {
+    if (userId) localStorage.setItem(AUTH_MARKER_KEY, userId);
+    else localStorage.removeItem(AUTH_MARKER_KEY);
+  } catch (error) {
+    // Storage can be disabled in private browsing; Supabase's own storage
+    // remains the source of truth in that case.
+    console.warn('Unable to synchronize auth marker.', error);
+  }
+};
+
+export const isAdminAccount = (user) => normalizeRole(user?.role) === 'ADMIN';
+
+export const isPendingAccount = (user) => {
+  if (!user || isAdminAccount(user)) return false;
+  const status = normalizeStatus(user.applicationStatus ?? user.application_status);
+  return ['PENDING', 'PENDING_APPROVAL', 'PENDING_APPLICATION', 'SUBMITTED', 'APPLIED']
+    .includes(status) || (
+      user.isActive === false &&
+      !isApprovedAccountStatus(status) &&
+      !['REJECTED', 'DECLINED', 'DENIED'].includes(status)
+    );
+};
+
+export const isRejectedAccount = (user) => {
+  const status = normalizeStatus(user?.applicationStatus ?? user?.application_status);
+  return ['REJECTED', 'DECLINED', 'DENIED'].includes(status);
+};
+
+export const isAccountApproved = (user) => {
+  if (!user) return false;
+  if (isAdminAccount(user)) return true;
+  if (isPendingAccount(user) || isRejectedAccount(user)) return false;
+
+  // Fail closed for non-admin accounts.  A missing status or an inactive
+  // approved profile must never grant portal access; the migration backfills
+  // legacy active accounts before this rule is enforced.
+  const status = normalizeStatus(user.applicationStatus ?? user.application_status);
+  return user.isActive === true && isApprovedAccountStatus(status);
+};
+
+const roleForAccountType = (accountType) => {
+  if (accountType === 'ojt-student' || accountType === 'ojt_student' || accountType === 'OJT/Intern') {
+    return 'OJT/Intern';
+  }
+  return 'Trainee';
+};
+
+const makeAuthError = (message, code) => {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+};
+
+const isMissingProfileError = (error) => {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+  return code === 'PGRST116' || code === '404' || message.includes('no rows') || message.includes('not found');
+};
+
+// ==========================================================================
+// Registration
+// ==========================================================================
+
+/**
+ * Register a trainee.  Sign-up deliberately never leaves the browser logged
+ * in.  The profile trigger/RPC creates a pending application and the admin
+ * must approve it before the account can sign in.
+ */
 export async function register(userData) {
   try {
-    if (!supabase) {
-      throw new Error('Supabase not configured. Check .env file.');
+    const client = requireSupabase();
+    const email = String(userData.email || '').trim().toLowerCase();
+    if (!email) throw new Error('Email is required.');
+
+    // This is only a UX optimization.  Supabase Auth remains authoritative
+    // and prevents duplicate accounts even when the public profile is hidden
+    // by RLS.
+    try {
+      const { data: existingUser } = await client
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      if (existingUser) throw makeAuthError('Email already registered.', 'EMAIL_EXISTS');
+    } catch (error) {
+      if (error.code === 'EMAIL_EXISTS') throw error;
+      // An anon request may not be allowed to read public.users.  Continue to
+      // signUp and surface the authoritative Auth error if it is a duplicate.
     }
 
-    // Check if email exists in public.users
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', userData.email)
-      .maybeSingle();
-
-    if (existingUser) {
-      toast.error('Email already registered!');
-      throw new Error('Email already registered');
-    }
-
-    // Map frontend account type to database role
-    // Frontend: 'trainee' → Database: 'Trainee'
-    // Frontend: 'ojt-student' → Database: 'OJT/Intern'
-    const roleMap = {
-      'trainee': 'Trainee',
-      'ojt-student': 'OJT/Intern'
+    const role = roleForAccountType(userData.accountType);
+    const metadata = {
+      full_name: userData.fullName,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      student_id: userData.studentId || null,
+      requested_role: role,
+      // Kept for compatibility with the existing profile trigger.  The SQL
+      // trigger only permits Trainee/OJT-Intern; ADMIN is never accepted from
+      // user metadata.
+      role,
+      account_type: userData.accountType,
+      school: userData.school || null,
+      course: userData.course || null,
+      year_level: userData.yearLevel || null,
+      birthday: userData.birthday || null,
+      age: userData.age ? Number(userData.age) : null,
+      address: userData.address || null,
+      contact_number: userData.contactNumber || null,
+      required_hours: Number(userData.requiredHours) || 0,
+      rendered_hours: 0,
+      application_status: 'PENDING_APPROVAL',
+      is_active: false
     };
 
-    const userRole = roleMap[userData.accountType] || 'Trainee';
-
-    // Create auth user with metadata
-    // Database trigger will auto-create public.users profile
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email,
+    const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const { data: authData, error: authError } = await client.auth.signUp({
+      email,
       password: userData.password,
       options: {
-        data: {
-          full_name: userData.fullName,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          student_id: userData.studentId,
-          role: userRole, // Use mapped role
-          account_type: userData.accountType, // Keep for backward compatibility
-          school: userData.school,
-          course: userData.course,
-          year_level: userData.yearLevel,
-          birthday: userData.birthday,
-          age: userData.age,
-          address: userData.address,
-          contact_number: userData.contactNumber,
-          required_hours: userData.requiredHours,
-          rendered_hours: 0
-        },
-        emailRedirectTo: window.location.origin
+        data: metadata,
+        ...(redirectTo ? { emailRedirectTo: redirectTo } : {})
       }
     });
 
     if (authError) throw authError;
 
-    // Handle email confirmation case
-    if (!authData.session) {
-      toast.info('📧 Please check your email to confirm your account before logging in.');
-      return { user: authData.user, needsEmailConfirmation: true };
-    }
-
-    // If session exists, update profile with additional fields
-    // (Database trigger creates basic profile, now we add extra fields)
+    // When email confirmation is disabled Supabase returns a session.  The
+    // SECURITY DEFINER auth trigger has already created the pending profile;
+    // do not write role/approval columns from the browser.  Destroy the
+    // temporary session immediately so a pending account cannot enter a
+    // trainee portal.
     if (authData.session) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          role: userRole, // Set correct role
-          student_id: userData.studentId,
-          school: userData.school || null,
-          course: userData.course,
-          year_level: userData.yearLevel,
-          birthday: userData.birthday,
-          age: userData.age,
-          address: userData.address,
-          contact_number: userData.contactNumber,
-          required_hours: userData.requiredHours || 0,
-          rendered_hours: 0,
-          is_active: true
-        })
-        .eq('id', authData.user.id);
-
-      if (updateError) {
-        console.warn('Profile update warning:', updateError);
-        // Don't throw - basic profile was created by trigger
-      }
+      const { error: signOutError } = await client.auth.signOut();
+      if (signOutError) throw makeAuthError('Registration completed, but the temporary session could not be closed. Please contact support.', 'REGISTRATION_SESSION_CLEANUP_FAILED');
     }
 
-    toast.success('🎉 Registration successful! You can now login.');
-    return { user: authData.user, needsEmailConfirmation: false };
+    rememberUser(null);
+    return {
+      user: authData.user,
+      needsEmailConfirmation: !authData.session,
+      pendingApproval: true
+    };
   } catch (error) {
     console.error('Registration error:', error);
-    toast.error(error.message || 'Registration failed');
+    if (error.code === 'EMAIL_EXISTS') toast.error('Email already registered.');
     throw error;
   }
 }
 
-// ============================================
-// LOGIN - Sign in with email/password
-// Architecture: Authenticate first, then verify role
-// ============================================
-export async function login(email, password, selectedAccountType) {
+// ==========================================================================
+// Login and account approval gate
+// ==========================================================================
+
+export async function login(email, password, selectedAccountType = null) {
+  const client = requireSupabase();
+  const { data: authData, error: authError } = await client.auth.signInWithPassword({
+    email: String(email || '').trim().toLowerCase(),
+    password
+  });
+
+  if (authError) {
+    toast.error('❌ Invalid email or password');
+    throw authError;
+  }
+
   try {
-    if (!supabase) {
-      throw new Error('Supabase not configured. Check .env file.');
-    }
-
-    // STEP 1: Authenticate with Supabase Auth (credentials validation)
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (authError) {
-      // Authentication failed - wrong email/password
-      toast.error('❌ Invalid email or password');
-      throw authError;
-    }
-
-    // STEP 2: Fetch user profile from database to get role
-    const { data: user, error: userError } = await supabase
+    let profileResult = await client
       .from('users')
-      .select('*')
+      .select(SAFE_USER_COLUMNS)
       .eq('id', authData.user.id)
-      .single();
+      .maybeSingle();
+    if (profileResult.error) {
+      profileResult = await client.from('users').select('*').eq('id', authData.user.id).maybeSingle();
+    }
+    const profile = profileResult.data;
+    const profileError = profileResult.error;
 
-    if (userError || !user) {
-      // Auth succeeded but profile is missing - database/registration issue
-      await supabase.auth.signOut(); // Sign out since profile is missing
-      toast.error('❌ Account found but profile is incomplete. Please contact support.');
-      throw new Error('User profile not found in database. Auth succeeded but profile missing.');
+    if (profileError && !isMissingProfileError(profileError)) {
+      // Preserve the valid Supabase session on a temporary database/network
+      // failure.  The caller can retry instead of experiencing an artificial
+      // logout during a token refresh.
+      throw makeAuthError('We could not verify your account right now. Please try again.', 'PROFILE_READ_ERROR');
+    }
+    if (!profile) {
+      await client.auth.signOut();
+      rememberUser(null);
+      const error = makeAuthError('Your account profile is incomplete. Please contact HYT support.', 'PROFILE_MISSING');
+      toast.error(error.message);
+      throw error;
     }
 
-    // STEP 3: Role-based verification and redirection logic
+    const user = toCamelCase(profile);
+    if (isPendingAccount(user)) {
+      await client.auth.signOut();
+      rememberUser(null);
+      const error = makeAuthError(
+        'Please wait for the admin to confirm your account before logging in.',
+        'PENDING_APPROVAL'
+      );
+      toast.warning(error.message);
+      throw error;
+    }
+    if (isRejectedAccount(user)) {
+      await client.auth.signOut();
+      rememberUser(null);
+      const error = makeAuthError(
+        'Your application was not approved. Please contact HYT support for more information.',
+        'APPLICATION_REJECTED'
+      );
+      toast.error(error.message);
+      throw error;
+    }
+    if (!isAccountApproved(user)) {
+      await client.auth.signOut();
+      rememberUser(null);
+      const error = makeAuthError('Your account is not active yet. Please contact HYT support.', 'ACCOUNT_INACTIVE');
+      toast.error(error.message);
+      throw error;
+    }
 
-    // CASE 1: ADMIN BYPASS - Admins don't need account type selection
-    if (user.role === 'ADMIN') {
-      // Update last login
-      await supabase
+    if (isAdminAccount(user)) {
+      await client
         .from('users')
         .update({ last_login: new Date().toISOString() })
         .eq('id', user.id);
-
-      toast.success(`✅ Login successful! Welcome Admin ${user.full_name}`);
-      return toCamelCase(user);
+      rememberUser(user.id);
+      return user;
     }
 
-    // CASE 2 & 3: Non-admin users MUST select correct account type
-    
-    // Check if account type was selected
     if (!selectedAccountType) {
-      await supabase.auth.signOut();
-      
-      // Provide helpful error based on user's actual role
-      if (user.role === 'Trainee') {
-        toast.error('❌ Access Denied! Please select the Trainee account type to log in.');
-      } else if (user.role === 'OJT/Intern') {
-        toast.error('❌ Access Denied! Please select the OJT Student account type to log in.');
-      } else {
-        toast.error('❌ Access Denied! Please select an account type to log in.');
-      }
-      throw new Error('Account type selection required for non-admin users');
+      await client.auth.signOut();
+      rememberUser(null);
+      const error = makeAuthError('Please select your account type to log in.', 'ACCOUNT_TYPE_REQUIRED');
+      toast.error(error.message);
+      throw error;
     }
 
-    // Map frontend account type selection to database role
-    // Frontend: 'trainee' → Database: 'Trainee'
-    // Frontend: 'ojt-student' → Database: 'OJT/Intern'
-    const accountTypeMap = {
-      'trainee': 'Trainee',
-      'ojt-student': 'OJT/Intern'
-    };
-
-    const expectedRole = accountTypeMap[selectedAccountType];
-
-    // Verify the user's role matches their selection
-    if (user.role !== expectedRole) {
-      await supabase.auth.signOut();
-      
-      // Provide helpful error message
-      const userRoleFriendly = user.role === 'Trainee' ? 'Trainee' : 'OJT Student';
-      toast.error(`❌ Access Denied! Please select the ${userRoleFriendly} account type to log in.`);
-      throw new Error('Incorrect account type selected');
+    const expectedRole = roleForAccountType(selectedAccountType);
+    if (normalizeRole(user.role) !== normalizeRole(expectedRole)) {
+      await client.auth.signOut();
+      rememberUser(null);
+      const roleLabel = normalizeRole(user.role) === 'OJT/INTERN' ? 'OJT Student' : 'Trainee';
+      const error = makeAuthError(`Please select the ${roleLabel} account type to log in.`, 'ROLE_MISMATCH');
+      toast.error(`❌ Access Denied! ${error.message}`);
+      throw error;
     }
 
-    // Update last login
-    await supabase
+    await client
       .from('users')
       .update({ last_login: new Date().toISOString() })
       .eq('id', user.id);
-
-    toast.success(`✅ Login successful! Welcome ${user.full_name}`);
-    return toCamelCase(user);
+    rememberUser(user.id);
+    return user;
   } catch (error) {
-    console.error('Login error:', error);
-    throw error;
-  }
-}
-
-// ============================================
-// LOGOUT
-// ============================================
-export async function logout() {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    toast.info('👋 Logged out successfully');
-    return { success: true };
-  } catch (error) {
-    console.error('Logout error:', error);
-    toast.error('Logout failed');
-    return { success: false };
-  }
-}
-
-// ============================================
-// GET CURRENT USER
-// ============================================
-export async function getCurrentUser() {
-  try {
-    if (!supabase) {
-      console.error('Supabase client not initialized');
-      return null;
+    if (!['PENDING_APPROVAL', 'APPLICATION_REJECTED', 'ACCOUNT_INACTIVE', 'ROLE_MISMATCH', 'ACCOUNT_TYPE_REQUIRED', 'PROFILE_READ_ERROR'].includes(error.code)) {
+      // Do not turn a network/profile read failure into a false successful
+      // login.  Supabase has already invalidated the local session where
+      // appropriate; the caller will show the useful error.
+      console.error('Login profile validation error:', error);
     }
-    
-    const { data: { user: authUser }, error } = await supabase.auth.getUser();
-    
-    if (error || !authUser) return null;
-
-    const { data: user } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
-
-    return user ? toCamelCase(user) : null;
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return null;
-  }
-}
-
-// ============================================
-// UPDATE PROFILE
-// ============================================
-export async function updateProfile(userId, updates) {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        full_name: updates.fullName,
-        first_name: updates.firstName,
-        last_name: updates.lastName,
-        birthday: updates.birthday,
-        age: updates.age,
-        address: updates.address,
-        contact_number: updates.contactNumber,
-        profile_picture: updates.profilePicture,
-        school: updates.school,
-        course: updates.course,
-        year_level: updates.yearLevel
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    toast.success('✅ Profile updated successfully!');
-    return toCamelCase(data);
-  } catch (error) {
-    console.error('Update profile error:', error);
-    toast.error('Failed to update profile');
     throw error;
   }
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
+// ==========================================================================
+// Session/logout/profile helpers
+// ==========================================================================
+
+export async function logout() {
+  const client = supabase;
+  try {
+    if (client) await client.auth.signOut();
+  } catch (error) {
+    console.warn('Supabase sign-out error; continuing with local logout.', error);
+  } finally {
+    rememberUser(null);
+  }
+
+  toast.info('👋 Logged out successfully');
+  return { success: true };
+}
+
+export async function getCurrentUser() {
+  const client = requireSupabase();
+  const { data, error } = await client.auth.getUser();
+  if (error || !data?.user) return null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let profileResult = await client
+      .from('users')
+      .select(SAFE_USER_COLUMNS)
+      .eq('id', data.user.id)
+      .maybeSingle();
+    if (profileResult.error) {
+      profileResult = await client.from('users').select('*').eq('id', data.user.id).maybeSingle();
+    }
+    if (!profileResult.error && profileResult.data) return toCamelCase(profileResult.data);
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return null;
+}
+
+export async function updateProfile(userId, updates) {
+  const client = requireSupabase();
+  const allowed = {
+    fullName: updates.fullName,
+    firstName: updates.firstName,
+    lastName: updates.lastName,
+    birthday: updates.birthday,
+    age: updates.age,
+    address: updates.address,
+    contactNumber: updates.contactNumber,
+    profilePicture: updates.profilePicture,
+    school: updates.school,
+    course: updates.course,
+    yearLevel: updates.yearLevel
+  };
+  Object.keys(allowed).forEach((key) => {
+    if (allowed[key] === undefined) delete allowed[key];
+  });
+
+  const { data, error } = await client
+    .from('users')
+    .update(toSnakeCase(allowed))
+    .eq('id', userId)
+    .select()
+    .single();
+  if (error) throw error;
+  toast.success('✅ Profile updated successfully!');
+  return toCamelCase(data);
+}
+
 export function hasRole(currentUser, role) {
-  return currentUser?.role === role;
+  return normalizeRole(currentUser?.role) === normalizeRole(role);
 }
 
 export function isAdmin(currentUser) {
-  return currentUser?.role === 'ADMIN';
+  return isAdminAccount(currentUser);
 }
 
 export function isStudent(currentUser) {
-  return currentUser?.role === 'STUDENT';
+  return ['OJT/INTERN', 'STUDENT', 'TRAINEE'].includes(normalizeRole(currentUser?.role));
 }
 
 export function isAuthenticated(currentUser) {
-  return currentUser !== null;
+  return Boolean(currentUser);
 }
+
+export { rememberUser as syncAuthMarker };

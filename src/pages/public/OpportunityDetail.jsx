@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { formatDate } from '../../utils/helpers';
+import { isEventActive } from '../../services/supabaseService';
 import './Detail.css';
 
 export function OpportunityDetail() {
@@ -14,7 +15,7 @@ export function OpportunityDetail() {
 
   const opportunity = opportunities.find(o => o.id === id);
 
-  if (!opportunity) {
+  if (!opportunity || !isEventActive(opportunity)) {
     return (
       <div className="detail-page">
         <div className="container">

@@ -1,0 +1,72 @@
+.signin-wall-content {
+  padding: 8px 0;
+  text-align: center;
+}
+
+.signin-wall-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.signin-wall-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 12px;
+}
+
+.signin-wall-message {
+  font-size: 15px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.signin-wall-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.signin-wall-benefits {
+  padding-top: 24px;
+  border-top: 1px solid #E5E7EB;
+  text-align: left;
+}
+
+.benefits-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.benefits-list li {
+  font-size: 14px;
+  color: #6B7280;
+  padding-left: 8px;
+}
+
+@media (max-width: 640px) {
+  .signin-wall-icon {
+    font-size: 48px;
+  }
+
+  .signin-wall-title {
+    font-size: 20px;
+  }
+
+  .signin-wall-message {
+    font-size: 14px;
+  }
+}

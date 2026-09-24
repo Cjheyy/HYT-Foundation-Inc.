@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { formatDate } from '../../utils/helpers';
+import { isEventActive } from '../../services/supabaseService';
 import './Detail.css';
 
 export function ProgramDetail() {
@@ -14,7 +15,7 @@ export function ProgramDetail() {
 
   const program = programs.find(p => p.id === id);
 
-  if (!program) {
+  if (!program || !isEventActive(program)) {
     return (
       <div className="detail-page">
         <div className="container">

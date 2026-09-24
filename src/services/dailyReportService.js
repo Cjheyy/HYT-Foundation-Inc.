@@ -56,7 +56,10 @@ export function getReportsByStudent(reports, studentId) {
 }
 
 export function getPendingReports(reports) {
-  return reports.filter(report => report.status === 'Submitted');
+  return reports.filter((report) =>
+    ['PENDING', 'PENDING_APPROVAL', 'SUBMITTED', 'UNDER_REVIEW']
+      .includes(String(report.status || '').trim().toUpperCase().replace(/\s+/g, '_'))
+  );
 }
 
 export const REPORT_STATUSES = [

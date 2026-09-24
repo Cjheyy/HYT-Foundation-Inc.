@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
+import { supabase } from '../../config/supabase';
+import { isPendingReportStatus } from '../../services/supabaseService';
+import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
@@ -13,6 +17,7 @@ import { toast } from 'react-toastify';
 import './Admin.css';
 
 export function ReportApprovals() {
+  const { refreshData } = useApp();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -25,6 +30,19 @@ export function ReportApprovals() {
 
   useEffect(() => {
     loadReports();
+    let timer;
+    const refresh = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(loadReports, 120);
+    };
+    const channel = supabase
+      ?.channel(`admin-report-approvals-${Date.now()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_reports' }, refresh)
+      .subscribe();
+    return () => {
+      window.clearTimeout(timer);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadReports = async () => {
@@ -55,9 +73,11 @@ export function ReportApprovals() {
     try {
       setActionLoading(true);
       await approveDailyReport(selectedReport.id, adminNote.trim() || null);
-      toast.success('✅ Report approved successfully!');
+      toast.success('✅ Report approved successfully.');
       setShowModal(false);
       await loadReports();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Approve error:', error);
       toast.error(error.message || 'Failed to approve report');
@@ -81,6 +101,8 @@ export function ReportApprovals() {
       toast.success('Report rejected with feedback sent to student');
       setShowModal(false);
       await loadReports();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Reject error:', error);
       toast.error(error.message || 'Failed to reject report');
@@ -97,7 +119,7 @@ export function ReportApprovals() {
     }
   };
 
-  const pendingReports = reports.filter(rep => rep.status === 'Pending');
+  const pendingReports = reports.filter((report) => isPendingReportStatus(report.status));
 
   if (loading) {
     return (
@@ -176,7 +198,7 @@ export function ReportApprovals() {
           <h2 className="card-title">Recently Processed</h2>
         </div>
 
-        {reports.filter(rep => rep.status !== 'Pending').length > 0 ? (
+        {reports.filter((report) => !isPendingReportStatus(report.status)).length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
@@ -190,7 +212,7 @@ export function ReportApprovals() {
               </thead>
               <tbody>
                 {reports
-                  .filter(rep => rep.status !== 'Pending')
+                  .filter((report) => !isPendingReportStatus(report.status))
                   .slice(0, 10)
                   .map((report) => (
                     <tr key={report.id}>

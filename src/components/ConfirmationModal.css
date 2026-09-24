@@ -1,0 +1,87 @@
+/* Confirmation Modal */
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirmation-modal-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 32px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease;
+  text-align: center;
+}
+
+.confirmation-icon {
+  font-size: 56px;
+  margin-bottom: 20px;
+  animation: scaleIn 0.4s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.confirmation-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 16px 0;
+}
+
+.confirmation-message {
+  font-size: 15px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin: 0 0 28px 0;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .confirmation-modal-card {
+    padding: 24px;
+  }
+
+  .confirmation-icon {
+    font-size: 48px;
+  }
+
+  .confirmation-title {
+    font-size: 20px;
+  }
+
+  .confirmation-message {
+    font-size: 14px;
+  }
+
+  .confirmation-actions {
+    flex-direction: column;
+  }
+
+  .confirmation-actions button {
+    width: 100% !important;
+  }
+}

@@ -1,65 +1,129 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
+import { supabase } from '../../config/supabase';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Modal } from '../../components/Modal';
-import { 
-  getAttendanceLogs, 
-  approveAttendance, 
-  rejectAttendance 
+import {
+  getAttendanceLogs,
+  approveAttendance,
+  rejectAttendance,
+  isPendingAttendanceStatus,
+  getAttendanceStage,
+  normalizeStatus
 } from '../../services/supabaseService';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { toast } from 'react-toastify';
+import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import './Admin.css';
 
+const formatDuration = (seconds) => {
+  const total = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainder = Math.floor(total % 60);
+  return [hours, minutes, remainder].map((value) => String(value).padStart(2, '0')).join(':');
+};
+
+const getStage = (log) => getAttendanceStage(log) || 'CLOCK_IN';
+
+const stageLabel = (stage) => stage === 'CLOCK_IN' ? 'Clock-in request' : 'Clock-out request';
+
 export function AttendanceVerification() {
-  const [attendanceLogs, setAttendanceLogs] = useState([]);
+  const { state, refreshData } = useApp();
+  const { currentUser } = state;
+  const [searchParams] = useSearchParams();
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
-  const [showModal, setShowModal] = useState(false);
   const [modalAction, setModalAction] = useState(null);
   const [adminNote, setAdminNote] = useState('');
   const [noteError, setNoteError] = useState('');
+  const requestedStatus = searchParams.get('status');
+  const requestedUser = searchParams.get('user');
 
-  useEffect(() => {
-    loadAttendanceLogs();
-  }, []);
-
-  const loadAttendanceLogs = async () => {
+  const loadLogs = useCallback(async ({ loader = false } = {}) => {
+    if (loader) setLoading(true);
     try {
-      setLoading(true);
-      // Get all pending attendance logs (you might want to filter by status='Pending' in the service)
-      const logs = await getAttendanceLogs();
-      setAttendanceLogs(logs || []);
+      const data = await getAttendanceLogs();
+      setLogs(data || []);
     } catch (error) {
       console.error('Error loading attendance logs:', error);
       toast.error('Failed to load attendance logs');
     } finally {
-      setLoading(false);
+      if (loader) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadLogs({ loader: true });
+    let refreshTimer;
+    const refresh = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => loadLogs(), 120);
+    };
+    let channel;
+    if (supabase) {
+      channel = supabase
+        .channel(`admin-attendance-verification-${Date.now()}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, refresh)
+        .subscribe();
+    }
+    return () => {
+      window.clearTimeout(refreshTimer);
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [loadLogs]);
+
+  const pendingLogs = useMemo(() => logs.filter((log) => isPendingAttendanceStatus(log.status)), [logs]);
+  const processedLogs = useMemo(() => logs.filter((log) =>
+    ['APPROVED', 'REJECTED', 'VOID'].includes(normalizeStatus(log.status))
+  ), [logs]);
+  const filteredPending = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return pendingLogs.filter((log) => {
+      const matchesUser = !requestedUser || requestedUser === log.userId || requestedUser === log.user?.id;
+      if (!matchesUser) return false;
+      if (!query) return true;
+      return [log.user?.fullName, log.user?.email, log.user?.school, log.date]
+        .some((value) => String(value || '').toLowerCase().includes(query));
+    });
+  }, [pendingLogs, requestedUser, searchTerm]);
 
   const openActionModal = (log, action) => {
     setSelectedLog(log);
     setModalAction(action);
     setAdminNote('');
     setNoteError('');
-    setShowModal(true);
+  };
+
+  const closeModal = (force = false) => {
+    if (actionLoading && !force) return;
+    setSelectedLog(null);
+    setModalAction(null);
+    setAdminNote('');
+    setNoteError('');
   };
 
   const handleApprove = async () => {
-    if (!selectedLog) return;
-
+    if (!selectedLog || !currentUser?.id) return;
     try {
       setActionLoading(true);
-      await approveAttendance(selectedLog.id, adminNote.trim() || null);
-      toast.success('✅ Attendance approved successfully!');
-      setShowModal(false);
-      await loadAttendanceLogs();
+      await approveAttendance(selectedLog.id, currentUser.id, adminNote.trim());
+      const stage = getStage(selectedLog);
+      toast.success(stage === 'CLOCK_IN'
+        ? 'Clock-in approved. The trainee timer has started.'
+        : 'Attendance approved and rendered hours credited.');
+      closeModal(true);
+      await loadLogs();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Approve error:', error);
+      console.error('Approve attendance error:', error);
       toast.error(error.message || 'Failed to approve attendance');
     } finally {
       setActionLoading(false);
@@ -67,215 +131,190 @@ export function AttendanceVerification() {
   };
 
   const handleReject = async () => {
-    if (!selectedLog) return;
-
-    // Rejection requires a note
-    if (!adminNote || adminNote.trim().length < 10) {
-      setNoteError('Rejection reason is required (at least 10 characters)');
+    if (!selectedLog || !currentUser?.id) return;
+    if (adminNote.trim().length < 10) {
+      setNoteError('Please provide a reason of at least 10 characters.');
       return;
     }
-
     try {
       setActionLoading(true);
-      await rejectAttendance(selectedLog.id, adminNote.trim());
-      toast.success('Attendance rejected');
-      setShowModal(false);
-      await loadAttendanceLogs();
+      await rejectAttendance(selectedLog.id, currentUser.id, adminNote.trim());
+      toast.warning('Attendance request rejected. No hours were credited.');
+      closeModal(true);
+      await loadLogs();
+      await refreshData().catch(() => undefined);
+      window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Reject error:', error);
+      console.error('Reject attendance error:', error);
       toast.error(error.message || 'Failed to reject attendance');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const executeAction = () => {
-    if (modalAction === 'approve') {
-      handleApprove();
-    } else if (modalAction === 'reject') {
-      handleReject();
-    }
-  };
-
-  const pendingLogs = attendanceLogs.filter(log => log.status === 'Pending');
+  const executeAction = () => (modalAction === 'approve' ? handleApprove() : handleReject());
 
   if (loading) {
-    return (
-      <div className="admin-page">
-        <div className="loading-spinner">Loading...</div>
-      </div>
-    );
+    return <div className="admin-page"><div className="loading-spinner">Loading attendance requests...</div></div>;
   }
 
   return (
     <div className="admin-page">
       <div className="page-header">
         <h1 className="page-title">Attendance Verification</h1>
-        <p className="page-subtitle">Review and approve daily attendance logs</p>
+        <p className="page-subtitle">
+          Review both clock-in and clock-out requests. The trainee timer never starts or credits hours before approval.
+        </p>
       </div>
+
+      {requestedStatus && (
+        <div className="filter-notice">
+          Showing pending requests{requestedUser ? ' for the selected trainee' : ''}. Counts update automatically when another request is processed.
+        </div>
+      )}
 
       <Card>
         <div className="card-header">
-          <h2 className="card-title">Pending Attendance Logs</h2>
+          <div>
+            <h2 className="card-title">Pending Attendance Requests</h2>
+            <p className="card-subtitle">Pending clock-in requests start the timer only after approval; pending clock-out requests keep the frozen duration.</p>
+          </div>
           <Badge color="yellow">{pendingLogs.length} Pending</Badge>
         </div>
+        <div className="table-toolbar">
+          <input
+            type="search"
+            className="table-search-input"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Filter by student, email, school, or date..."
+            aria-label="Filter attendance requests"
+          />
+          <Button variant="ghost" size="sm" onClick={() => loadLogs()} disabled={loading}>Refresh</Button>
+        </div>
 
-        {pendingLogs.length > 0 ? (
+        {filteredPending.length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Student</th>
+                  <th>Stage</th>
                   <th>Date</th>
                   <th>Time In</th>
-                  <th>Time Out</th>
-                  <th>Hours</th>
+                  <th>Frozen End</th>
+                  <th>Duration / Hours</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {pendingLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td>
-                      <div className="student-info">
-                        <div className="student-name">{log.user?.fullName || 'Unknown'}</div>
-                        <div className="student-email">{log.user?.email}</div>
-                      </div>
-                    </td>
-                    <td>{formatDate(log.date)}</td>
-                    <td>{log.timeIn ? formatTime(log.timeIn) : '--:--'}</td>
-                    <td>{log.timeOut ? formatTime(log.timeOut) : '--:--'}</td>
-                    <td>
-                      <span className="hours-badge">
-                        {log.renderedHours?.toFixed(2) || '0.00'} hrs
-                      </span>
-                    </td>
-                    <td><Badge status={log.status}>{log.status}</Badge></td>
-                    <td>
-                      <div className="action-buttons">
-                        <Button 
-                          size="sm" 
-                          variant="success"
-                          onClick={() => openActionModal(log, 'approve')}
-                        >
-                          ✓ Approve
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="danger"
-                          onClick={() => openActionModal(log, 'reject')}
-                        >
-                          ✗ Reject
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredPending.map((log) => {
+                  const stage = getStage(log);
+                  const isRequestedUser = !requestedUser || requestedUser === log.userId || requestedUser === log.user?.id;
+                  return (
+                    <tr key={log.id} className={isRequestedUser ? 'requested-row' : ''}>
+                      <td>
+                        <div className="student-info">
+                          <div className="student-name">{log.user?.fullName || 'Unknown'}</div>
+                          <div className="student-email">{log.user?.email || '--'}</div>
+                        </div>
+                      </td>
+                      <td><Badge color={stage === 'CLOCK_IN' ? 'blue' : 'yellow'}>{stageLabel(stage)}</Badge></td>
+                      <td>{formatDate(log.date)}</td>
+                      <td>{log.timeIn ? formatTime(log.timeIn) : 'Not started'}</td>
+                      <td>{log.pendingEndTime ? formatTime(log.pendingEndTime) : '--:--'}</td>
+                      <td>
+                        {stage === 'CLOCK_IN' ? <span className="muted-cell">Timer starts after approval</span> : (
+                          <>
+                            <div className="duration-display">{formatDuration(log.durationSeconds)}</div>
+                            <strong className="hours-display">{Number(log.renderedHours || 0).toFixed(4)} hrs</strong>
+                          </>
+                        )}
+                      </td>
+                      <td><Badge status={log.status}>Pending</Badge></td>
+                      <td>
+                        <div className="action-buttons">
+                          <Button size="sm" variant="success" onClick={() => openActionModal(log, 'approve')}>Accept</Button>
+                          <Button size="sm" variant="danger" onClick={() => openActionModal(log, 'reject')}>Reject</Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
           <div className="empty-state">
             <div className="empty-icon">✅</div>
-            <h3>All Caught Up!</h3>
-            <p>No pending attendance logs to review</p>
+            <h3>All caught up!</h3>
+            <p>No pending attendance requests match this filter.</p>
           </div>
         )}
       </Card>
 
-      {/* Recent Processed Logs */}
       <Card style={{ marginTop: '24px' }}>
-        <div className="card-header">
-          <h2 className="card-title">Recently Processed</h2>
-        </div>
-
-        {attendanceLogs.filter(log => log.status !== 'Pending').length > 0 ? (
+        <div className="card-header"><h2 className="card-title">Recently Processed</h2></div>
+        {processedLogs.length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>Date</th>
-                  <th>Hours</th>
-                  <th>Status</th>
-                  <th>Admin Note</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Student</th><th>Date</th><th>Duration</th><th>Hours</th><th>Status</th><th>Admin note</th></tr></thead>
               <tbody>
-                {attendanceLogs
-                  .filter(log => log.status !== 'Pending')
-                  .slice(0, 10)
-                  .map((log) => (
-                    <tr key={log.id}>
-                      <td>{log.user?.fullName || 'Unknown'}</td>
-                      <td>{formatDate(log.date)}</td>
-                      <td>{log.renderedHours?.toFixed(2) || '0.00'} hrs</td>
-                      <td><Badge status={log.status}>{log.status}</Badge></td>
-                      <td className="admin-note-cell">{log.adminNote || '--'}</td>
-                    </tr>
-                  ))}
+                {processedLogs.slice(0, 15).map((log) => (
+                  <tr key={log.id}>
+                    <td>{log.user?.fullName || 'Unknown'}</td>
+                    <td>{formatDate(log.date)}</td>
+                    <td className="duration-display">{formatDuration(log.durationSeconds)}</td>
+                    <td>{Number(log.renderedHours || 0).toFixed(4)} hrs</td>
+                    <td><Badge status={log.status}>{log.status}</Badge></td>
+                    <td>{log.adminNote || '--'}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <p className="empty-state-text">No processed logs yet</p>
-        )}
+        ) : <p className="empty-state-text">No processed attendance requests yet.</p>}
       </Card>
 
-      {/* Action Modal */}
       <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={modalAction === 'approve' ? 'Approve Attendance' : 'Reject Attendance'}
+        isOpen={Boolean(selectedLog)}
+        onClose={() => closeModal()}
+        title={modalAction === 'approve' ? 'Accept attendance request' : 'Reject attendance request'}
       >
         {selectedLog && (
           <div>
-            <div className="modal-info">
-              <p><strong>Student:</strong> {selectedLog.user?.fullName}</p>
+            <div className="modal-info attendance-review-summary">
+              <p><strong>Student:</strong> {selectedLog.user?.fullName || 'Unknown'}</p>
+              <p><strong>Stage:</strong> {stageLabel(getStage(selectedLog))}</p>
               <p><strong>Date:</strong> {formatDate(selectedLog.date)}</p>
-              <p><strong>Hours:</strong> {selectedLog.renderedHours?.toFixed(2)} hrs</p>
+              {getStage(selectedLog) === 'CLOCK_OUT' && (
+                <>
+                  <p><strong>Frozen duration:</strong> {formatDuration(selectedLog.durationSeconds)}</p>
+                  <p><strong>Hours to credit:</strong> {Number(selectedLog.renderedHours || 0).toFixed(4)} hrs</p>
+                </>
+              )}
             </div>
-
             <div className="form-group" style={{ marginTop: '20px' }}>
-              <label className="form-label">
-                Admin Note {modalAction === 'reject' && <span style={{color: 'red'}}>*</span>}
+              <label className="form-label" htmlFor="attendance-admin-note">
+                Admin note {modalAction === 'reject' && <span className="required">*</span>}
               </label>
               <textarea
+                id="attendance-admin-note"
                 className={`form-textarea ${noteError ? 'error' : ''}`}
                 value={adminNote}
-                onChange={(e) => {
-                  setAdminNote(e.target.value);
-                  setNoteError('');
-                }}
-                placeholder={
-                  modalAction === 'approve' 
-                    ? 'Optional note for approval...' 
-                    : 'Required: Explain why this attendance is being rejected...'
-                }
+                onChange={(event) => { setAdminNote(event.target.value); setNoteError(''); }}
+                placeholder={modalAction === 'approve' ? 'Optional note for the trainee...' : 'Explain why this request is rejected...'}
                 rows="4"
               />
               {noteError && <div className="form-error">{noteError}</div>}
-              {modalAction === 'reject' && (
-                <div className="form-help">Minimum 10 characters required</div>
-              )}
+              {modalAction === 'reject' && <div className="form-help">Minimum 10 characters.</div>}
             </div>
-
             <div className="modal-actions" style={{ marginTop: '24px' }}>
-              <Button 
-                variant={modalAction === 'approve' ? 'success' : 'danger'}
-                onClick={executeAction}
-                disabled={actionLoading}
-              >
-                {modalAction === 'approve' ? '✓ Approve' : '✗ Reject'}
+              <Button variant={modalAction === 'approve' ? 'success' : 'danger'} onClick={executeAction} disabled={actionLoading}>
+                {actionLoading ? 'Processing...' : modalAction === 'approve' ? 'Accept & apply' : 'Reject request'}
               </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => setShowModal(false)}
-                disabled={actionLoading}
-              >
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={closeModal} disabled={actionLoading}>Cancel</Button>
             </div>
           </div>
         )}

@@ -97,7 +97,10 @@ export function updateAttendanceStatus(attendance, newStatus, note = '') {
 }
 
 export function getPendingVerifications(attendanceRecords) {
-  return attendanceRecords.filter(att => att.status === 'Pending Verification');
+  return attendanceRecords.filter((attendance) =>
+    ['PENDING', 'PENDING_APPROVAL', 'PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_VERIFICATION']
+      .includes(String(attendance.status || '').trim().toUpperCase().replace(/\s+/g, '_'))
+  );
 }
 
 export function getAttendanceByStudent(attendanceRecords, studentId) {

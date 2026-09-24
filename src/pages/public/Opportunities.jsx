@@ -8,6 +8,7 @@ import { Select } from '../../components/Select';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
 import { OPPORTUNITY_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
+import { isEventActive } from '../../services/supabaseService';
 import './Opportunities.css';
 
 export function Opportunities() {
@@ -19,14 +20,17 @@ export function Opportunities() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedThrust, setSelectedThrust] = useState('');
 
-  const publishedOpportunities = opportunities.filter(o => o.status === 'Published');
+  const publishedOpportunities = opportunities.filter((opportunity) =>
+    String(opportunity.status).toLowerCase() === 'published' && isEventActive(opportunity)
+  );
 
   const filteredOpportunities = publishedOpportunities.filter(opp => {
-    const matchesSearch = opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         opp.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         opp.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = String(opp.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         String(opp.organization || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         String(opp.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || opp.category === selectedCategory;
-    const matchesThrust = !selectedThrust || opp.thrusts.includes(selectedThrust);
+    const thrusts = Array.isArray(opp.thrusts) ? opp.thrusts : [];
+    const matchesThrust = !selectedThrust || thrusts.includes(selectedThrust);
 
     return matchesSearch && matchesCategory && matchesThrust;
   });
@@ -80,7 +84,7 @@ export function Opportunities() {
                   <h3 className="opportunity-title">{opp.title}</h3>
                   <p className="opportunity-org">{opp.organization}</p>
                   <p className="opportunity-description">
-                    {opp.description.substring(0, 120)}...
+                    {String(opp.description || '').substring(0, 120)}{opp.description?.length > 120 ? '...' : ''}
                   </p>
                   <div className="opportunity-meta">
                     <div className="meta-item">
@@ -97,7 +101,7 @@ export function Opportunities() {
                     </div>
                   </div>
                   <div className="opportunity-thrusts">
-                    {opp.thrusts.slice(0, 3).map((thrust, idx) => (
+                    {(Array.isArray(opp.thrusts) ? opp.thrusts : []).slice(0, 3).map((thrust, idx) => (
                       <span key={idx} className="thrust-tag">{thrust}</span>
                     ))}
                   </div>

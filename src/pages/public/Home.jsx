@@ -7,6 +7,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectCoverflow, Pagination } from 'swiper/modules';
 import { GalleryModal } from '../../components/GalleryModal';
 import { galleryItems } from '../../data/galleryData';
+import { isEventActive } from '../../services/supabaseService';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -21,7 +22,9 @@ export function Home() {
   const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const publishedOpportunities = opportunities.filter(o => o.status === 'Published').slice(0, 3);
+  const publishedOpportunities = opportunities
+    .filter((opportunity) => String(opportunity.status).toLowerCase() === 'published' && isEventActive(opportunity))
+    .slice(0, 3);
 
   const handleSlideClick = (item) => {
     setSelectedGalleryItem(item);
@@ -52,6 +55,8 @@ export function Home() {
     { value: '100+', label: 'Opportunities Created' },
     { value: '95%', label: 'Completion Rate' }
   ];
+
+  
 
   return (
     <div className="home-page">
@@ -319,5 +324,9 @@ export function Home() {
         </div>
       </section>
     </div>
+
+    
+
+    
   );
 }

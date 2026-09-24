@@ -1,0 +1,362 @@
+/* Role Selection Modal Overlay */
+.role-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Card */
+.role-modal-card {
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.role-modal-card.guidance-card {
+  max-width: 650px;
+}
+
+/* Modal Header */
+.role-modal-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.role-modal-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 12px;
+}
+
+.role-modal-subtitle {
+  font-size: 15px;
+  color: #6B7280;
+  line-height: 1.6;
+}
+
+/* Role Selection Grid */
+.role-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.role-option-card {
+  position: relative;
+  background: white;
+  border: 3px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.role-option-card:hover {
+  border-color: var(--role-color);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.role-option-card:active {
+  transform: translateY(-4px);
+}
+
+.role-option-icon {
+  font-size: 56px;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.role-option-card:hover .role-option-icon {
+  transform: scale(1.15);
+}
+
+.role-option-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0;
+}
+
+.role-option-description {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.role-option-arrow {
+  font-size: 24px;
+  color: var(--role-color);
+  font-weight: 700;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.role-option-card:hover .role-option-arrow {
+  opacity: 1;
+}
+
+/* Guidance Content */
+.guidance-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.guidance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.guidance-section {
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.guidance-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guidance-section-title::before {
+  content: '📋';
+  font-size: 20px;
+}
+
+.guidance-requirements {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guidance-requirements li {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  padding-left: 0;
+}
+
+/* Commitment Box */
+.guidance-commitment {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 2px solid #F59E0B;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.commitment-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.commitment-text {
+  flex: 1;
+}
+
+.commitment-text strong {
+  display: block;
+  font-size: 15px;
+  color: #92400E;
+  margin-bottom: 6px;
+}
+
+.commitment-text p {
+  font-size: 14px;
+  color: #78350F;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Notice */
+.guidance-notice {
+  background: #EEF2FF;
+  border: 2px solid #818CF8;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.guidance-notice p {
+  font-size: 13px;
+  color: #3730A3;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.guidance-notice strong {
+  font-weight: 700;
+}
+
+/* Actions */
+.guidance-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Footer */
+.role-modal-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.role-modal-link {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.role-modal-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .role-modal-card {
+    padding: 32px 24px;
+  }
+
+  .role-modal-title {
+    font-size: 26px;
+  }
+
+  .role-selection-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .role-option-card {
+    padding: 28px 20px;
+  }
+
+  .role-option-icon {
+    font-size: 48px;
+  }
+
+  .guidance-icon {
+    width: 80px;
+    height: 80px;
+    font-size: 40px;
+  }
+
+  .guidance-section {
+    padding: 20px;
+  }
+
+  .guidance-commitment {
+    padding: 16px;
+  }
+
+  .guidance-actions {
+    flex-direction: column;
+  }
+
+  .guidance-actions button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-modal-overlay {
+    padding: 10px;
+  }
+
+  .role-modal-card {
+    padding: 24px 16px;
+  }
+
+  .role-modal-title {
+    font-size: 22px;
+  }
+
+  .role-modal-subtitle {
+    font-size: 14px;
+  }
+
+  .role-option-icon {
+    font-size: 40px;
+  }
+
+  .role-option-title {
+    font-size: 18px;
+  }
+
+  .guidance-section-title {
+    font-size: 16px;
+  }
+
+  .guidance-requirements li {
+    font-size: 13px;
+  }
+}

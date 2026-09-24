@@ -1,39 +1,60 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { logout } from '../services/authService';
 import hytLogo from '../assets/HYT.png';
 import './PortalLayout.css';
 import '../components/Logo.css';
 
 export function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const { state, dispatch } = useApp();
   const { currentUser } = state;
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch({ type: 'LOGOUT' });
-    navigate('/');
+  const handleLogout = async () => {
+    if (loggingOut) return; // Prevent double-click
+    
+    try {
+      setLoggingOut(true);
+      
+      // CRITICAL: Clear context state IMMEDIATELY to prevent null role access
+      dispatch({ type: 'LOGOUT' });
+      
+      // Small delay to allow state to propagate
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Call logout service (handles storage, Supabase, redirect)
+      await logout();
+      
+      // Sign out the Supabase session, then return through the router.
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout handler error:', error);
+      // Force redirect even on error
+      window.location.href = '/login';
+    }
   };
 
   const isActive = (path) => {
+    if (path === '/admin') return location.pathname === '/admin' || location.pathname === '/admin/dashboard';
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
+    { path: '/admin/application-review', label: 'Application Review', icon: '✉️' },
     { path: '/admin/students', label: 'Students', icon: '👥' },
     { path: '/admin/programs', label: 'Programs', icon: '📚' },
     { path: '/admin/opportunities', label: 'Opportunities', icon: '🎯' },
-    { path: '/admin/applications', label: 'Applications', icon: '📝' },
     { path: '/admin/attendance-verification', label: 'Attendance Verification', icon: '✓' },
     { path: '/admin/ot-approvals', label: 'OT Approvals', icon: '⏰' },
     { path: '/admin/report-approvals', label: 'Report Approvals', icon: '📋' },
     { path: '/admin/requirements', label: 'Requirements', icon: '📄' },
     { path: '/admin/certificates', label: 'Certificates', icon: '🏆' },
-    { path: '/admin/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/admin/reports', label: 'Reports', icon: '📈' }
+    { path: '/admin/announcements', label: 'Announcements', icon: '📢' }
   ];
 
   return (
@@ -76,9 +97,13 @@ export function AdminLayout({ children }) {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="logout-btn" onClick={handleLogout}>
+          <button 
+            className="logout-btn" 
+            onClick={handleLogout}
+            disabled={loggingOut}
+          >
             <span>🚪</span>
-            <span>Logout</span>
+            <span>{loggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       </aside>

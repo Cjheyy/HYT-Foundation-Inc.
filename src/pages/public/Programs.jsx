@@ -8,6 +8,7 @@ import { Select } from '../../components/Select';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
 import { PROGRAM_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
+import { isEventActive } from '../../services/supabaseService';
 import './Programs.css';
 
 export function Programs() {
@@ -19,13 +20,16 @@ export function Programs() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedThrust, setSelectedThrust] = useState('');
 
-  const publishedPrograms = programs.filter(p => p.status === 'Published');
+  const publishedPrograms = programs.filter((program) =>
+    String(program.status).toLowerCase() === 'published' && isEventActive(program)
+  );
 
   const filteredPrograms = publishedPrograms.filter(program => {
-    const matchesSearch = program.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         program.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = String(program.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         String(program.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || program.category === selectedCategory;
-    const matchesThrust = !selectedThrust || program.thrusts.includes(selectedThrust);
+    const thrusts = Array.isArray(program.thrusts) ? program.thrusts : [];
+    const matchesThrust = !selectedThrust || thrusts.includes(selectedThrust);
 
     return matchesSearch && matchesCategory && matchesThrust;
   });
@@ -77,7 +81,7 @@ export function Programs() {
                   </div>
                   <h3 className="program-title">{program.title}</h3>
                   <p className="program-description">
-                    {program.description.substring(0, 150)}...
+                    {String(program.description || '').substring(0, 150)}{program.description?.length > 150 ? '...' : ''}
                   </p>
                   <div className="program-meta">
                     <div className="meta-item">
@@ -94,7 +98,7 @@ export function Programs() {
                     </div>
                   </div>
                   <div className="program-thrusts">
-                    {program.thrusts.map((thrust, idx) => (
+                    {(Array.isArray(program.thrusts) ? program.thrusts : []).map((thrust, idx) => (
                       <span key={idx} className="thrust-tag">{thrust}</span>
                     ))}
                   </div>

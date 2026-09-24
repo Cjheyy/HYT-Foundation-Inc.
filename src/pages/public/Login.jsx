@@ -6,7 +6,7 @@ import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import hytLogo from '../../assets/HYT.png';
-import './Login.css';
+import './Auth.css';
 import '../../components/Logo.css';
 
 export function Login() {
@@ -61,12 +61,13 @@ export function Login() {
       if (user) {
         dispatch({ type: 'SET_CURRENT_USER', payload: user });
         
-        // Automatic dashboard redirection based on role
-        if (user.role === 'ADMIN') {
+        // Automatic dashboard redirection based on the normalized role
+        const role = String(user.role || '').toUpperCase();
+        if (role === 'ADMIN') {
           navigate('/admin/dashboard');
-        } else if (user.role === 'OJT/Intern') {
+        } else if (role === 'OJT/INTERN') {
           navigate('/student/dashboard');
-        } else if (user.role === 'Trainee') {
+        } else if (role === 'TRAINEE') {
           navigate('/trainee/dashboard');
         } else {
           // Fallback for unknown roles
@@ -150,7 +151,12 @@ export function Login() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  onPaste={(e) => e.preventDefault()}
+                  onCopy={(e) => e.preventDefault()}
+                  onCut={(e) => e.preventDefault()}
                   error={errors.password}
+                  maxLength={72}
+                  autoComplete="current-password"
                   required
                 />
                 <button

@@ -1,0 +1,160 @@
+/* Live Time Tracker */
+.live-time-tracker {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  animation: fadeIn 0.5s ease;
+}
+
+.tracker-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pulse-indicator {
+  width: 12px;
+  height: 12px;
+  background: #10B981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.tracker-label {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tracker-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.time-segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 70px;
+}
+
+.time-value {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.time-label {
+  font-size: 11px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.time-separator {
+  font-size: 40px;
+  font-weight: 700;
+  opacity: 0.6;
+  margin: 0 4px;
+  animation: blink 1.5s infinite;
+}
+
+.tracker-frozen-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 12px;
+  text-align: center;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .live-time-tracker {
+    padding: 20px;
+  }
+
+  .time-value {
+    font-size: 40px;
+  }
+
+  .time-segment {
+    min-width: 60px;
+  }
+
+  .time-separator {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .live-time-tracker {
+    padding: 16px;
+  }
+
+  .time-value {
+    font-size: 32px;
+  }
+
+  .time-segment {
+    min-width: 50px;
+  }
+
+  .time-label {
+    font-size: 10px;
+  }
+
+  .time-separator {
+    font-size: 24px;
+    margin: 0 2px;
+  }
+
+  .tracker-display {
+    gap: 8px;
+  }
+}
