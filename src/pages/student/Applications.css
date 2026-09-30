@@ -51,3 +51,24 @@
   font-size: 14px;
   margin-top: 4px;
 }
+
+/* A declined application is not a success state.  It previously reused
+   .application-accepted-notice, so "your application was not approved" rendered
+   in the same green success box as an approval. */
+.application-declined-notice {
+  padding: 12px;
+  background: #FEE2E2;
+  border-left: 3px solid #DC2626;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.application-declined-notice strong {
+  color: #991B1B;
+}
+
+.application-declined-notice p {
+  color: #991B1B;
+  font-size: 14px;
+  margin-top: 4px;
+}

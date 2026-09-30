@@ -5,9 +5,9 @@ export function Impact() {
   const stats = [
     { value: '500+', label: 'Youth Empowered', icon: '👥' },
     { value: '50+', label: 'Partner Organizations', icon: '🤝' },
-    { value: '100+', label: 'Opportunities Created', icon: '🎯' },
+    { value: '100+', label: 'Opportunities Created', icon: '' },
     { value: '95%', label: 'Completion Rate', icon: '✓' },
-    { value: '50,000+', label: 'Training Hours', icon: '⏰' },
+    { value: '50,000+', label: 'Training Hours', icon: '' },
     { value: '20+', label: 'Communities Reached', icon: '🌍' }
   ];
 

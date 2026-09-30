@@ -1,0 +1,489 @@
+/* ==========================================================================
+   Register wizard — a stepped dialog instead of one long scrolling page.
+   Palette follows the HYT Foundation logo: teal (#279EB6), terracotta
+   (#D57156) and yellow (#F3DB6E).
+   ========================================================================== */
+
+.rw-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  background: rgba(17, 32, 38, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: rwOverlayIn 180ms ease-out;
+}
+
+@keyframes rwOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rw-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 620px;
+  /* 860px keeps the tallest step ("Your Details") inside the dialog on a
+     standard 900px-tall laptop window without any internal scrolling. */
+  max-height: min(92vh, 860px);
+  overflow: hidden;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow:
+    0 32px 70px rgba(15, 42, 50, 0.32),
+    0 2px 8px rgba(15, 42, 50, 0.10);
+  animation: rwDialogIn 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes rwDialogIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Header ------------------------------------------------------------- */
+.rw-head {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--border, #E5E7EB);
+  background-image:
+    radial-gradient(circle at 96% 0%, rgba(39, 158, 182, 0.10) 0%, transparent 58%),
+    radial-gradient(circle at 4% 100%, rgba(213, 113, 86, 0.08) 0%, transparent 55%);
+}
+
+.rw-head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.rw-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal, #279EB6);
+}
+
+.rw-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: -6px -8px -6px 0;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted-text, #6B7280);
+  background: transparent;
+  border-radius: 10px;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.rw-close:hover {
+  background: #F1F5F7;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted-text, #6B7280);
+}
+
+/* --- Stepper ------------------------------------------------------------ */
+.rw-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  list-style: none;
+}
+
+.rw-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.rw-step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-text, #6B7280);
+  background: #F1F5F7;
+  border-radius: 50%;
+  transition: background 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+
+.rw-step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text, #6B7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 220ms ease;
+}
+
+.rw-step.is-active .rw-step-dot {
+  color: #fff;
+  background: var(--teal, #279EB6);
+  box-shadow: 0 0 0 4px rgba(39, 158, 182, 0.16);
+}
+
+.rw-step.is-active .rw-step-label {
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-step.is-done .rw-step-dot {
+  color: #fff;
+  background: var(--primary-orange, #D57156);
+}
+
+.rw-step.is-done .rw-step-label {
+  color: var(--muted-text, #6B7280);
+}
+
+/* --- Body --------------------------------------------------------------- */
+.rw-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 28px;
+}
+
+.rw-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.rw-field-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+/* --- Step 1: role cards ------------------------------------------------- */
+.rw-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 14px;
+}
+
+.rw-role {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px 18px;
+  text-align: left;
+  background: #fff;
+  border: 1.5px solid var(--border, #E5E7EB);
+  border-radius: 16px;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.rw-role::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--role-tint, rgba(39, 158, 182, 0.12));
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.rw-role:hover {
+  transform: translateY(-3px);
+  border-color: var(--role-color, #279EB6);
+  box-shadow: 0 14px 28px rgba(31, 41, 55, 0.12);
+}
+
+.rw-role:hover::after {
+  opacity: 1;
+}
+
+.rw-role-icon,
+.rw-role-title,
+.rw-role-desc,
+.rw-role-arrow {
+  position: relative;
+  z-index: 1;
+}
+
+.rw-role-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  color: var(--role-color, #279EB6);
+  background: var(--role-tint, rgba(39, 158, 182, 0.12));
+  border-radius: 14px;
+}
+
+.rw-role-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-role-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-text, #6B7280);
+}
+
+.rw-role-arrow {
+  margin-top: 8px;
+  font-size: 18px;
+  color: var(--role-color, #279EB6);
+  transition: transform 200ms ease;
+}
+
+.rw-role:hover .rw-role-arrow {
+  transform: translateX(4px);
+}
+
+/* --- Step 2: guidance --------------------------------------------------- */
+.rw-guidance {
+  display: grid;
+  gap: 16px;
+}
+
+.rw-guidance-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #F7FAFB;
+  border-radius: 14px;
+}
+
+.rw-guidance-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  color: #fff;
+  background: var(--role-color, #279EB6);
+  border-radius: 12px;
+}
+
+.rw-guidance-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6B7280);
+}
+
+.rw-guidance-role {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-requirements {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.rw-requirements li {
+  position: relative;
+  padding-left: 24px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-requirements li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  background: var(--teal, #279EB6);
+  border-radius: 50%;
+}
+
+.rw-commitment {
+  padding: 14px 16px;
+  background: rgba(243, 219, 110, 0.18);
+  border-left: 3px solid var(--yellow, #F3DB6E);
+  border-radius: 0 12px 12px 0;
+}
+
+.rw-commitment strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8A6D1F;
+}
+
+.rw-commitment p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--dark-text, #1F2937);
+}
+
+.rw-notice {
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #14606F;
+  background: rgba(39, 158, 182, 0.10);
+  border-radius: 12px;
+}
+
+/* --- Step 4: success ---------------------------------------------------- */
+.rw-success {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 12px 8px 4px;
+  text-align: center;
+}
+
+.rw-success-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  color: #fff;
+  background: linear-gradient(140deg, #279EB6 0%, #1E8296 100%);
+  border-radius: 50%;
+  box-shadow: 0 12px 26px rgba(39, 158, 182, 0.34);
+}
+
+.rw-success h3 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.rw-success p {
+  max-width: 44ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted-text, #6B7280);
+}
+
+.rw-success-note {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #8A6D1F;
+  background: rgba(243, 219, 110, 0.22);
+  border-radius: 10px;
+}
+
+/* --- Footer ------------------------------------------------------------- */
+.rw-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 18px 28px;
+  border-top: 1px solid var(--border, #E5E7EB);
+  background: #FCFDFE;
+}
+
+.rw-foot-note {
+  font-size: 14px;
+  color: var(--muted-text, #6B7280);
+}
+
+/* --- Responsive --------------------------------------------------------- */
+@media (max-width: 640px) {
+  .rw-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .rw-dialog {
+    max-width: 100%;
+    max-height: 94vh;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .rw-head {
+    padding: 20px 20px 16px;
+  }
+
+  .rw-title {
+    font-size: 21px;
+  }
+
+  .rw-body {
+    padding: 20px;
+  }
+
+  .rw-foot {
+    padding: 16px 20px;
+  }
+
+  /* Labels would truncate to ellipses at this width; the dots carry the
+     progress on their own. */
+  .rw-step-label {
+    display: none;
+  }
+
+  .rw-step {
+    justify-content: center;
+  }
+
+  .rw-field-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rw-overlay,
+  .rw-dialog {
+    animation: none;
+  }
+
+  .rw-role,
+  .rw-role::after,
+  .rw-role-arrow {
+    transition: none;
+  }
+
+  .rw-role:hover {
+    transform: none;
+  }
+}

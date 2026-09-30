@@ -14,42 +14,21 @@ I've completed ALL the code implementation:
 
 ## 🚀 YOUR 5-STEP ACTION PLAN
 
-### STEP 1: Run SQL Script (5 minutes) ⚠️ CRITICAL
+### STEP 1: Run the Canonical OJT Migration (5 minutes) ⚠️ CRITICAL
 
-**What:** Setup database tables, triggers, and functions
+**What:** Install the approval workflow, dual-stage attendance state machine, RLS policies, hour-credit triggers, dashboard RPC, and Realtime publication.
 
 **How:**
 ```
-1. Open browser to:
-   https://supabase.com/dashboard/project/qlulnldctvcjlzflpupe/sql
-
-2. Click "New Query" button
-
-3. Open file: COMPLETE_PRODUCTION_FEATURES.sql
-
-4. Copy ALL contents (Ctrl+A, Ctrl+C)
-
-5. Paste into Supabase SQL Editor
-
-6. Click "RUN" button
-
-7. Wait for success message: "✅ Production features installed successfully!"
+1. Back up the Supabase project (or clone it to staging).
+2. Open the SQL Editor for the project.
+3. Open and copy the entire contents of:
+   OJT_TRACKING_PRODUCTION_MIGRATION.sql
+4. Paste it into one query and click RUN.
+5. Follow OJT_TRACKING_MIGRATION_RUNBOOK.md for verification.
 ```
 
-**Verify it worked:**
-```sql
--- Copy paste this and run:
-SELECT * FROM validate_geofence(14.6401, 121.0189);
-
--- Should return:
--- is_valid: true
--- location_name: 'HYT Building'
--- distance_meters: 0
-```
-
-**If you get errors:**
-1. First run: `FIX_SUPABASE_500_ERRORS.sql`
-2. Then run: `COMPLETE_PRODUCTION_FEATURES.sql`
+Do **not** run the older attendance/registration repair scripts again. They contain incompatible status values and overlapping hour-credit triggers.
 
 ---
 
@@ -258,7 +237,7 @@ firebase deploy
 After completing all steps:
 
 ```
-□ SQL script ran successfully in Supabase
+□ Canonical OJT migration ran successfully in Supabase
 □ EmailJS keys configured in ContactForm.jsx
 □ Build completes with no errors
 □ /forgot-password page loads
@@ -281,7 +260,7 @@ After completing all steps:
 **Fix:** File is at `src/pages/public/ForgotPassword.jsx` - already created ✅
 
 ### SQL Script Errors
-**Fix:** Run `FIX_SUPABASE_500_ERRORS.sql` first, then retry
+**Fix:** Use the verification steps in `OJT_TRACKING_MIGRATION_RUNBOOK.md`; do not mix in legacy repair scripts.
 
 ### EmailJS Not Sending
 **Fix:** 
@@ -300,8 +279,9 @@ After completing all steps:
 ## 📁 FILES YOU NEED TO KNOW
 
 **SQL Files:**
-- `COMPLETE_PRODUCTION_FEATURES.sql` - Run this in Supabase ⚠️
-- `FIX_SUPABASE_500_ERRORS.sql` - Run if you have auth errors
+- `OJT_TRACKING_PRODUCTION_MIGRATION.sql` - Run this in Supabase ⚠️
+- `OJT_TRACKING_MIGRATION_RUNBOOK.md` - Verification and smoke-test steps
+- Legacy `COMPLETE_PRODUCTION_FEATURES.sql` / `AUTO_VOID_INCOMPLETE_LOGS.sql` - Do not re-run
 
 **Code Files (Already Done):**
 - `src/App.js` - Routes added ✅
@@ -324,8 +304,8 @@ After completing all steps:
 **Minimum to get running:**
 
 ```bash
-# 1. Run SQL (Supabase Dashboard)
-Copy COMPLETE_PRODUCTION_FEATURES.sql → Paste in SQL Editor → RUN
+# 1. Run the canonical migration in Supabase SQL Editor
+Copy OJT_TRACKING_PRODUCTION_MIGRATION.sql → Paste in SQL Editor → RUN
 
 # 2. Add EmailJS keys (src/components/ContactForm.jsx)
 Line 9: emailjs.init('YOUR_KEY');

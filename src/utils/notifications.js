@@ -48,7 +48,7 @@ export function showToast(message, type = 'success') {
   const icons = {
     success: '✓',
     error: '✕',
-    warning: '⚠',
+    warning: '',
     info: 'ℹ'
   };
   

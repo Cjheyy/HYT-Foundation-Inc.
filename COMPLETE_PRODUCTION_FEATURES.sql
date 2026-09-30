@@ -1,4 +1,18 @@
 -- ============================================================================
+-- DO NOT RUN - SUPERSEDED BY OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ----------------------------------------------------------------------------
+-- Problems with running this file today:
+--   1. Recreates public.geofenced_clock_in(), which bypasses PENDING_CLOCK_IN
+--      approval (SECURITY DEFINER, no auth.uid() check).
+--   2. Recreates title-case hour-credit triggers that only fire on
+--      status = 'Approved' while the canonical schema uses 'APPROVED'.
+--   3. Uses a 5 m geofence radius while the canonical policy uses 100 m.
+--   4. Ends with top-level RAISE NOTICE statements, which are not valid
+--      outside PL/pgSQL, so the script cannot be relied on to finish.
+--
+-- Canonical migration: OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ============================================================================
+-- ============================================================================
 -- HYT FOUNDATION - COMPLETE PRODUCTION FEATURES SQL SCRIPT
 -- ============================================================================
 -- Purpose: Geofencing, Hour Calculations, Application Review, Event Limits

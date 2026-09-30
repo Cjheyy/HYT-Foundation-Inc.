@@ -19,21 +19,19 @@ All 9 production features have been implemented:
 
 ## 📋 What You Need to Do
 
-### Step 1: Run SQL Script (REQUIRED)
+### Step 1: Run the Canonical OJT Migration (REQUIRED)
 
-Open Supabase SQL Editor and run:
+Back up the project, then run the entire contents of
+`OJT_TRACKING_PRODUCTION_MIGRATION.sql` in the Supabase SQL Editor.
 
-```sql
--- File: AUTO_VOID_INCOMPLETE_LOGS.sql
--- This creates the auto-void function and trigger
-```
+The canonical migration installs the approval gate, dual-stage attendance
+states, atomic hour crediting, RLS policies, dashboard metrics, event cleanup,
+and Realtime publication. Follow `OJT_TRACKING_MIGRATION_RUNBOOK.md` to verify
+the installation.
 
-Copy and paste the entire contents of `AUTO_VOID_INCOMPLETE_LOGS.sql` into Supabase SQL Editor and click "Run".
-
-**What it does:**
-- Creates function to mark incomplete logs as VOID
-- Adds trigger that runs when new attendance log is created
-- Auto-voids logs without clock-out past 6:05 PM
+Do not re-run the legacy `AUTO_VOID_INCOMPLETE_LOGS.sql` or
+`COMPLETE_PRODUCTION_FEATURES.sql` scripts; their status values and triggers
+conflict with the canonical state machine.
 
 ### Step 2: Test in Development
 
@@ -64,8 +62,10 @@ npm start
    - Login as student
    - Go to Attendance page
    - Try clock-in (should show confirmation modal)
-   - Confirm → should see live time tracker counting
-   - Try clock-out (should show confirmation modal)
+   - Confirm → the request stays pending and the timer must remain stopped
+   - Approve the request in `/admin/attendance-verification` → the timer starts
+   - Submit clock-out → the timer freezes while the request is pending
+   - Approve the clock-out → the frozen duration is credited once
    - **Test Time Window:**
      - Try before 8:55 AM → should see warning
      - Try after 6:05 PM → should see warning
@@ -73,9 +73,9 @@ npm start
 4. **Admin Dashboard:**
    - Login as admin
    - Check Dashboard page
-   - Verify 7 metric cards show
-   - Verify "Live" indicator is pulsing
-   - Check navigation (should NOT have "Applications" or "Reports" tabs)
+   - Verify 7 metric cards show live counts
+   - Use the cards to open Applications, Attendance, or Reports
+   - Verify the "Live" indicator reflects the Realtime connection
 
 ### Step 3: Deploy to Production
 
@@ -91,16 +91,16 @@ Upload the `build` folder to your hosting service.
 
 ### For Users:
 - **Forgot password** now sends email link (not OTP code)
-- **Registration** requires reading role requirements first
+- **Registration** creates a pending application; an administrator must approve it before login
 - **Attendance** must be between 8:55 AM - 6:05 PM
-- **Confirmation** required before clock-in/out
-- **Profile changes** reflect immediately (no refresh needed)
+- **Confirmation** is required before submitting clock-in/out requests
+- **Clock-in and clock-out each require administrator approval**
 
 ### For Admins:
 - **Dashboard metrics** update in real-time (no refresh needed)
-- **Navigation** simplified (Applications and Reports removed)
-- **Application Review** tab handles user approvals
-- **Metrics** show on main dashboard
+- **Application Review** handles account approvals and rejections
+- **Attendance Verification** handles both clock-in and clock-out stages
+- **Report Approvals** handles daily-report decisions
 
 ---
 
@@ -138,7 +138,7 @@ Upload the `build` folder to your hosting service.
 ### Time Window:
 - Clock-in: 8:55 AM - 6:05 PM only
 - Outside window: Red alert banner shows
-- Past 6:05 PM without clock-out: Marked as VOID
+- A clock-out request freezes the duration; hours are credited only after admin approval
 
 ---
 
@@ -162,13 +162,13 @@ Upload the `build` folder to your hosting service.
 ## 📊 Admin Dashboard Metrics
 
 **7 Real-time Cards:**
-1. Total Students (OJT + Trainee, active)
-2. Total Applications (all registrations)
-3. Accepted Applications (approved users)
-4. Completed OJT (≥486 hours)
-5. Programs & Opportunities (active)
-6. Pending Attendance (needs verification)
-7. Pending Reports (needs review)
+1. Total Students (OJT + Trainee accounts)
+2. Total Applications (registrations awaiting review)
+3. Accepted Applications (approved and active users)
+4. Completed OJT (rendered hours meet each user's required hours)
+5. Programs & Opportunities (published, non-expired listings)
+6. Pending Attendance (clock-in or clock-out requests)
+7. Pending Reports (daily reports awaiting review)
 
 All update automatically when database changes.
 
@@ -201,11 +201,12 @@ All update automatically when database changes.
 
 **Clock-in Time:** 8:55 AM - 6:05 PM  
 **Geofence Radius:** 5 meters  
-**OJT Requirement:** 486 hours  
-**Auto-void Time:** 6:05 PM (for incomplete logs)
+**OJT Requirement:** configured per trainee
+**Attendance approval:** clock-in and clock-out are separate admin stages
 
 **Files to Check:**
-- `AUTO_VOID_INCOMPLETE_LOGS.sql` - Run in Supabase
+- `OJT_TRACKING_PRODUCTION_MIGRATION.sql` - Canonical database migration
+- `OJT_TRACKING_MIGRATION_RUNBOOK.md` - Deployment and smoke tests
 - `SYSTEM_POLISH_COMPLETE.md` - Full documentation
 - `.env` - Supabase credentials
 
@@ -213,7 +214,7 @@ All update automatically when database changes.
 
 ## ✅ Checklist Before Going Live
 
-- [ ] Run `AUTO_VOID_INCOMPLETE_LOGS.sql` in Supabase
+- [ ] Run `OJT_TRACKING_PRODUCTION_MIGRATION.sql` in Supabase SQL Editor
 - [ ] Test forgot password with real email
 - [ ] Test registration with both roles
 - [ ] Test clock-in confirmation modal

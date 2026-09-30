@@ -58,7 +58,14 @@ ALTER TABLE public.attendance_logs
   ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES public.users(id),
   ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ DEFAULT NOW(),
   ADD COLUMN IF NOT EXISTS admin_note TEXT,
-  ADD COLUMN IF NOT EXISTS location_name VARCHAR(120);
+  ADD COLUMN IF NOT EXISTS location_name VARCHAR(120),
+  -- Geofencing columns are inserted by request_clock_in.  Older tables created
+  -- by COMPLETE_REFACTOR_SCHEMA.sql do not have them, so they must be added
+  -- explicitly or a migrated database fails at the first clock-in.
+  ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7),
+  ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7),
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.attendance_logs
   ALTER COLUMN rendered_hours TYPE NUMERIC(8, 4) USING rendered_hours::NUMERIC;
 ALTER TABLE public.attendance_logs
@@ -235,9 +242,10 @@ WHERE UPPER(role) = 'ADMIN'
 -- ---------------------------------------------------------------------------
 UPDATE public.attendance_logs
 SET status = CASE
-  WHEN time_in IS NULL AND UPPER(status) IN ('PENDING', 'PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'CLOCKED_IN') THEN 'PENDING_CLOCK_IN'
-  WHEN time_in IS NOT NULL AND time_out IS NULL AND UPPER(status) IN ('PENDING', 'PENDING_APPROVAL', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_REVIEW') THEN 'PENDING_CLOCK_OUT'
+  WHEN time_in IS NULL AND UPPER(status) IN ('PENDING', 'PENDING_CLOCK_IN', 'PENDING_IN', 'PENDING_APPROVE', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'CLOCKED_IN') THEN 'PENDING_CLOCK_IN'
+  WHEN time_in IS NOT NULL AND time_out IS NULL AND UPPER(status) IN ('PENDING', 'PENDING_APPROVAL', 'PENDING_APPROVE', 'PENDING_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_REVIEW') THEN 'PENDING_CLOCK_OUT'
   WHEN UPPER(status) = 'APPROVED' THEN 'APPROVED'
+  WHEN UPPER(status) = 'VERIFIED' THEN 'APPROVED'
   WHEN UPPER(status) = 'REJECTED' THEN 'REJECTED'
   WHEN UPPER(status) = 'VOID' THEN 'VOID'
   WHEN UPPER(status) = 'CLOCKED_IN' THEN 'CLOCKED_IN'
@@ -305,28 +313,40 @@ ALTER TABLE public.ot_requests
 
 CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_date ON public.attendance_logs(user_id, date DESC);
 -- A calendar day may have only one attendance state for a trainee.
-DELETE FROM public.attendance_logs older
-USING public.attendance_logs newer
-WHERE older.user_id = newer.user_id
-  AND older.date = newer.date
-  AND (older.created_at IS NULL OR newer.created_at IS NULL
-       OR older.created_at < newer.created_at
-       OR (older.created_at = newer.created_at AND older.id < newer.id));
+-- ROW_NUMBER() keeps exactly the newest row per (user_id, date).  The previous
+-- self-join treated a NULL created_at on either side as "older", which could
+-- delete an entire duplicate group instead of a single row.
+DELETE FROM public.attendance_logs
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           ROW_NUMBER() OVER (
+             PARTITION BY user_id, date
+             ORDER BY created_at DESC NULLS LAST, id DESC
+           ) AS row_number
+    FROM public.attendance_logs
+  ) ranked
+  WHERE ranked.row_number > 1
+);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_logs_user_date_unique
   ON public.attendance_logs(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendance_logs_pending ON public.attendance_logs(status) WHERE status IN ('PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING');
 CREATE INDEX IF NOT EXISTS idx_users_application_status ON public.users(application_status);
 CREATE INDEX IF NOT EXISTS idx_daily_reports_pending ON public.daily_reports(status) WHERE status = 'PENDING';
 -- Keep the newest row when a legacy deployment has duplicate report dates.
-DELETE FROM public.daily_reports older
-USING public.daily_reports newer
-WHERE older.user_id IS NOT NULL
-  AND older.report_date IS NOT NULL
-  AND older.user_id = newer.user_id
-  AND older.report_date = newer.report_date
-  AND (older.created_at IS NULL OR newer.created_at IS NULL
-       OR older.created_at < newer.created_at
-       OR (older.created_at = newer.created_at AND older.id < newer.id));
+DELETE FROM public.daily_reports
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           ROW_NUMBER() OVER (
+             PARTITION BY user_id, report_date
+             ORDER BY created_at DESC NULLS LAST, id DESC
+           ) AS row_number
+    FROM public.daily_reports
+    WHERE user_id IS NOT NULL AND report_date IS NOT NULL
+  ) ranked
+  WHERE ranked.row_number > 1
+);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_reports_user_date
   ON public.daily_reports(user_id, report_date)
   WHERE user_id IS NOT NULL AND report_date IS NOT NULL;
@@ -577,6 +597,10 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'You must be at an approved HYT location to clock in.');
   END IF;
 
+  -- Self-heal a shift left open on a previous day instead of silently allowing
+  -- a second concurrent open row.
+  PERFORM public.hyt_close_previous_attendance(caller);
+
   IF EXISTS (
     SELECT 1 FROM public.attendance_logs
     WHERE user_id = caller AND date = today_value
@@ -667,10 +691,16 @@ BEGIN
   IF UPPER(record_row.status) NOT IN ('PENDING_CLOCK_IN', 'PENDING', 'PENDING_APPROVAL', 'PENDING_REVIEW') THEN
     RAISE EXCEPTION 'Attendance request is not awaiting clock-in approval';
   END IF;
+  -- A pending clock-in must not carry a start timestamp.  Accepting one would
+  -- credit a shift the trainee never worked, because the timer is supposed to
+  -- begin only at approval time.
+  IF record_row.time_in IS NOT NULL THEN
+    RAISE EXCEPTION 'Attendance request already has a clock-in timestamp; reject it and ask for a new request';
+  END IF;
 
   UPDATE public.attendance_logs
   SET status = 'CLOCKED_IN',
-      time_in = COALESCE(time_in, NOW()),
+      time_in = NOW(),
       approved_by = reviewer,
       approved_at = NOW(),
       admin_note = NULLIF(TRIM(COALESCE(p_admin_note, '')), ''),
@@ -701,17 +731,26 @@ BEGIN
   IF NOT public.is_hyt_admin() THEN RAISE EXCEPTION 'Administrator approval required'; END IF;
   SELECT * INTO record_row FROM public.attendance_logs WHERE id = p_attendance_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Attendance request not found'; END IF;
-  IF UPPER(record_row.status) NOT IN ('PENDING_CLOCK_OUT', 'PENDING_APPROVAL', 'PENDING', 'PENDING_REVIEW') THEN
+  IF UPPER(record_row.status) NOT IN ('PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING', 'PENDING_REVIEW') THEN
     RAISE EXCEPTION 'Attendance request is not awaiting clock-out approval';
   END IF;
   IF record_row.time_in IS NULL THEN
     RAISE EXCEPTION 'Clock-out request has no approved clock-in timestamp';
   END IF;
+  -- The frozen timestamp is the authoritative end of the shift.  Falling back
+  -- to NOW() would silently credit every hour between the shift and the
+  -- approval, so a malformed request is rejected instead.
+  IF record_row.pending_end_time IS NULL THEN
+    RAISE EXCEPTION 'Clock-out request has no frozen end time; reject it and ask the trainee to clock out again';
+  END IF;
 
-  frozen_at := COALESCE(record_row.pending_end_time, NOW());
+  frozen_at := record_row.pending_end_time;
+  IF frozen_at < record_row.time_in THEN
+    RAISE EXCEPTION 'Clock-out request ends before it starts; reject this request';
+  END IF;
   seconds := COALESCE(record_row.duration_seconds,
     GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (frozen_at - record_row.time_in)))::INTEGER));
-  hours := ROUND(COALESCE(record_row.rendered_hours, seconds::NUMERIC / 3600), 4);
+  hours := ROUND(seconds::NUMERIC / 3600, 4);
 
   UPDATE public.attendance_logs
   SET status = 'APPROVED',
@@ -755,12 +794,77 @@ BEGIN
       admin_note = TRIM(p_admin_note),
       updated_at = NOW()
   WHERE id = p_attendance_id
-    AND UPPER(status) IN ('PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING');
+    AND UPPER(status) IN ('PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING');
 
   IF NOT FOUND THEN RAISE EXCEPTION 'Attendance request is no longer pending'; END IF;
   RETURN jsonb_build_object('success', true, 'attendance_id', p_attendance_id, 'status', 'REJECTED');
 END;
 $$;
+
+-- Close attendance rows that were left open by a forgotten clock-out.  Without
+-- this, yesterday's CLOCKED_IN row stays invisible to today's clock-out check
+-- and the trainee can accumulate multiple open shifts.
+CREATE OR REPLACE FUNCTION public.hyt_void_stale_attendance()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  today_value DATE := (NOW() AT TIME ZONE 'Asia/Manila')::date;
+  cutoff_ts TIMESTAMPTZ := (today_value::TIMESTAMP + TIME '18:05') AT TIME ZONE 'Asia/Manila';
+  affected INTEGER;
+BEGIN
+  UPDATE public.attendance_logs
+  SET status = 'VOID',
+      rendered_hours = 0,
+      time_out = NULL,
+      admin_note = COALESCE(NULLIF(TRIM(admin_note), ''), 'Automatically closed: no clock-out request was submitted.'),
+      updated_at = NOW()
+  WHERE UPPER(status) = 'CLOCKED_IN'
+    AND (date < today_value OR (date = today_value AND NOW() > cutoff_ts));
+  GET DIAGNOSTICS affected = ROW_COUNT;
+
+  UPDATE public.attendance_logs
+  SET status = 'VOID',
+      rendered_hours = 0,
+      admin_note = COALESCE(NULLIF(TRIM(admin_note), ''), 'Automatically closed: clock-in request expired.'),
+      updated_at = NOW()
+  WHERE UPPER(status) = 'PENDING_CLOCK_IN'
+    AND date < today_value;
+  GET DIAGNOSTICS affected = affected + ROW_COUNT;
+  RETURN affected;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.hyt_void_stale_attendance() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.hyt_void_stale_attendance() FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.hyt_void_stale_attendance() TO service_role;
+
+-- Called by request_clock_in so a stale shift never blocks today's request,
+-- even when the scheduled job has not run yet.
+CREATE OR REPLACE FUNCTION public.hyt_close_previous_attendance(p_user_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  today_value DATE := (NOW() AT TIME ZONE 'Asia/Manila')::date;
+BEGIN
+  UPDATE public.attendance_logs
+  SET status = 'VOID',
+      rendered_hours = 0,
+      time_out = NULL,
+      admin_note = COALESCE(NULLIF(TRIM(admin_note), ''), 'Automatically closed: the trainee did not clock out the previous day.'),
+      updated_at = NOW()
+  WHERE user_id = p_user_id
+    AND date < today_value
+    AND UPPER(status) IN ('CLOCKED_IN', 'PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING');
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.hyt_close_previous_attendance(UUID) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION public.request_clock_in(UUID, NUMERIC, NUMERIC) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.request_clock_out(UUID) FROM PUBLIC;
@@ -880,10 +984,12 @@ BEGIN
     'total_students', COUNT(*) FILTER (WHERE LOWER(role) IN ('trainee', 'ojt/intern', 'student')),
     'total_applications', COUNT(*) FILTER (WHERE LOWER(role) IN ('trainee', 'ojt/intern', 'student') AND UPPER(COALESCE(application_status, '')) IN ('PENDING_APPROVAL', 'PENDING', 'PENDING_APPLICATION')),
     'accepted_applications', COUNT(*) FILTER (WHERE LOWER(role) IN ('trainee', 'ojt/intern', 'student') AND UPPER(COALESCE(application_status, '')) IN ('APPROVED', 'ACCEPTED', 'ACTIVE') AND is_active = TRUE),
-    'completed_ojt', COUNT(*) FILTER (WHERE LOWER(role) IN ('trainee', 'ojt/intern', 'student') AND COALESCE(required_hours, 0) > 0 AND COALESCE(rendered_hours, 0) >= required_hours),
+    'completed_ojt', COUNT(*) FILTER (WHERE LOWER(role) IN ('trainee', 'ojt/intern', 'student') AND is_active = TRUE AND UPPER(COALESCE(application_status, '')) IN ('APPROVED', 'ACCEPTED', 'ACTIVE') AND COALESCE(required_hours, 0) > 0 AND COALESCE(rendered_hours, 0) >= required_hours),
     'active_programs', (SELECT COUNT(*) FROM public.programs WHERE UPPER(status) IN ('PUBLISHED', 'ACTIVE', 'OPEN') AND (application_deadline IS NULL OR application_deadline >= (NOW() AT TIME ZONE 'Asia/Manila')::date)),
     'active_opportunities', (SELECT COUNT(*) FROM public.opportunities WHERE UPPER(status) IN ('PUBLISHED', 'ACTIVE', 'OPEN') AND (application_deadline IS NULL OR application_deadline >= (NOW() AT TIME ZONE 'Asia/Manila')::date)),
-    'pending_attendance', (SELECT COUNT(*) FROM public.attendance_logs WHERE UPPER(status) IN ('PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING')),
+    -- Legacy pending values are included so the metric matches the
+    -- Attendance Verification queue and the client-side fallback.
+    'pending_attendance', (SELECT COUNT(*) FROM public.attendance_logs WHERE UPPER(status) IN ('PENDING_CLOCK_IN', 'PENDING_CLOCK_OUT', 'PENDING_OUT', 'PENDING_APPROVE', 'PENDING_IN', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'PENDING')),
     'pending_reports', (SELECT COUNT(*) FROM public.daily_reports WHERE UPPER(status) IN ('PENDING', 'PENDING_APPROVAL', 'SUBMITTED', 'UNDER_REVIEW'))
   ) INTO result;
   RETURN result;
@@ -938,6 +1044,19 @@ BEGIN
     -- Scheduling is optional.  A restricted pg_cron installation must not
     -- prevent the schema/RPC migration from completing.
     RAISE NOTICE 'HYT event cleanup scheduler was not installed: %', SQLERRM;
+  END;
+
+  -- Same for stale attendance: without a schedule, a forgotten clock-out is
+  -- only closed when the trainee requests the next clock-in.
+  BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+      EXECUTE 'SELECT EXISTS (SELECT 1 FROM cron.job WHERE jobname = ''hyt-void-stale-attendance'')' INTO has_job;
+      IF NOT COALESCE(has_job, FALSE) THEN
+        EXECUTE 'SELECT cron.schedule(''hyt-void-stale-attendance'', ''5 19 * * *'', ''SELECT public.hyt_void_stale_attendance()'')';
+      END IF;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'HYT stale attendance scheduler was not installed: %', SQLERRM;
   END;
 END;
 $$;
@@ -1061,13 +1180,15 @@ CREATE POLICY "hyt_reports_insert_own" ON public.daily_reports FOR INSERT TO aut
 WITH CHECK (user_id = auth.uid() AND UPPER(status) IN ('PENDING', 'SUBMITTED', 'DRAFT'));
 CREATE POLICY "hyt_reports_update_own_pending" ON public.daily_reports FOR UPDATE TO authenticated
 USING (user_id = auth.uid() AND UPPER(status) IN ('PENDING', 'SUBMITTED', 'DRAFT'))
-WITH CHECK (user_id = auth.uid());
+WITH CHECK (user_id = auth.uid() AND UPPER(status) IN ('PENDING', 'SUBMITTED', 'DRAFT'));
 CREATE POLICY "hyt_reports_admin_manage" ON public.daily_reports FOR ALL TO authenticated
 USING (public.is_hyt_admin()) WITH CHECK (public.is_hyt_admin());
 
 -- Direct attendance state changes are not client-writable; use the RPCs above.
 REVOKE INSERT, UPDATE, DELETE ON public.attendance_logs FROM authenticated;
 GRANT SELECT ON public.attendance_logs TO authenticated;
+REVOKE UPDATE ON public.daily_reports FROM authenticated;
+GRANT UPDATE (accomplishments) ON public.daily_reports TO authenticated;
 GRANT SELECT ON public.users, public.daily_reports TO authenticated;
 
 -- Profile clients may edit presentation fields only.  Approval, role and hour

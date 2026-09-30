@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^13.5.0",
+    "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.3",
@@ -21,11 +22,19 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false --runInBand",
+    "lint": "eslint src",
     "eject": "react-scripts eject"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "jest": {
     "moduleNameMapper": {
-      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js"
+      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js",
+      "^swiper/react$": "<rootDir>/src/__mocks__/swiper-react.jsx",
+      "^swiper/modules$": "<rootDir>/src/__mocks__/swiper-modules.jsx",
+      "^swiper/css.*$": "<rootDir>/src/__mocks__/swiper-css.js"
     }
   },
   "eslintConfig": {

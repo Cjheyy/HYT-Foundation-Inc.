@@ -1,5 +1,15 @@
+/* OJT / Experience — adopted from the previously orphaned stylesheet.
+ *
+ * The file existed but was never imported, so the page was 100% inline styles.
+ * Selectors are unique to this page (checked against every other .css in src/).
+ *
+ * Note: the original `.ojt-page { min-height: 100vh }` was dropped — this page
+ * already sits inside a `.content-area` whose parent is `min-height: 100vh`, so
+ * the extra 100vh only produced a phantom scrollbar on short pages.
+ */
+
 .ojt-page {
-  min-height: 100vh;
+  display: block;
 }
 
 .ojt-content {

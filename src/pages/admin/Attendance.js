@@ -38,10 +38,10 @@ export function AdminAttendance() {
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>{student?.fullName}</h3>
                   <div style={{ display: 'grid', gap: '6px', marginBottom: '12px', fontSize: '14px', color: 'var(--muted-text)' }}>
                     <div>📅 {formatDate(att.date)}</div>
-                    <div>🕐 Time In: {formatTime(att.timeIn)}</div>
+                    <div> Time In: {formatTime(att.timeIn)}</div>
                     <div>📍 {att.workplace}</div>
-                    <div>🗺️ Location: {att.locationValid ? '✓ Valid' : '⚠ Outside area'}</div>
-                    <div>📆 Schedule: {att.scheduleValid ? '✓ Valid' : '⚠ Outside schedule'}</div>
+                    <div>🗺️ Location: {att.locationValid ? '✓ Valid' : ' Outside area'}</div>
+                    <div>📆 Schedule: {att.scheduleValid ? '✓ Valid' : ' Outside schedule'}</div>
                   </div>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <Button size="sm" variant="success" onClick={() => handleConfirm(att)}>

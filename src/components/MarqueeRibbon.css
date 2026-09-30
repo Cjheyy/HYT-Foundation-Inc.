@@ -1,0 +1,109 @@
+/* Diagonal marquee ribbon — decorative section separator.
+   Used by <MarqueeRibbon /> on the Home page. */
+
+.ribbon-zone {
+  /* The ribbon is rotated and wider than the viewport on purpose, so the zone
+     clips the overhang. 34px of vertical padding keeps the raised corners of
+     the rotated bar from being cut off. */
+  overflow: hidden;
+  padding: 34px 0;
+}
+
+.ribbon {
+  overflow: hidden;
+  transform: rotate(-2.4deg) scale(1.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ribbon-ink {
+  background: #0E1726;
+}
+
+.ribbon-brand {
+  background: var(--primary-orange, #D57156);
+  /* Second ribbon leans the other way and sits slightly under the first. */
+  transform: rotate(1.8deg) scale(1.06);
+  margin-top: -18px;
+}
+
+/* The HYT logo ramp — orange -> yellow -> teal, the order the wordmark reads.
+   Deepened from the vivid brand stops so white text clears 4.5:1: the vivid
+   version only manages 1.9:1 on its yellow stop. Same lean and tuck as
+   .ribbon-brand so the two ribbons still read as a pair. */
+.ribbon-tri {
+  background: linear-gradient(90deg, #B8441F 0%, #8A6E12 52%, #16697A 100%);
+  transform: rotate(1.8deg) scale(1.06);
+  margin-top: -18px;
+}
+
+.ribbon-track {
+  display: flex;
+  width: max-content;
+  animation: ribbonScroll 34s linear infinite;
+}
+
+.ribbon-reverse .ribbon-track {
+  animation-direction: reverse;
+}
+
+/* Let people stop the motion by pointing at it. */
+.ribbon:hover .ribbon-track {
+  animation-play-state: paused;
+}
+
+@keyframes ribbonScroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ribbon-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 26px;
+  margin-right: 26px;
+  padding: 15px 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.ribbon-track span i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--yellow, #F3DB6E);
+  flex: none;
+}
+
+.ribbon-brand .ribbon-track span i {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.ribbon-tri .ribbon-track span i {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 768px) {
+  .ribbon-zone {
+    padding: 24px 0;
+  }
+
+  .ribbon-track span {
+    font-size: 13px;
+    gap: 18px;
+    margin-right: 18px;
+    padding: 12px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-track {
+    animation: none;
+  }
+}

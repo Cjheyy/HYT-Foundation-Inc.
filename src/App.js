@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useApp } from './context/AppContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { PublicHeader } from './components/PublicHeader';
 import { PublicFooter } from './components/PublicFooter';
@@ -8,6 +8,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastContainer } from 'react-toastify';
+import { normalizeRole } from './services/supabaseService';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Public pages
@@ -23,6 +24,7 @@ import { Login } from './pages/public/Login';
 import { Register } from './pages/public/Register';
 import { ForgotPassword } from './pages/public/ForgotPassword';
 import { ResetPassword } from './pages/public/ResetPassword';
+import { AuthConfirm } from './pages/public/AuthConfirm';
 
 // Student pages
 import { StudentDashboard } from './pages/student/Dashboard';
@@ -45,8 +47,6 @@ import { AdminDashboard } from './pages/admin/Dashboard';
 import { AdminStudents } from './pages/admin/Students';
 import { AdminPrograms } from './pages/admin/Programs';
 import { AdminOpportunities } from './pages/admin/Opportunities';
-import { AdminApplications } from './pages/admin/Applications';
-import { AdminAttendance } from './pages/admin/Attendance';
 import { AdminOJT } from './pages/admin/OJT';
 import { AdminDailyReports } from './pages/admin/DailyReports';
 import { AdminRequirements } from './pages/admin/Requirements';
@@ -54,7 +54,6 @@ import { AdminCertificates } from './pages/admin/Certificates';
 import { AdminAnnouncements } from './pages/admin/Announcements';
 import { AdminReports } from './pages/admin/Reports';
 import { AttendanceVerification } from './pages/admin/AttendanceVerification';
-import { AttendanceReview } from './pages/admin/AttendanceReview';
 import { OtApprovals } from './pages/admin/OtApprovals';
 import { ReportApprovals } from './pages/admin/ReportApprovals';
 import { ApplicationReview } from './pages/admin/ApplicationReview';
@@ -67,6 +66,17 @@ function PublicLayout({ children }) {
       <PublicFooter />
     </>
   );
+}
+
+function SmartFallback() {
+  const { state, authStatus } = useApp();
+  const authenticated = authStatus === 'authenticated' && Boolean(state.currentUser);
+  const role = normalizeRole(state.currentUser?.role);
+  if (!authenticated) return <Navigate to="/" replace />;
+  if (role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'OJT/INTERN') return <Navigate to="/student/dashboard" replace />;
+  if (role === 'TRAINEE') return <Navigate to="/trainee/dashboard" replace />;
+  return <Navigate to="/" replace />;
 }
 
 function App() {
@@ -89,6 +99,8 @@ function App() {
           <Route path="/register" element={<PublicLayout><Register /></PublicLayout>} />
           <Route path="/forgot-password" element={<PublicLayout><ForgotPassword /></PublicLayout>} />
           <Route path="/reset-password" element={<PublicLayout><ResetPassword /></PublicLayout>} />
+          {/* Callback for Supabase {{ .TokenHash }} recovery/confirm emails. */}
+          <Route path="/auth/confirm" element={<PublicLayout><AuthConfirm /></PublicLayout>} />
 
           {/* Student Routes (OJT/Intern) */}
           <Route path="/student/dashboard" element={
@@ -235,15 +247,20 @@ function App() {
               <AdminLayout><AdminOpportunities /></AdminLayout>
             </ProtectedRoute>
           } />
+          {/* Legacy local-only applications page: its status updater ran purely
+              in client memory and never persisted, so approvals silently
+              vanished on refresh AND bypassed slot accounting. Redirect to the
+              service-backed review page instead. */}
           <Route path="/admin/applications" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminLayout><AdminApplications /></AdminLayout>
-            </ProtectedRoute>
+            <Navigate to="/admin/application-review" replace />
           } />
+          {/* Legacy local-only attendance page: it never wrote to Supabase.
+              Redirect instead of mounting a page whose approvals were fake. */}
           <Route path="/admin/attendance" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminLayout><AdminAttendance /></AdminLayout>
-            </ProtectedRoute>
+            <Navigate to="/admin/attendance-verification" replace />
+          } />
+          <Route path="/admin/attendance-review" element={
+            <Navigate to="/admin/attendance-verification" replace />
           } />
           <Route path="/admin/ojt" element={
             <ProtectedRoute requiredRole="ADMIN">
@@ -280,9 +297,10 @@ function App() {
               <AdminLayout><AttendanceVerification /></AdminLayout>
             </ProtectedRoute>
           } />
-          <Route path="/admin/attendance-review" element={
+          {/* Underscore alias used by older specs/bookmarks — same verification page. */}
+          <Route path="/admin/attendance_verification" element={
             <ProtectedRoute requiredRole="ADMIN">
-              <AdminLayout><AttendanceReview /></AdminLayout>
+              <AdminLayout><AttendanceVerification /></AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin/ot-approvals" element={
@@ -300,9 +318,15 @@ function App() {
               <AdminLayout><ApplicationReview /></AdminLayout>
             </ProtectedRoute>
           } />
+          {/* Underscore alias used by older specs/bookmarks — same review page. */}
+          <Route path="/admin/application_review" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><ApplicationReview /></AdminLayout>
+            </ProtectedRoute>
+          } />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Fallback: keep the user in context instead of forcing everyone to the landing page. */}
+          <Route path="*" element={<SmartFallback />} />
         </Routes>
         
         <ToastContainer

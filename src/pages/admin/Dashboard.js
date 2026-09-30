@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
-import { AdminDashboardMetrics, DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
-import { supabase } from '../../config/supabase';
+import { Icon } from '../../components/icons';
+import { ListItemSkeleton } from '../../components/Skeleton';
+import {
+  AdminDashboardMetrics,
+  DASHBOARD_DATA_CHANGED_EVENT,
+  DASHBOARD_SNAPSHOT_READY_EVENT
+} from '../../components/AdminDashboardMetrics';
 import {
   getUsers,
   getPendingUserApplications,
@@ -31,51 +36,93 @@ export function AdminDashboard() {
   const [pendingReports, setPendingReports] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  const loadDashboardData = useCallback(async () => {
-    setSearchLoading(true);
+  // The realtime channel is owned by <AdminDashboardMetrics />, which also
+  // handles realtime setup/teardown and its own fallback polling.  This page
+  // only needs the freshest snapshot, so it listens for the snapshot event and
+  // for cross-route invalidations instead of subscribing to the same tables.
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
+  const contextUsersRef = useRef(state.users);
+  contextUsersRef.current = state.users;
+
+  const loadDashboardData = useCallback(async ({ showLoader = false } = {}) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    if (showLoader) setSearchLoading(true);
     try {
-      const [users, applications, logs, reports] = await Promise.all([
-        getUsers().catch(() => state.users || []),
-        getPendingUserApplications().catch(() => []),
-        getAttendanceLogs().catch(() => []),
-        getDailyReports().catch(() => [])
+      const [usersResult, applicationsResult, logsResult, reportsResult] = await Promise.allSettled([
+        getUsers(),
+        getPendingUserApplications(),
+        getAttendanceLogs(),
+        getDailyReports()
       ]);
-      setDirectoryUsers(users || []);
-      setPendingApplications((applications || []).filter((application) =>
+
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
+
+      const failures = [
+        usersResult.status === 'rejected' ? usersResult.reason : usersResult.value?.error,
+        applicationsResult.status === 'rejected' ? applicationsResult.reason : applicationsResult.value?.error,
+        logsResult.status === 'rejected' ? logsResult.reason : logsResult.value?.error,
+        reportsResult.status === 'rejected' ? reportsResult.reason : reportsResult.value?.error
+      ].filter(Boolean);
+
+      if (failures.length) {
+        // Keep the previous lists instead of rendering convincing empties.
+        console.error('Admin dashboard data load failed.', failures);
+        setLoadError('Some dashboard data could not be loaded. Retrying automatically.');
+        return;
+      }
+
+      const users = usersResult.value?.data || usersResult.value || [];
+      const rawApplications = applicationsResult.value?.data || applicationsResult.value || [];
+      const rawLogs = logsResult.value?.data || logsResult.value || [];
+      const rawReports = reportsResult.value?.data || reportsResult.value || [];
+      setDirectoryUsers(Array.isArray(users) ? users : []);
+      setPendingApplications((Array.isArray(rawApplications) ? rawApplications : []).filter((application) =>
         isPendingAccountStatus(application.applicationStatus)
       ));
-      setPendingLogs((logs || []).filter((log) => isPendingAttendanceStatus(log.status)));
-      setPendingReports((reports || []).filter((report) => isPendingReportStatus(report.status)));
+      setPendingLogs((Array.isArray(rawLogs) ? rawLogs : []).filter((log) => isPendingAttendanceStatus(log.status)));
+      setPendingReports((Array.isArray(rawReports) ? rawReports : []).filter((report) => isPendingReportStatus(report.status)));
+      setLoadError('');
     } finally {
-      setSearchLoading(false);
+      if (mountedRef.current && showLoader && requestId === requestIdRef.current) setSearchLoading(false);
+      if (mountedRef.current && requestId === requestIdRef.current) setInitialLoading(false);
     }
-  }, [state.users]);
+  }, []);
 
   useEffect(() => {
-    loadDashboardData();
+    mountedRef.current = true;
+    loadDashboardData({ showLoader: true });
+
     let refreshTimer;
     const scheduleRefresh = () => {
       window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(loadDashboardData, 150);
+      refreshTimer = window.setTimeout(() => {
+        if (mountedRef.current) loadDashboardData();
+      }, 150);
     };
     const onLocalChange = () => scheduleRefresh();
     window.addEventListener(DASHBOARD_DATA_CHANGED_EVENT, onLocalChange);
+    window.addEventListener(DASHBOARD_SNAPSHOT_READY_EVENT, onLocalChange);
 
-    let channel;
-    if (supabase) {
-      channel = supabase
-        .channel(`admin-dashboard-directory-${Date.now()}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, scheduleRefresh)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, scheduleRefresh)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_reports' }, scheduleRefresh)
-        .subscribe();
-    }
+    // Safety net for a dropped socket, a missing realtime publication, or a
+    // backgrounded tab that missed events while asleep.
+    const pollTimer = window.setInterval(() => loadDashboardData(), 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') loadDashboardData();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
+      mountedRef.current = false;
       window.clearTimeout(refreshTimer);
+      window.clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener(DASHBOARD_DATA_CHANGED_EVENT, onLocalChange);
-      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener(DASHBOARD_SNAPSHOT_READY_EVENT, onLocalChange);
     };
   }, [loadDashboardData]);
 
@@ -92,17 +139,25 @@ export function AdminDashboard() {
     return students.filter(matches).slice(0, 8);
   }, [searchTerm, students]);
 
-  const recentApplications = pendingApplications.slice(0, 5);
-  const recentReports = pendingReports.slice(0, 5);
-  const recentLogs = pendingLogs.slice(0, 5);
+  const recentApplications = useMemo(() => pendingApplications.slice(0, 5), [pendingApplications]);
+  const recentReports = useMemo(() => pendingReports.slice(0, 5), [pendingReports]);
+  const recentLogs = useMemo(() => pendingLogs.slice(0, 5), [pendingLogs]);
+  const dashboardCounts = useMemo(() => ({
+    applications: pendingApplications.length,
+    reports: pendingReports.length,
+    logs: pendingLogs.length
+  }), [pendingApplications.length, pendingReports.length, pendingLogs.length]);
 
-  const openDirectoryResult = (user) => {
+  const openDirectoryResult = useCallback((user) => {
     if (isPendingAccountStatus(user.applicationStatus)) {
       navigate(`/admin/application-review?user=${encodeURIComponent(user.id)}`);
     } else {
       navigate(`/admin/students?user=${encodeURIComponent(user.id)}`);
     }
-  };
+  }, [navigate]);
+
+  const handleSearchChange = useCallback((event) => setSearchTerm(event.target.value), []);
+  const handleClearSearch = useCallback(() => setSearchTerm(''), []);
 
   return (
     <div className="admin-dashboard-page">
@@ -113,6 +168,10 @@ export function AdminDashboard() {
 
       <AdminDashboardMetrics />
 
+      {loadError && (
+        <div className="metrics-error" role="alert" style={{ marginBottom: '16px' }}>{loadError}</div>
+      )}
+
       <Card className="admin-search-card">
         <div className="admin-search-heading">
           <div>
@@ -122,17 +181,17 @@ export function AdminDashboard() {
           {searchLoading && <span className="search-sync-label">Syncing...</span>}
         </div>
         <div className="admin-search-input-wrap">
-          <span className="admin-search-icon" aria-hidden="true">⌕</span>
+          <span className="admin-search-icon" aria-hidden="true"><Icon name="search" size={16} /></span>
           <input
             type="search"
             className="admin-search-input"
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+            onChange={handleSearchChange}
             placeholder="Search students or applications..."
             aria-label="Search students and applications"
           />
           {searchTerm && (
-            <button type="button" className="admin-search-clear" onClick={() => setSearchTerm('')} aria-label="Clear search">×</button>
+            <button type="button" className="admin-search-clear" onClick={handleClearSearch} aria-label="Clear search"><Icon name="x" size={14} /></button>
           )}
         </div>
         {searchTerm && (
@@ -144,7 +203,10 @@ export function AdminDashboard() {
                   <strong>{user.fullName || 'Unknown user'}</strong>
                   <small>{user.email}{user.school ? ` · ${user.school}` : ''}</small>
                 </span>
-                <span className="admin-search-result-action">View →</span>
+                <Badge status={user.applicationStatus || 'UNKNOWN'}>
+                  {isPendingAccountStatus(user.applicationStatus) ? 'Application' : 'Student'}
+                </Badge>
+                <span className="admin-search-result-action">View</span>
               </button>
             )) : <p className="admin-search-empty">No matching students or applications.</p>}
           </div>
@@ -154,10 +216,10 @@ export function AdminDashboard() {
       <div className="admin-dashboard-grid">
         <Card>
           <div className="dashboard-card-heading">
-            <h3 className="admin-section-title">Pending Registration Applications</h3>
+            <h3 className="admin-section-title">Pending Registration Applications ({dashboardCounts.applications})</h3>
             <button type="button" className="text-link-button" onClick={() => navigate('/admin/application-review?status=PENDING_APPROVAL')}>View all</button>
           </div>
-          {recentApplications.length > 0 ? recentApplications.map((application) => (
+          {initialLoading ? <ListItemSkeleton rows={2} /> : recentApplications.length > 0 ? recentApplications.map((application) => (
             <div key={application.id} className="admin-item" onClick={() => navigate(`/admin/application-review?user=${application.id}`)}>
               <div className="admin-item-header">
                 <div>
@@ -172,10 +234,10 @@ export function AdminDashboard() {
 
         <Card>
           <div className="dashboard-card-heading">
-            <h3 className="admin-section-title">Pending Daily Reports</h3>
+            <h3 className="admin-section-title">Pending Daily Reports ({dashboardCounts.reports})</h3>
             <button type="button" className="text-link-button" onClick={() => navigate('/admin/report-approvals?status=pending')}>View all</button>
           </div>
-          {recentReports.length > 0 ? recentReports.map((report) => (
+          {initialLoading ? <ListItemSkeleton rows={2} /> : recentReports.length > 0 ? recentReports.map((report) => (
             <div key={report.id} className="admin-item" onClick={() => navigate('/admin/report-approvals?status=pending')}>
               <div className="admin-item-header">
                 <div>
@@ -190,10 +252,10 @@ export function AdminDashboard() {
 
         <Card>
           <div className="dashboard-card-heading">
-            <h3 className="admin-section-title">Pending Attendance Verification</h3>
+            <h3 className="admin-section-title">Pending Attendance Verification ({dashboardCounts.logs})</h3>
             <button type="button" className="text-link-button" onClick={() => navigate('/admin/attendance-verification?status=pending')}>View all</button>
           </div>
-          {recentLogs.length > 0 ? recentLogs.map((log) => (
+          {initialLoading ? <ListItemSkeleton rows={2} /> : recentLogs.length > 0 ? recentLogs.map((log) => (
             <div key={log.id} className="admin-item" onClick={() => navigate('/admin/attendance-verification?status=pending')}>
               <div className="admin-item-header">
                 <div>

@@ -1,3 +1,14 @@
+-- ============================================================================
+-- DO NOT RUN - SUPERSEDED BY OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ----------------------------------------------------------------------------
+-- This file installs the OLD single-approval timer machine
+-- (CLOCKED_IN -> PENDING_APPROVAL -> APPROVED/REJECTED). It omits
+-- PENDING_CLOCK_IN / PENDING_CLOCK_OUT, so it both fails on a database that is
+-- already migrated and restores the old state machine if it succeeds.
+--
+-- Canonical migration: OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- Runbook:           OJT_TRACKING_MIGRATION_RUNBOOK.md
+-- ============================================================================
 -- ============================================
 -- TIMER STATE MACHINE MIGRATION
 -- Implements proper work timer approval flow

@@ -1,26 +1,39 @@
+/* Certificates — adopted from the previously orphaned stylesheet.
+ *
+ * The file existed but was never imported, so the page was 100% inline styles
+ * and drifted from every other page's rhythm.  Selectors are unique to this
+ * page (verified against every other .css in src/), so no extra scoping is
+ * needed beyond the .certificates-page wrapper.
+ */
+
 .certificates-page {
-  min-height: 100vh;
+  display: block;
 }
 
 .certificates-list {
   display: grid;
   gap: 16px;
+  margin-top: 16px;
 }
 
 .certificate-card-content {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .certificate-card-info {
   flex: 1;
+  min-width: 240px;
 }
 
 .certificate-card-title {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+  color: var(--dark-text);
 }
 
 .certificate-card-details {
@@ -35,4 +48,40 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.certificate-id-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.certificate-copy-id {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal);
+  cursor: pointer;
+}
+
+.certificate-copy-id:hover {
+  text-decoration: underline;
+}
+
+.certificate-download-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--muted-text);
+}
+
+@media (max-width: 640px) {
+  .certificate-card-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+  }
 }

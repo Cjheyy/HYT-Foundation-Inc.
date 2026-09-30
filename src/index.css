@@ -593,3 +593,186 @@ input, textarea, select {
     border-radius: 0;
   }
 }
+
+@keyframes hyt-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.hyt-skeleton { display: block; }
+
+.portal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--dark-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.portal-header-btn:hover {
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
+  transform: translateY(-1px);
+}
+
+.portal-header-btn.primary {
+  background: linear-gradient(135deg, #D57156 0%, #E8763B 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.portal-header-btn.primary:hover { color: #fff; filter: brightness(1.03); }
+
+.nav-icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  color: inherit;
+}
+
+.metric-icon-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.meta-icon-svg {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: var(--muted-text);
+}
+
+.schedule-range-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.schedule-preview {
+  border: 1px dashed var(--border);
+  background: #F9FAFB;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--dark-text);
+}
+
+.certificate-preview-frame {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+@media (max-width: 640px) {
+  .schedule-range-grid { grid-template-columns: 1fr; }
+  .portal-header-actions .portal-header-btn span:last-child { display: none; }
+}
+
+/* ==========================================================================
+   Responsive baseline (global)
+   ========================================================================== */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- Data tables ----------------------------------------------------------
+   `.table-responsive` and `.data-table` were only defined inside page-scoped
+   stylesheets (Attendance.css, AttendanceReview.css), so a page that had not
+   loaded one of those rendered an unstyled table. Worse, nothing stopped a
+   wide table from squashing its columns on a phone. Defining them here gives
+   every table the same look and makes it scroll sideways instead. */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+/* Below this width the columns stop shrinking and the wrapper scrolls. */
+.table-responsive > .data-table {
+  min-width: 640px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: #F9FAFB;
+}
+
+.data-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #374151;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+  background: #F9FAFB;
+}
+
+@media (max-width: 768px) {
+  .data-table th {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  .data-table td {
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-responsive > .data-table {
+    min-width: 560px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px;
+  }
+}

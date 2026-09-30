@@ -1,0 +1,624 @@
+/* ============================================================================
+   DreamAcademy.css — the Dream Academy section of the public Home page.
+
+   Layout and motion are kept in ONE file (unlike Home.css / HomeMotion.css),
+   because this whole section is a single reviewable, revertible unit. All class
+   names are `da-`-prefixed: CRA bundles every stylesheet into one global scope,
+   so an unprefixed `.card` or `.list` here would collide with the rest of the app.
+
+   COLOUR RULE FOR THIS FILE
+   The vivid brand palette is a DISPLAY palette, not a text palette. Against
+   white it measures: yellow #F3DB6E 1.38:1, light-cyan #8DD0DE 1.72:1, teal
+   #279EB6 3.16:1, orange #D57156 3.32:1 — every one of them fails 4.5:1.
+   So the ramp is used here in exactly two safe ways:
+     a) as pure decoration (rules, seams, dots, borders) where no text sits on it
+     b) as a GRADIENT between the DEEPENED stops, which all clear 4.5:1 on white
+        (#B8441F 5.41, #8A6E12 4.86, #16697A 6.30)
+   Where a label must sit ON the ramp, the label is ink #0E1726 — 5.69:1 at the
+   worst (teal) stop, 12.97:1 at the best (yellow).
+   ========================================================================== */
+
+.da {
+  background: #fff;
+}
+
+/* ==========================================================================
+   1. HEADER
+   ========================================================================== */
+
+.da-head {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(440px, 64vh, 620px);
+  padding: clamp(84px, 11vh, 140px) 0 clamp(54px, 7vh, 82px);
+  background: #0E1726;
+  overflow: hidden;
+}
+
+.da-head-photo,
+.da-head-sweep,
+.da-head-scrim,
+.da-head-seam {
+  position: absolute;
+}
+
+.da-head-photo {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+/* The ramp wash. It sits UNDER the scrim on purpose — over it, it would lift
+   the background and eat into the white text's contrast margin. */
+.da-head-sweep {
+  inset: 0;
+  background: linear-gradient(
+    104deg,
+    rgba(232, 118, 59, 0.42) 0%,
+    rgba(243, 219, 110, 0.24) 44%,
+    rgba(39, 158, 182, 0.42) 100%
+  );
+}
+
+/* The contrast guarantee, and the reason it is two layers instead of one.
+   The flat background-color is the FLOOR: at 0.66 the brightest pixel any
+   photograph can produce behind a glyph is rgb(96, 102, 112) — 5.78:1 against
+   white. The background-image then only ever ADDS ink, weighted to the bottom
+   where the heading and the fact strip actually sit, so the floor cannot be
+   raised by it. That is what lets the photograph stay readable up top instead of
+   being flattened by a single heavy scrim. */
+.da-head-scrim {
+  inset: 0;
+  background-color: rgba(14, 23, 38, 0.66);
+  background-image: linear-gradient(
+    180deg,
+    rgba(14, 23, 38, 0) 0%,
+    rgba(14, 23, 38, 0.3) 55%,
+    rgba(14, 23, 38, 0.46) 100%
+  );
+}
+
+/* The logo ramp, full-bleed, as the seam out of the header. Decoration. */
+.da-head-seam {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #E8763B 0%, #F3DB6E 50%, #279EB6 100%);
+}
+
+.da-head-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ink on the ramp: 5.69:1 at the teal stop, 12.97:1 at the yellow. */
+.da-kicker {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #E8763B 0%, #F3DB6E 50%, #279EB6 100%);
+  color: #0E1726;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.da-title {
+  margin: 0;
+  font-size: clamp(46px, 9.2vw, 118px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* Outlined second word. The solid white colour is the fallback and the
+   guarantee — `color: transparent` only ever applies inside the @supports
+   block, so a browser without -webkit-text-stroke can never render this
+   invisible. */
+.da-title-outline {
+  color: #fff;
+}
+
+@supports (-webkit-text-stroke: 1px #fff) {
+  .da-title-outline {
+    color: transparent;
+    -webkit-text-stroke: clamp(1.5px, 0.26vw, 3px) #fff;
+  }
+}
+
+.da-rule {
+  display: block;
+  width: 132px;
+  height: 6px;
+  margin: 30px 0 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #E8763B 0%, #F3DB6E 50%, #279EB6 100%);
+}
+
+.da-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 56px;
+  margin: 34px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Emphasised twice on request: 13px/600/#EAF1F7 → 17px/700/#FFFFFF, with the
+   dots at 12px and roomier gutters.  White is affordable here and is the
+   strongest this strip can get: the scrim's flat 0.66 floor over a pure-white
+   photo pixel is rgb(96,102,112), and white against that is 5.78:1 —
+   comfortably past 4.5:1 for body text. */
+.da-fact {
+  position: relative;
+  padding-left: 30px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #FFFFFF;
+}
+
+.da-fact::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  /* A soft halo in the dot's OWN colour, so the three read as the ramp rather
+     than as three flat dots. Decoration — no text sits on it, so it cannot
+     touch any contrast ratio. */
+  box-shadow: 0 0 0 6px var(--da-halo);
+}
+
+/* The three facts read as the ramp, in order. */
+.da-fact:nth-child(1) { --da-halo: rgba(232, 118, 59, 0.24); }
+.da-fact:nth-child(2) { --da-halo: rgba(243, 219, 110, 0.2); }
+.da-fact:nth-child(3) { --da-halo: rgba(39, 158, 182, 0.26); }
+
+.da-fact:nth-child(1)::before { background: #E8763B; }
+.da-fact:nth-child(2)::before { background: #F3DB6E; }
+.da-fact:nth-child(3)::before { background: #279EB6; }
+
+/* ==========================================================================
+   2. ABOUT — the card breaks the header's ramp seam
+   ========================================================================== */
+
+/* NO background here, deliberately. The card is pulled up over the header's ramp
+   seam by a negative margin, and an opaque background on this wrapper would paint
+   over that seam and hide it. The section's own white already sits behind. */
+.da-about-wrap {
+  position: relative;
+  padding: 0 0 clamp(52px, 7vh, 88px);
+}
+
+.da-about {
+  position: relative;
+  margin-top: -54px;
+  padding: clamp(28px, 3.6vw, 50px);
+  padding-left: clamp(36px, 4.4vw, 62px);
+  border: 1px solid #E9EEF3;
+  /* No LEFT border: the ramp spine IS the left edge. A border paints over the
+     background, so a 1px #E9EEF3 hairline would sit on the spine's first pixel
+     as a light line against the orange. */
+  border-left: 0;
+  border-radius: 22px;
+  background-color: #fff;
+  /* The ramp spine, as the card's own BACKGROUND rather than a ::before.
+     A 5px-wide ::before cannot follow a 22px corner: border-radius is clamped
+     by the element's own box, so `border-radius: 22px 0 0 22px` on a 5px bar
+     resolves to a ~5px corner (f = 5/22) and the bar keeps a square cap that
+     pokes out past the card's curve as an orange tab. A background is clipped
+     by the box's OWN border-radius, so the spine now traces the corner exactly
+     — at the top and at the bottom. Decoration; no text crosses it. */
+  background-image: linear-gradient(180deg, #E8763B 0%, #F3DB6E 50%, #279EB6 100%);
+  background-size: 5px 100%;
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-origin: border-box;
+  background-clip: border-box;
+  box-shadow: 0 34px 74px -36px rgba(14, 23, 38, 0.45), 0 2px 6px rgba(14, 23, 38, 0.04);
+}
+
+/* ==========================================================================
+   3. TRAINING PROGRAM AND OBJECTIVES
+   ========================================================================== */
+
+.da-spec {
+  padding-bottom: clamp(54px, 7.5vh, 94px);
+}
+
+.da-block-head {
+  max-width: 780px;
+  margin-bottom: 34px;
+}
+
+/* Emphasised: a ramp dash leads the label, and the label itself is a size up and
+   heavier than a plain eyebrow. #B8441F is 5.41:1 on white. Used by BOTH section
+   headers on purpose — two different eyebrow treatments on one page would read
+   as a mistake rather than as emphasis. */
+.da-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #B8441F;
+}
+
+/* The dash is the same ramp as .da-rule in the header and .da-about's spine, so
+   the section's three rules all speak the same language. Decoration. */
+.da-eyebrow::before {
+  content: '';
+  flex: none;
+  width: 34px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #E8763B 0%, #F3DB6E 50%, #279EB6 100%);
+}
+
+.da-h3 {
+  margin: 0 0 14px;
+  font-size: clamp(25px, 3vw, 37px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+  color: #0E1726; /* 17.96:1 on white */
+}
+
+.da-h3:last-child {
+  margin-bottom: 0;
+}
+
+.da-body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.78;
+  color: #374151; /* 10.31:1 on white */
+}
+
+.da-about-text {
+  max-width: 74ch;
+  font-size: clamp(16px, 1.35vw, 18px);
+}
+
+.da-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.da-spec-card {
+  position: relative;
+  padding: clamp(26px, 3vw, 40px);
+  border: 1px solid #E9EEF3;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #F9FBFC 0%, #FFFFFF 100%);
+}
+
+/* The numeral carries the DEEPENED ramp as a gradient — safe here because all
+   three stops clear 4.5:1 on white on their own. The solid colour is the
+   fallback for a browser without background-clip: text. */
+.da-spec-num {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #B8441F;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .da-spec-num {
+    background: linear-gradient(120deg, #B8441F 0%, #8A6E12 52%, #16697A 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.da-spec-title {
+  margin: 0 0 14px;
+  font-size: clamp(18px, 1.9vw, 23px);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #0E1726;
+}
+
+/* ==========================================================================
+   4. DREAMER'S GOALS — the ink band
+   ========================================================================== */
+
+.da-goals {
+  position: relative;
+  padding: clamp(62px, 9vh, 112px) 0;
+  background: linear-gradient(180deg, #0E1726 0%, #16233A 50%, #0E1726 100%);
+  overflow: hidden;
+}
+
+/* Aurora. The brightest this band can get is ~#1B455D, which still leaves white
+   at ~10:1 — so the pull-quote below is safe even where the glows overlap. */
+.da-goals::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(560px 300px at 16% 30%, rgba(39, 158, 182, 0.28), transparent 66%),
+    radial-gradient(560px 300px at 84% 70%, rgba(213, 113, 86, 0.24), transparent 66%);
+}
+
+.da-goals-inner {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.da-goals-eyebrow {
+  margin: 0 0 22px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #F3DB6E; /* 12.97:1 on ink */
+}
+
+.da-goals-text {
+  margin: 0;
+  font-size: clamp(19px, 2.3vw, 27px);
+  font-weight: 500;
+  line-height: 1.56;
+  letter-spacing: -0.005em;
+  color: #fff; /* 17.96:1 on ink */
+}
+
+/* ==========================================================================
+   5. UNIT ASSIGNMENTS
+   ========================================================================== */
+
+.da-units {
+  padding-bottom: clamp(64px, 9vh, 116px);
+}
+
+.da-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.da-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #E9EEF3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 44px -34px rgba(14, 23, 38, 0.5);
+}
+
+/* White label on the unit's deepened accent: 4.86:1 worst case (olive),
+   7.21:1 best (brick). The outline pill is a BORDER, not a tinted fill — a
+   translucent white fill would lift the accent and drop this under 4.5:1. */
+.da-card-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  background: var(--da-accent, #B8441F);
+}
+
+.da-card-num {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+
+.da-card-name {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 21px);
+  font-weight: 800;
+  letter-spacing: -0.012em;
+  color: #fff;
+}
+
+.da-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 22px 24px 26px;
+  list-style: none;
+}
+
+.da-duty {
+  position: relative;
+  padding-left: 24px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #374151; /* 10.31:1 on white */
+}
+
+/* A diamond in the unit's accent, so each list is visibly owned by its card. */
+.da-duty::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.5em;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--da-accent, #B8441F);
+  transform: rotate(45deg);
+}
+
+/* ==========================================================================
+   6. RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .da-spec-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .da-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .da-about {
+    margin-top: -42px;
+  }
+
+  .da-title {
+    letter-spacing: -0.022em;
+  }
+
+  /* The 17px strip wraps to one fact per row at this width; stepping back to
+     15px keeps the block from dominating the header it sits in. */
+  .da-facts {
+    gap: 14px 34px;
+    margin-top: 28px;
+  }
+
+  .da-fact {
+    font-size: 15px;
+    padding-left: 26px;
+  }
+
+  .da-fact::before {
+    width: 11px;
+    height: 11px;
+    margin-top: -5.5px;
+    box-shadow: 0 0 0 5px var(--da-halo);
+  }
+
+  .da-card-top {
+    padding: 16px 20px;
+  }
+
+  .da-list {
+    padding: 20px 20px 22px;
+  }
+}
+
+/* An eyebrow is one unbreakable line, so it is the first thing to run out of
+   room. At 15px / 0.2em "WHAT A TRAINEE SIGNS UP FOR" needs ~380px of text, but
+   a 390px viewport leaves 342px inside the container — so the type steps down
+   rather than wrapping the label onto two lines under the dash. */
+@media (max-width: 480px) {
+  .da-eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+  }
+}
+
+/* ==========================================================================
+   7. MOTION
+   Everything here degrades to the plain layout, and none of it runs under
+   `prefers-reduced-motion: reduce`.
+   ========================================================================== */
+
+/* A very slow drift on the header photograph, so the section breathes. */
+@keyframes daDrift {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.14) translate3d(0, -1.6%, 0);
+  }
+}
+
+.da-head-photo {
+  animation: daDrift 28s ease-in-out infinite alternate;
+}
+
+.da-card {
+  transition: transform 0.34s var(--e-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow 0.34s var(--e-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color 0.34s var(--e-soft, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.da-card:hover {
+  transform: translateY(-5px);
+  border-color: #D6E0E8;
+  box-shadow: 0 34px 64px -34px rgba(14, 23, 38, 0.45);
+}
+
+/* A white rule sweeps across the accent bar. Decoration only. */
+.da-card-top::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.92);
+  transition: width 0.42s var(--e-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.da-card:hover .da-card-top::after {
+  width: 100%;
+}
+
+.da-duty::before {
+  transition: transform 0.3s var(--e-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* The base transform must be repeated: `transform` is not additive. */
+.da-card:hover .da-duty::before {
+  transform: rotate(45deg) scale(1.3);
+}
+
+/* The About card's ramp spine has no entry here any more: it is the card's own
+   background now, not a ::before, so there is no separate box to animate. */
+
+@media (prefers-reduced-motion: reduce) {
+  .da-head-photo {
+    animation: none;
+  }
+
+  .da-card,
+  .da-card-top::after,
+  .da-duty::before {
+    transition: none;
+  }
+
+  .da-card:hover {
+    transform: none;
+  }
+
+  .da-card:hover .da-duty::before {
+    transform: rotate(45deg);
+  }
+}

@@ -1,4 +1,15 @@
 -- ============================================================================
+-- DO NOT RUN AFTER THE CANONICAL MIGRATION
+-- ----------------------------------------------------------------------------
+-- This repair script runs GRANT ALL ON ALL TABLES IN SCHEMA public TO
+-- authenticated, which re-grants the direct writes that
+-- OJT_TRACKING_PRODUCTION_MIGRATION.sql revokes and undoes the RPC-only
+-- attendance / OT approval model.
+--
+-- If you must run a repair script, re-apply
+-- OJT_TRACKING_PRODUCTION_MIGRATION.sql afterwards to restore the grants.
+-- ============================================================================
+-- ============================================================================
 -- SUPABASE 500 ERROR FIX - COMPLETE DATABASE REPAIR SCRIPT
 -- ============================================================================
 -- Purpose: Fix RLS policies, sync auth.users with public.users, and prevent

@@ -1,25 +1,200 @@
-/* Auth Pages Styling */
+/* ==========================================================================
+   Auth pages — Login / Register / Confirm / Forgot / Reset
+   Palette follows the HYT Foundation logo: teal (#279EB6), terracotta
+   (#D57156) and yellow (#F3DB6E).  No purple anywhere.
+   ========================================================================== */
+
 .auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 32px 20px;
+  background-color: var(--background, #F9FBFC);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(39, 158, 182, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(213, 113, 86, 0.10) 0%, transparent 45%);
 }
 
+/* --- Split shell: brand rail + form panel --- */
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  width: 100%;
+  max-width: 1060px;
+  min-height: 640px;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 60px rgba(31, 41, 55, 0.14),
+    0 2px 8px rgba(31, 41, 55, 0.06);
+}
+
+/* --- Brand rail --- */
+.auth-brand {
+  position: relative;
+  overflow: hidden;
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  color: #fff;
+  /* Teal-dominant base with warm brand accents layered on top.  A straight
+     teal -> terracotta blend interpolates through a muddy olive, so the
+     terracotta arrives as a radial accent instead of a gradient stop. */
+  background-color: #1E8296;
+  background-image:
+    radial-gradient(circle at 92% 8%, rgba(213, 113, 86, 0.9) 0%, transparent 60%),
+    radial-gradient(circle at 6% 96%, rgba(243, 219, 110, 0.32) 0%, transparent 55%),
+    linear-gradient(160deg, #0F6A7E 0%, #279EB6 58%, #1E8296 100%);
+}
+
+.auth-brand-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  pointer-events: none;
+}
+
+.auth-brand-glow-a {
+  width: 320px;
+  height: 320px;
+  top: -100px;
+  right: -90px;
+  background: rgba(243, 219, 110, 0.42);
+}
+
+.auth-brand-glow-b {
+  width: 300px;
+  height: 300px;
+  bottom: -90px;
+  left: -80px;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.auth-brand-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand-logo-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+}
+
+.auth-brand-logo-card img {
+  display: block;
+  height: 52px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.auth-brand-title {
+  margin: 26px 0 0;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.auth-brand-title span {
+  display: block;
+  color: #F3DB6E;
+}
+
+.auth-brand-text {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.auth-brand-points {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-brand-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.auth-brand-tick {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  color: #fff;
+}
+
+.auth-brand-foot {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* --- Form panel --- */
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.auth-panel-inner {
+  margin: auto;
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 44px;
+}
+
+/* --- Standalone card (Confirm / Forgot / Reset) --- */
 .auth-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
   padding: 40px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(31, 41, 55, 0.14);
 }
 
 .auth-header {
+  margin-bottom: 28px;
+}
+
+.auth-card .auth-header {
   text-align: center;
-  margin-bottom: 32px;
 }
 
 .auth-logo-image {
@@ -30,22 +205,33 @@
 }
 
 .auth-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: #1F2937;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: 14.5px;
   color: #6B7280;
-  line-height: 1.5;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 15px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .auth-footer {
@@ -56,10 +242,12 @@
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid #E5E7EB;
+  font-size: 14px;
+  color: #6B7280;
 }
 
 .auth-link {
-  color: #667eea;
+  color: #279EB6;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -71,7 +259,7 @@
 }
 
 .auth-link:hover {
-  color: #764ba2;
+  color: #D57156;
   text-decoration: underline;
 }
 
@@ -80,7 +268,223 @@
   cursor: not-allowed;
 }
 
-/* Success Message */
+/* --- Alerts --- */
+.alert {
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.alert-error {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.alert-success {
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+}
+
+.alert-warning {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.link {
+  color: #279EB6;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: #D57156;
+  text-decoration: underline;
+}
+
+.link-primary {
+  color: #279EB6;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.link-primary:hover {
+  color: #D57156;
+  text-decoration: underline;
+}
+
+/* --- Form primitives --- */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* The same form serves admins, who never choose an account type.  Without this
+   note the two cards read as a required step for everybody.  #6B7280 is 4.83:1
+   on white. */
+.form-label-note {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* --- Account type selector (Login) ---
+   Required for OJT Students and Trainees so the chosen portal must match the
+   role on their profile.  Admins are exempt in authService and the form does
+   not block on this field, so an admin signs in without touching it. */
+.account-type-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.account-type-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: 14px;
+  border: 2px solid #E5E7EB;
+  background: #fff;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.account-type-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.account-type-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 15px 12px;
+  text-align: center;
+}
+
+.account-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 5px;
+  border-radius: 12px;
+  color: #6B7280;
+  background: #F3F4F6;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+
+.account-type-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.account-type-note {
+  font-size: 11.5px;
+  color: #6B7280;
+}
+
+.account-type-card:hover {
+  border-color: rgba(39, 158, 182, 0.55);
+  transform: translateY(-2px);
+}
+
+.account-type-card:has(input[type="radio"]:checked) {
+  border-color: #279EB6;
+  box-shadow: 0 6px 18px rgba(39, 158, 182, 0.22);
+}
+
+.account-type-card:has(input[type="radio"]:checked) .account-type-icon {
+  color: #fff;
+  background: linear-gradient(135deg, #279EB6, #1E7F94);
+}
+
+.account-type-card:has(input[type="radio"]:checked) .account-type-label {
+  color: #1E7F94;
+}
+
+.account-type-card:has(input[type="radio"]:focus-visible) {
+  outline: 3px solid rgba(39, 158, 182, 0.55);
+  outline-offset: 2px;
+}
+
+/* --- Password input --- */
+.password-input-wrapper {
+  position: relative;
+}
+
+/* Keep revealed text clear of the toggle button. */
+.password-input-wrapper .form-input {
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 34px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.65;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+  background: rgba(39, 158, 182, 0.1);
+}
+
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Keyboard focus must stay visible: index.css removes the default outline. */
+.auth-page :focus-visible,
+.route-loading :focus-visible {
+  outline: 3px solid rgba(39, 158, 182, 0.55);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.password-toggle:focus-visible {
+  outline: 3px solid rgba(39, 158, 182, 0.55);
+  outline-offset: 1px;
+}
+
+/* --- Success state --- */
 .success-message {
   text-align: center;
   padding: 32px 24px;
@@ -128,7 +532,7 @@
   color: #16A34A !important;
 }
 
-/* Password Requirements */
+/* --- Password requirements --- */
 .password-requirements {
   background: #F9FAFB;
   border: 1px solid #E5E7EB;
@@ -178,7 +582,7 @@
   font-weight: 700;
 }
 
-/* Step Indicator */
+/* --- Step indicator --- */
 .step-indicator {
   display: flex;
   align-items: center;
@@ -209,7 +613,7 @@
 }
 
 .step.active .step-number {
-  background: #667eea;
+  background: #279EB6;
   color: white;
 }
 
@@ -220,7 +624,7 @@
 }
 
 .step.active .step-label {
-  color: #667eea;
+  color: #279EB6;
   font-weight: 600;
 }
 
@@ -233,10 +637,10 @@
 }
 
 .step-line.active {
-  background: #667eea;
+  background: #279EB6;
 }
 
-/* OTP Input */
+/* --- OTP --- */
 .otp-info {
   text-align: center;
   padding: 16px;
@@ -263,250 +667,7 @@
   font-weight: 600;
 }
 
-@media (max-width: 640px) {
-  .auth-card {
-    padding: 24px;
-  }
-
-  .auth-title {
-    font-size: 24px;
-  }
-
-  .step-indicator {
-    padding: 0 10px;
-  }
-
-  .step-line {
-    width: 40px;
-  }
-
-  .step-number {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .step-label {
-    font-size: 11px;
-  }
-}
-
-
-/* Password Input Wrapper */
-.password-input-wrapper {
-  position: relative;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 12px;
-  top: 38px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
-  padding: 4px;
-  line-height: 1;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.password-toggle:hover {
-  opacity: 1;
-}
-
-/* Account Type Selection */
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
-}
-
-.form-hint {
-  font-size: 12px;
-  color: #6B7280;
-  margin-top: 8px;
-}
-
-.account-type-selection {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-top: 8px;
-}
-
-.account-type-card {
-  position: relative;
-  cursor: pointer;
-  border-radius: 12px;
-  border: 2px solid #E5E7EB;
-  background: white;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  overflow: hidden;
-}
-
-.account-type-card input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.account-type-content {
-  padding: 20px 16px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.account-type-icon {
-  font-size: 32px;
-  margin-bottom: 8px;
-  transition: transform 0.3s ease;
-}
-
-.account-type-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1F2937;
-}
-
-.account-type-card:hover {
-  border-color: #667eea;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
-}
-
-.account-type-card:hover .account-type-icon {
-  transform: scale(1.15);
-}
-
-.account-type-card input[type="radio"]:checked ~ .account-type-content {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-}
-
-.account-type-card:has(input[type="radio"]:checked) {
-  border-color: #667eea;
-  border-width: 3px;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-}
-
-.account-type-card:has(input[type="radio"]:checked) .account-type-label {
-  color: #667eea;
-}
-
-.account-type-card:has(input[type="radio"]:checked) .account-type-icon {
-  transform: scale(1.1);
-}
-
-/* Alert Messages */
-.alert {
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.alert-error {
-  background-color: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FECACA;
-}
-
-.alert-success {
-  background-color: #D1FAE5;
-  color: #065F46;
-  border: 1px solid #A7F3D0;
-}
-
-.alert-warning {
-  background-color: #FEF3C7;
-  color: #92400E;
-  border: 1px solid #FDE68A;
-}
-
-.form-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: -8px;
-  margin-bottom: 8px;
-}
-
-.link {
-  color: #667eea;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s;
-}
-
-.link:hover {
-  color: #764ba2;
-  text-decoration: underline;
-}
-
-.link-primary {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.link-primary:hover {
-  color: #764ba2;
-  text-decoration: underline;
-}
-
-
-/* Selected Role Badge */
-.selected-role-badge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-  border: 2px solid #667eea;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-.role-badge-icon {
-  font-size: 28px;
-}
-
-.role-badge-text {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 700;
-  color: #667eea;
-}
-
-.role-change-button {
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #667eea;
-  background: white;
-  border: 2px solid #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.role-change-button:hover {
-  background: #667eea;
-  color: white;
-  transform: translateY(-1px);
-}
-
-.role-change-button:active {
-  transform: translateY(0);
-}
-
-/* Password strength and registration approval feedback */
+/* --- Password strength --- */
 .password-strength {
   display: flex;
   align-items: center;
@@ -554,6 +715,7 @@
 .match-text { color: #10B981; }
 .no-match-text { color: #EF4444; }
 
+/* --- Registration outcome modal --- */
 .pending-approval-modal {
   text-align: center;
   padding: 8px 4px 4px;
@@ -594,4 +756,111 @@
 @keyframes strength-color {
   from { filter: brightness(1.35); }
   to { filter: brightness(1); }
+}
+
+/* ==========================================================================
+   Responsive — the rail collapses above the form and drops its long copy
+   ========================================================================== */
+@media (max-width: 900px) {
+  .auth-page {
+    padding: 20px 16px;
+  }
+
+  .auth-shell {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    min-height: 0;
+  }
+
+  .auth-brand {
+    padding: 24px 22px;
+    gap: 14px;
+  }
+
+  .auth-brand-logo-card {
+    padding: 9px 13px;
+    border-radius: 12px;
+  }
+
+  .auth-brand-logo-card img {
+    height: 34px;
+  }
+
+  .auth-brand-title {
+    margin-top: 14px;
+    font-size: 23px;
+  }
+
+  .auth-brand-title span {
+    display: inline;
+  }
+
+  /* The long copy is redundant once the rail is a header strip. */
+  .auth-brand-text,
+  .auth-brand-points {
+    display: none;
+  }
+
+  .auth-brand-foot {
+    display: none;
+  }
+
+  .auth-panel-inner {
+    padding: 32px 28px 36px;
+  }
+
+  .auth-title {
+    font-size: 25px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .auth-shell {
+    max-width: none;
+    border-radius: 0;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+
+  .auth-card {
+    padding: 28px 22px;
+    border-radius: 0;
+    max-width: none;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: none;
+  }
+
+  .auth-brand {
+    padding: 26px 22px;
+  }
+
+  .auth-panel-inner {
+    padding: 28px 22px 40px;
+  }
+
+  .step-indicator {
+    padding: 0 10px;
+  }
+
+  .step-line {
+    width: 40px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .step-label {
+    font-size: 11px;
+  }
 }

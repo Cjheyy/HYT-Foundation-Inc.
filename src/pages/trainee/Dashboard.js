@@ -3,8 +3,9 @@ import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
+import { Icon } from '../../components/icons';
 import { getApplicationsByStudent } from '../../services/applicationService';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getFirstName } from '../../utils/helpers';
 import '../student/Dashboard.css';
 
 export function TraineeDashboard() {
@@ -35,7 +36,7 @@ export function TraineeDashboard() {
     <div className="student-dashboard">
       <div className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">Welcome back, {currentUser?.firstName}!</h1>
+          <h1 className="dashboard-title">Welcome back, {getFirstName(currentUser)}!</h1>
           <p className="dashboard-subtitle">Track your training progress and manage your programs</p>
         </div>
       </div>
@@ -55,7 +56,7 @@ export function TraineeDashboard() {
               <p className="application-date">Started on {formatDate(activeApplication.appliedAt)}</p>
               <Button 
                 size="sm" 
-                onClick={() => navigate(`/trainee/applications/${activeApplication.id}`)}
+                onClick={() => navigate('/trainee/applications')}
                 style={{ marginTop: '12px' }}
               >
                 View Details
@@ -64,7 +65,7 @@ export function TraineeDashboard() {
           ) : (
             <div className="empty-card-content">
               <p className="empty-text">No active training programs</p>
-              <Button size="sm" onClick={() => navigate('/trainee/opportunities')}>
+              <Button size="sm" onClick={() => navigate('/trainee/programs')}>
                 Browse Programs
               </Button>
             </div>
@@ -80,7 +81,7 @@ export function TraineeDashboard() {
             {pendingRequirements.length > 0 ? (
               <>
                 <div className="requirement-alert">
-                  <span className="alert-icon">⚠️</span>
+                  <span className="alert-icon"><Icon name="alert" size={16} /></span>
                   <span>{pendingRequirements.length} requirement(s) need attention</span>
                 </div>
                 <Button 
@@ -145,7 +146,7 @@ export function TraineeDashboard() {
             ) : (
               <div className="empty-card-content">
                 <p className="empty-text">No applications yet</p>
-                <Button size="sm" onClick={() => navigate('/trainee/opportunities')}>
+                <Button size="sm" onClick={() => navigate('/trainee/programs')}>
                   Apply Now
                 </Button>
               </div>
@@ -159,32 +160,32 @@ export function TraineeDashboard() {
             <h3 className="card-title">Quick Actions</h3>
           </div>
           <div className="quick-actions">
-            <button 
+            <button
               className="action-button"
-              onClick={() => navigate('/trainee/opportunities')}
+              onClick={() => navigate('/trainee/programs')}
             >
-              <span className="action-icon">🎯</span>
+              <span className="action-icon"><Icon name="target" size={20} /></span>
               <span className="action-label">Browse Programs</span>
             </button>
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/trainee/applications')}
             >
-              <span className="action-icon">📝</span>
+              <span className="action-icon"><Icon name="file" size={20} /></span>
               <span className="action-label">My Applications</span>
             </button>
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/trainee/attendance')}
             >
-              <span className="action-icon">✓</span>
+              <span className="action-icon"><Icon name="check" size={20} /></span>
               <span className="action-label">Check Attendance</span>
             </button>
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/trainee/certificates')}
             >
-              <span className="action-icon">🏆</span>
+              <span className="action-icon"><Icon name="award" size={20} /></span>
               <span className="action-label">View Certificates</span>
             </button>
           </div>
@@ -228,7 +229,7 @@ export function TraineeDashboard() {
                 className="announcement-item"
                 onClick={() => navigate('/trainee/announcements')}
               >
-                <div className="announcement-icon">📢</div>
+                <div className="announcement-icon"><Icon name="bell" size={18} /></div>
                 <div className="announcement-content">
                   <h4 className="announcement-title">{announcement.title}</h4>
                   <p className="announcement-preview">

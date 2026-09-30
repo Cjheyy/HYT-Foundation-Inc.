@@ -1,6 +1,18 @@
-import React, { createContext, useCallback, useContext, useEffect, useReducer, useState } from 'react';
-import { getCurrentUser, isAccountApproved, syncAuthMarker } from '../services/authService';
-import { supabase, toCamelCase } from '../config/supabase';
+import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react';
+import {
+  getCurrentUser,
+  isAccountApproved,
+  isRejectedAccount,
+  logout,
+  syncAuthMarker
+} from '../services/authService';
+import {
+  clearPersistedSession,
+  SUPABASE_CONFIG_ERROR,
+  SUPABASE_STORAGE_KEY,
+  supabase,
+  toCamelCase
+} from '../config/supabase';
 import {
   getUsers,
   getPrograms,
@@ -33,11 +45,18 @@ const initialState = {
   certificates: [],
   announcements: [],
   notifications: [],
+  otRequests: [],
   settings: {},
-  loading: true
+  loading: true,
+  // Separate from `loading` (which gates ProtectedRoute): this tracks the
+  // portal data fetch, so list pages can show skeletons instead of flashing an
+  // empty state before their rows arrive.
+  dataLoading: true
 };
 
-function appReducer(state, action) {
+// Exported for unit tests: LOGOUT/LOAD_DATA reset semantics protect against
+// leaking one identity's data into another session.
+export function appReducer(state, action) {
   switch (action.type) {
     case 'SET_CURRENT_USER':
       return { ...state, currentUser: action.payload, loading: false };
@@ -206,8 +225,19 @@ function appReducer(state, action) {
 
     case 'SET_SETTINGS':
       return { ...state, settings: action.payload };
+    case 'SET_DATA_LOADING':
+      return { ...state, dataLoading: Boolean(action.payload) };
     case 'LOAD_DATA':
-      return { ...state, ...action.payload, loading: false };
+      // A snapshot load must replace every collection.  Merging partial payloads
+      // previously let a previous user's rows survive a logout or an account
+      // switch in another tab.
+      return {
+        ...initialState,
+        currentUser: state.currentUser,
+        loading: false,
+        dataLoading: false,
+        ...action.payload
+      };
     default:
       return state;
   }
@@ -216,18 +246,64 @@ function appReducer(state, action) {
 const valueFromResult = (result, fallback) =>
   result.status === 'fulfilled' ? (result.value ?? fallback) : fallback;
 
+const VERIFY_ERROR_NOTICE = {
+  tone: 'error',
+  message: 'We could not verify your account right now. Check your connection and try again.',
+  retryable: true
+};
+
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
-  const [authInitialized, setAuthInitialized] = useState(false);
+  const [authStatus, setAuthStatus] = useState('initializing');
+  const [authNotice, setAuthNotice] = useState(null);
+  const [recoveryUserId, setRecoveryUserId] = useState(null);
 
-  const loadPublicData = useCallback(async () => {
+  // Supabase emits SIGNED_OUT while older profile requests can still be in
+  // flight.  Every async auth job captures an epoch and must re-check it before
+  // touching React state, otherwise a signed-out tab can be resurrected with
+  // the previous user's profile and data.
+  const authEpochRef = useRef(0);
+  const authStatusRef = useRef('initializing');
+  const activeUserIdRef = useRef(null);
+  const pendingNoticeRef = useRef(null);
+  const recoveryUserIdRef = useRef(null);
+
+  const setStatus = useCallback((status) => {
+    authStatusRef.current = status;
+    setAuthStatus(status);
+  }, []);
+
+  const setRecovery = useCallback((userId) => {
+    recoveryUserIdRef.current = userId || null;
+    setRecoveryUserId(userId || null);
+  }, []);
+
+  const clearAuthNotice = useCallback(() => {
+    pendingNoticeRef.current = null;
+    setAuthNotice(null);
+  }, []);
+
+  const endLocalSession = useCallback((notice = null) => {
+    authEpochRef.current += 1;
+    activeUserIdRef.current = null;
+    pendingNoticeRef.current = null;
+    syncAuthMarker(null);
+    setAuthNotice(notice);
+    setStatus('anonymous');
+    setRecovery(null);
+    dispatch({ type: 'LOGOUT' });
+  }, [setRecovery, setStatus]);
+
+  const loadPublicData = useCallback(async (isStale) => {
     if (!supabase) return;
+    dispatch({ type: 'SET_DATA_LOADING', payload: true });
     const [programs, opportunities, announcements, settings] = await Promise.allSettled([
       getPrograms({ includeInactive: false }),
       getOpportunities({ includeInactive: false }),
       getAnnouncements(),
       getSettings()
     ]);
+    if (typeof isStale === 'function' && isStale()) return;
     dispatch({
       type: 'LOAD_DATA',
       payload: {
@@ -239,8 +315,10 @@ export function AppProvider({ children }) {
     });
   }, []);
 
-  const fetchAllData = useCallback(async (user) => {
+  const fetchAllData = useCallback(async (user, isStale) => {
     if (!user) return;
+    const stale = () => (typeof isStale === 'function' ? isStale() : false);
+    dispatch({ type: 'SET_DATA_LOADING', payload: true });
 
     if (String(user.role || '').toUpperCase() === 'ADMIN') {
       // Expiry cleanup is best effort; the SQL migration can also schedule it.
@@ -258,6 +336,7 @@ export function AppProvider({ children }) {
         getAnnouncements(),
         getSettings()
       ]);
+      if (stale()) return;
       dispatch({
         type: 'LOAD_DATA',
         payload: {
@@ -291,9 +370,15 @@ export function AppProvider({ children }) {
       getSettings(),
       getOtRequests(user.id)
     ]);
+    if (stale()) return;
     const ojtRecords = valueFromResult(results[3], []).filter((record) => record.studentId === user.id);
     const requirements = valueFromResult(results[6], []).filter((item) => item.studentId === user.id);
-    const certificates = valueFromResult(results[7], []).filter((item) => item.studentId === user.id);
+    const userEmail = String(user.email || '').trim().toLowerCase();
+    const certificates = valueFromResult(results[7], []).filter((item) => {
+      if (item.studentId === user.id) return true;
+      const itemEmail = String(item.recipientEmail || item.recipient_email || item.email || '').trim().toLowerCase();
+      return Boolean(userEmail && itemEmail && itemEmail === userEmail);
+    });
     dispatch({
       type: 'LOAD_DATA',
       payload: {
@@ -319,127 +404,261 @@ export function AppProvider({ children }) {
     else await loadPublicData();
   }, [fetchAllData, loadPublicData, state.currentUser]);
 
-  // Initialize the persisted Supabase session exactly once.  A transient
-  // network error is not treated as a logout; only an actual SIGNED_OUT event
-  // clears the application state.
-  useEffect(() => {
-    let mounted = true;
+  /**
+   * Turn a live Supabase session into an authorized application session.
+   * `force` re-reads the profile for the same identity (USER_UPDATED,
+   * PASSWORD_RECOVERY, an explicit retry).  `loadData: false` refreshes only
+   * the profile, so a token rotation never re-downloads the whole portal.
+   */
+  const reconcileSession = useCallback(async (session, options = {}) => {
+    const { force = false, loadData = true } = options;
 
-    const initialize = async () => {
-      if (!supabase) {
-        if (mounted) {
-          dispatch({ type: 'SET_CURRENT_USER', payload: null });
-          setAuthInitialized(true);
-        }
+    if (!supabase) {
+      endLocalSession({ tone: 'error', message: SUPABASE_CONFIG_ERROR, retryable: false });
+      return;
+    }
+
+    const userId = session?.user?.id || null;
+    if (!userId) {
+      endLocalSession();
+      return;
+    }
+
+    if (!force && activeUserIdRef.current === userId && authStatusRef.current === 'authenticated') return;
+
+    if (activeUserIdRef.current !== userId) {
+      authEpochRef.current += 1;
+      setStatus('verifying');
+    }
+
+    const epoch = authEpochRef.current;
+    const isStale = () => epoch !== authEpochRef.current;
+
+    let profile = null;
+    try {
+      profile = await getCurrentUser();
+    } catch (error) {
+      console.warn('Profile read failed.', error);
+    }
+    if (isStale()) return;
+
+    if (!profile || profile.id !== userId) {
+      // A missing profile and a transient database failure must be separated:
+      // only a genuinely absent session may clear the persisted token.
+      let liveSession = null;
+      let sessionError = null;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        liveSession = data?.session || null;
+        sessionError = error || null;
+      } catch (error) {
+        sessionError = error;
+      }
+      if (isStale()) return;
+
+      if (sessionError || liveSession?.user?.id === userId) {
+        setStatus('error');
+        setAuthNotice(VERIFY_ERROR_NOTICE);
         return;
       }
 
+      endLocalSession();
+      return;
+    }
+
+    if (!isAccountApproved(profile)) {
+      const notice = {
+        tone: 'error',
+        message: isRejectedAccount(profile)
+          ? 'Your application was not approved. Please contact HYT support for more information.'
+          : 'Your account is not active. Please contact HYT support.'
+      };
+      // Direct login is allowed for pending accounts; only rejected or
+      // deactivated accounts are signed out here.
+      pendingNoticeRef.current = notice;
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        let session = sessionData?.session || null;
-
-        if (sessionError) {
-          console.warn('Session read failed; retaining local state until auth confirms it.', sessionError);
-          const user = await getCurrentUser();
-          session = user ? { user: { id: user.id } } : null;
-        }
-
-        if (session?.user?.id) {
-          syncAuthMarker(session.user.id);
-          let user = await getCurrentUser();
-          // A profile is created by an auth trigger immediately after sign-up;
-          // retry briefly to avoid a refresh racing that trigger.
-          for (let attempt = 0; !user && attempt < 2; attempt += 1) {
-            await new Promise((resolve) => setTimeout(resolve, 250));
-            user = await getCurrentUser();
-          }
-          if (user && !isAccountApproved(user)) {
-            await supabase.auth.signOut().catch(() => undefined);
-            syncAuthMarker(null);
-            user = null;
-          }
-          if (mounted) {
-            dispatch({ type: 'SET_CURRENT_USER', payload: user });
-            if (user) fetchAllData(user).catch((error) => console.error('Initial data load failed.', error));
-          }
-        } else if (mounted) {
-          syncAuthMarker(null);
-          dispatch({ type: 'SET_CURRENT_USER', payload: null });
-          loadPublicData().catch((error) => console.warn('Public data load failed.', error));
-        }
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) clearPersistedSession();
       } catch (error) {
-        console.error('App initialization failed:', error);
-        if (mounted) dispatch({ type: 'SET_CURRENT_USER', payload: null });
-      } finally {
-        if (mounted) setAuthInitialized(true);
+        clearPersistedSession();
       }
-    };
+      if (!isStale()) endLocalSession(notice);
+      return;
+    }
 
-    initialize();
-    return () => { mounted = false; };
-  }, [fetchAllData, loadPublicData]);
+    if (isStale()) return;
+    activeUserIdRef.current = profile.id;
+    setAuthNotice(null);
+    pendingNoticeRef.current = null;
+    setStatus('authenticated');
+    dispatch({ type: 'SET_CURRENT_USER', payload: profile });
+    if (loadData) {
+      fetchAllData(profile, isStale).catch((error) => console.error('Auth data refresh failed.', error));
+    }
+  }, [endLocalSession, fetchAllData, setStatus]);
 
-  // Supabase persists and refreshes the session.  Do not perform network work
-  // synchronously inside this callback; doing so can deadlock the auth client.
+  const retryAuth = useCallback(async () => {
+    if (!supabase) {
+      endLocalSession({ tone: 'error', message: SUPABASE_CONFIG_ERROR, retryable: false });
+      return;
+    }
+    setStatus('verifying');
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        setStatus('error');
+        setAuthNotice(VERIFY_ERROR_NOTICE);
+        return;
+      }
+      await reconcileSession(data?.session, { force: true, loadData: true });
+    } catch (error) {
+      console.error('Session retry failed.', error);
+      setStatus('error');
+      setAuthNotice(VERIFY_ERROR_NOTICE);
+    }
+  }, [endLocalSession, reconcileSession, setStatus]);
+
+  const signOut = useCallback(async () => {
+    setStatus('verifying');
+    try {
+      await logout();
+    } finally {
+      endLocalSession();
+    }
+  }, [endLocalSession, setStatus]);
+
+  // Supabase owns session persistence and token refresh.  The listener is the
+  // single place where an auth event becomes application state; async work is
+  // deferred with setTimeout so it never blocks Supabase's emitter.
   useEffect(() => {
-    if (!supabase) return undefined;
-    let mounted = true;
+    if (!supabase) {
+      endLocalSession({ tone: 'error', message: SUPABASE_CONFIG_ERROR, retryable: false });
+      return undefined;
+    }
+
+    let disposed = false;
     let timer = null;
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      syncAuthMarker(session?.user?.id || null);
+    const schedule = (task) => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(async () => {
-        if (!mounted) return;
-        if (event === 'SIGNED_OUT' || !session) {
-          dispatch({ type: 'LOGOUT' });
+      timer = setTimeout(() => {
+        timer = null;
+        if (!disposed) task();
+      }, 0);
+    };
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (disposed) return;
+
+      if (event === 'SIGNED_OUT') {
+        schedule(() => endLocalSession());
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        // The SDK already rotated and persisted the token.  Never turn a
+        // refresh into a full portal reload; only reconcile a changed identity.
+        schedule(() => {
+          const userId = session?.user?.id;
+          if (!userId) {
+            retryAuth();
+            return;
+          }
+          if (activeUserIdRef.current !== userId || authStatusRef.current !== 'authenticated') {
+            reconcileSession(session, { force: true, loadData: false });
+          }
+        });
+        return;
+      }
+
+      if (!['INITIAL_SESSION', 'SIGNED_IN', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(event)) return;
+
+      schedule(() => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // Keep the Supabase recovery session (ResetPassword needs it) but do
+          // not treat it as a signed-in portal session.  Supabase immediately
+          // follows PASSWORD_RECOVERY with SIGNED_IN, which is ignored here
+          // until the recovery flow finishes and signs out.
+          endLocalSession();
+          setRecovery(session?.user?.id || null);
           return;
         }
-        if (['SIGNED_IN', 'INITIAL_SESSION', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
-          let user = await getCurrentUser();
-          if (user && !isAccountApproved(user)) {
-            await supabase.auth.signOut().catch(() => undefined);
-            syncAuthMarker(null);
-            user = null;
+
+        if (!session?.user?.id) {
+          if (event !== 'INITIAL_SESSION') {
+            retryAuth();
+            return;
           }
-          if (!mounted) return;
-          if (user) {
-            dispatch({ type: 'SET_CURRENT_USER', payload: user });
-            fetchAllData(user).catch((error) => console.error('Auth data refresh failed.', error));
-          }
+          // Supabase emits INITIAL_SESSION with a null session when the token
+          // read itself failed (for example a transient network error).  Only a
+          // confirmed empty session may clear state, otherwise a reload during
+          // a flaky connection would sign a valid user out.
+          supabase.auth.getSession().then(({ data, error }) => {
+            if (disposed) return;
+            if (!error && data?.session) {
+              reconcileSession(data.session, { force: true, loadData: true });
+              return;
+            }
+            if (error) {
+              setStatus('error');
+              setAuthNotice(VERIFY_ERROR_NOTICE);
+              return;
+            }
+            endLocalSession();
+            loadPublicData().catch((loadError) => console.warn('Public data load failed.', loadError));
+          }).catch(() => {
+            if (disposed) return;
+            setStatus('error');
+            setAuthNotice(VERIFY_ERROR_NOTICE);
+          });
+          return;
         }
-      }, 0);
+
+        if (recoveryUserIdRef.current === session.user.id) return;
+
+        const sameIdentity = activeUserIdRef.current === session.user.id;
+        if (sameIdentity && authStatusRef.current === 'authenticated' && event === 'SIGNED_IN') {
+          // Supabase re-emits SIGNED_IN on tab focus; there is nothing to do.
+          return;
+        }
+
+        reconcileSession(session, {
+          force: event !== 'SIGNED_IN',
+          loadData: event !== 'USER_UPDATED'
+        });
+      });
     });
 
     return () => {
-      mounted = false;
+      disposed = true;
       if (timer) clearTimeout(timer);
       listener?.subscription?.unsubscribe?.();
     };
-  }, [fetchAllData]);
+  }, [endLocalSession, loadPublicData, reconcileSession, retryAuth, setRecovery, setStatus]);
 
-  // Supabase persists its token in localStorage. Listen for cross-tab
-  // storage changes as well as onAuthStateChange so a refresh in a second tab
-  // cannot observe a stale logged-in state.
+  // Supabase already broadcasts cross-tab auth changes through
+  // BroadcastChannel.  Only fall back to the raw storage event when that API
+  // is unavailable, and match the single configured storage key exactly so
+  // PKCE verifiers and unrelated entries never trigger a reload.
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (!supabase || typeof window === 'undefined') return undefined;
+    if (typeof window.BroadcastChannel === 'function') return undefined;
+
     const onStorage = (event) => {
-      if (event.key && !event.key.includes('auth-token')) return;
-      supabase.auth.getSession().then(async ({ data: sessionData }) => {
-        if (!sessionData?.session) {
-          dispatch({ type: 'LOGOUT' });
+      if (event.key !== SUPABASE_STORAGE_KEY) return;
+      if (event.storageArea && event.storageArea !== window.localStorage) return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data?.session) {
+          endLocalSession();
           return;
         }
-        const user = await getCurrentUser();
-        if (user && isAccountApproved(user)) {
-          dispatch({ type: 'SET_CURRENT_USER', payload: user });
-          fetchAllData(user).catch(() => undefined);
-        }
+        reconcileSession(data.session, { force: true });
       }).catch(() => undefined);
     };
+
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [fetchAllData]);
+  }, [endLocalSession, reconcileSession]);
 
   // Keep the signed-in profile and hour totals live after approvals.
   useEffect(() => {
@@ -452,7 +671,14 @@ export function AppProvider({ children }) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
         (payload) => {
-          if (mounted && payload?.new) dispatch({ type: 'UPDATE_USER', payload: toCamelCase(payload.new) });
+          if (!mounted || !payload?.new) return;
+          const updated = toCamelCase(payload.new);
+          dispatch({ type: 'UPDATE_USER', payload: updated });
+          if (!isAccountApproved(updated)) {
+            const notice = { tone: 'error', message: 'Your account is not active. Please contact HYT support.' };
+            endLocalSession(notice);
+            supabase.auth.signOut().catch(() => clearPersistedSession());
+          }
         }
       )
       .subscribe();
@@ -461,13 +687,21 @@ export function AppProvider({ children }) {
       mounted = false;
       supabase.removeChannel(channel);
     };
+    // endLocalSession is stable; state.currentUser.id is the subscription key.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentUser?.id]);
 
   const value = {
     state,
     dispatch,
     refreshData,
-    authInitialized
+    authInitialized: authStatus !== 'initializing',
+    authStatus,
+    authNotice,
+    clearAuthNotice,
+    retryAuth,
+    signOut,
+    recoveryUserId
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

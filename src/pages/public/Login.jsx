@@ -1,25 +1,53 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { login } from '../../services/authService';
-import { Card } from '../../components/Card';
+import { normalizeRole } from '../../services/supabaseService';
+import { describeAuthError } from '../../utils/password';
 import { Input } from '../../components/Input';
+import { PasswordField } from '../../components/PasswordField';
 import { Button } from '../../components/Button';
-import hytLogo from '../../assets/HYT.png';
+import { Icon } from '../../components/icons';
+import { AuthBrandRail } from '../../components/AuthBrandRail';
 import './Auth.css';
-import '../../components/Logo.css';
+
+const DASHBOARD_BY_ROLE = {
+  ADMIN: '/admin/dashboard',
+  'OJT/INTERN': '/student/dashboard',
+  TRAINEE: '/trainee/dashboard'
+};
+
+const BRAND_POINTS = [
+  'Apply for OJT postings and trainee programs',
+  'Clock in and out with verified attendance',
+  'Track your rendered hours and certificates'
+];
 
 export function Login() {
-  const { dispatch } = useApp();
+  const { state, authStatus } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
-    accountType: '', // 'trainee' or 'ojt-student'
+    // 'trainee' | 'ojt-student' | '' — optional on the form: an admin never
+    // picks one, and authService requires it only once it knows the role.
+    accountType: '',
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  // A persisted session should not land on the login form.  Authenticated
+  // users are sent to their dashboard (or back to the page they requested).
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !state.currentUser) return;
+    const from = location.state?.from;
+    if (from && typeof from === 'string' && from.startsWith('/')) {
+      navigate(from, { replace: true });
+      return;
+    }
+    navigate(DASHBOARD_BY_ROLE[normalizeRole(state.currentUser.role)] || '/', { replace: true });
+  }, [authStatus, state.currentUser, location.state, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,23 +57,30 @@ export function Login() {
     }
   };
 
+  /* The account type is deliberately NOT validated here.  An admin signs in
+     through this same form and never picks a type — the role on their profile is
+     authoritative, and `login()` returns before the account-type gate for them.
+     OJT and Trainee must still declare theirs, but that gate can only run once
+     the role is known, which is *after* authentication.  So a Trainee who leaves
+     this blank gets the precise "choose OJT Student or Trainee" message from
+     authService, instead of a client-side block that an admin could never pass. */
   const validate = () => {
     const newErrors = {};
-    // Only validate email and password - accountType is optional for ADMIN
-    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (loading) return;
+
     // Clear any previous errors
     setErrors({});
-    
-    // Validate only email and password
+
+    // Custom validation is the single source of truth (noValidate on <form>).
     const newErrors = validate();
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -54,29 +89,31 @@ export function Login() {
     setLoading(true);
 
     try {
-      // Step 1: Authenticate with Supabase (credentials only)
-      // Step 2: authService will fetch user role and handle bypass logic
+      // Step 1: Authenticate with Supabase (credentials only).
+      // Step 2: authService validates the profile, the approval state and that
+      // the chosen account type matches the role on the profile.  Admins skip
+      // the account-type gate.  AppContext's listener commits the session.
       const user = await login(formData.email, formData.password, formData.accountType);
-      
+
       if (user) {
-        dispatch({ type: 'SET_CURRENT_USER', payload: user });
-        
-        // Automatic dashboard redirection based on the normalized role
-        const role = String(user.role || '').toUpperCase();
-        if (role === 'ADMIN') {
-          navigate('/admin/dashboard');
-        } else if (role === 'OJT/INTERN') {
-          navigate('/student/dashboard');
-        } else if (role === 'TRAINEE') {
-          navigate('/trainee/dashboard');
-        } else {
-          // Fallback for unknown roles
-          navigate('/');
-        }
+        const from = location.state?.from;
+        const target = from && typeof from === 'string' && from.startsWith('/')
+          ? from
+          : DASHBOARD_BY_ROLE[normalizeRole(user.role)] || '/';
+        navigate(target, { replace: true });
       }
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ general: error.message || 'Login failed. Please check your credentials.' });
+      const message = describeAuthError(error);
+      /* The two account-type failures belong UNDER the picker, not in the
+         top-of-form alert — that is where the user has to act.  Both are thrown
+         by authService only after it has read the profile, which is why the
+         form itself cannot pre-empt them. */
+      if (error?.code === 'ACCOUNT_TYPE_REQUIRED' || error?.code === 'ROLE_MISMATCH') {
+        setErrors({ accountType: message });
+      } else {
+        setErrors({ general: message });
+      }
     } finally {
       setLoading(false);
     }
@@ -84,36 +121,34 @@ export function Login() {
 
   return (
     <div className="auth-page">
-      <div className="container">
-        <div className="auth-container">
-          <Card className="auth-card">
+      <div className="auth-shell">
+        {/* Brand rail — carries the HYT identity into the sign-in experience */}
+        <AuthBrandRail
+          description="Your portal for OJT placements, trainee programs, verified attendance and certificates — all in one place."
+          points={BRAND_POINTS}
+        />
+
+        {/* Form rail */}
+        <main className="auth-panel">
+          <div className="auth-panel-inner">
             <div className="auth-header">
-              <img src={hytLogo} alt="HYT Foundation" className="auth-logo-image" />
               <h2 className="auth-title">Welcome Back</h2>
-              <p className="auth-subtitle">Login to your HYT Foundation account</p>
+              <p className="auth-subtitle">Sign in to continue to your dashboard</p>
             </div>
 
             {errors.general && (
-              <div className="alert alert-error">{errors.general}</div>
+              <div className="alert alert-error" role="alert">{errors.general}</div>
             )}
 
-            <form onSubmit={handleSubmit} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className="form-group">
-                <label className="form-label">Login as (Optional for Admin)</label>
+                <span className="form-label">
+                  Sign in as
+                  <span className="form-label-note">
+                    OJT and Trainee only — admins are detected automatically
+                  </span>
+                </span>
                 <div className="account-type-selection">
-                  <label className="account-type-card">
-                    <input
-                      type="radio"
-                      name="accountType"
-                      value="trainee"
-                      checked={formData.accountType === 'trainee'}
-                      onChange={handleChange}
-                    />
-                    <div className="account-type-content">
-                      <div className="account-type-icon">🎓</div>
-                      <div className="account-type-label">Trainee</div>
-                    </div>
-                  </label>
                   <label className="account-type-card">
                     <input
                       type="radio"
@@ -122,15 +157,28 @@ export function Login() {
                       checked={formData.accountType === 'ojt-student'}
                       onChange={handleChange}
                     />
-                    <div className="account-type-content">
-                      <div className="account-type-icon">💼</div>
-                      <div className="account-type-label">OJT Student</div>
-                    </div>
+                    <span className="account-type-content">
+                      <span className="account-type-icon"><Icon name="briefcase" size={22} /></span>
+                      <span className="account-type-label">OJT Student</span>
+                      <span className="account-type-note">Internship hours</span>
+                    </span>
+                  </label>
+                  <label className="account-type-card">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="trainee"
+                      checked={formData.accountType === 'trainee'}
+                      onChange={handleChange}
+                    />
+                    <span className="account-type-content">
+                      <span className="account-type-icon"><Icon name="award" size={22} /></span>
+                      <span className="account-type-label">Trainee</span>
+                      <span className="account-type-note">Programs &amp; events</span>
+                    </span>
                   </label>
                 </div>
-                <p className="form-hint" style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-                  Admin users can login without selecting an account type
-                </p>
+                {errors.accountType && <div className="form-error">{errors.accountType}</div>}
               </div>
 
               <Input
@@ -141,53 +189,34 @@ export function Login() {
                 onChange={handleChange}
                 error={errors.email}
                 placeholder="yourname@gmail.com"
+                autoComplete="email"
                 required
               />
 
-              <div className="password-input-wrapper">
-                <Input
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onPaste={(e) => e.preventDefault()}
-                  onCopy={(e) => e.preventDefault()}
-                  onCut={(e) => e.preventDefault()}
-                  error={errors.password}
-                  maxLength={72}
-                  autoComplete="current-password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
-                >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
-                </button>
-              </div>
+              <PasswordField
+                label="Password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                error={errors.password}
+                autoComplete="current-password"
+                required
+              />
 
               <div className="form-footer">
                 <Link to="/forgot-password" className="link">Forgot password?</Link>
               </div>
 
-              <Button 
-                type="submit" 
-                disabled={loading} 
-                className="login-submit-button"
-                style={{ width: '100%', fontSize: '18px', padding: '16px', fontWeight: '700' }}
-              >
-                {loading ? 'Logging in...' : 'Login'}
+              <Button type="submit" disabled={loading} className="auth-submit">
+                {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
 
             <div className="auth-footer">
-              Don't have an account? <Link to="/register" className="link-primary">Create Account</Link>
+              Don&apos;t have an account? <Link to="/register" className="link-primary">Create Account</Link>
             </div>
-          </Card>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

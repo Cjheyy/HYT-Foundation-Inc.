@@ -1,3 +1,14 @@
+-- ============================================================================
+-- DO NOT RUN - SUPERSEDED BY OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ----------------------------------------------------------------------------
+-- This file creates public.geofenced_clock_in(), a SECURITY DEFINER function
+-- that writes time_in = NOW() and status = 'CLOCKED_IN' immediately, for an
+-- arbitrary p_user_id and without checking that the caller owns the account.
+-- That is exactly the admin-approval bypass the dual-approval flow removes.
+-- The canonical migration drops this function on purpose.
+--
+-- Canonical migration: OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ============================================================================
 -- ============================================
 -- UPDATE GEOFENCED_CLOCK_IN FOR STATE MACHINE
 -- Sets initial status to 'CLOCKED_IN' instead of 'Pending'

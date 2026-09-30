@@ -149,103 +149,216 @@
   line-height: 1.7;
 }
 
-/* Thrusts List */
+/* ==========================================================================
+   Thrusts — even grid, equal-height cards.
+   `auto-fit` + `minmax` guarantees every card in a row is the same width, so
+   the tiles can never end up staggered like they did before.
+   ========================================================================== */
 .thrusts-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
-  max-width: 1200px;
+  /* min() keeps the track from overflowing a viewport narrower than 430px. */
+  grid-template-columns: repeat(auto-fit, minmax(min(430px, 100%), 1fr));
+  gap: 28px;
+  max-width: 1180px;
   margin: 0 auto;
+  align-items: stretch;
 }
 
 .thrust-item {
+  position: relative;
   display: flex;
   gap: 20px;
   align-items: flex-start;
-  padding: 28px;
-  background: white;
+  /* No `height: 100%` here: an explicit height disables the grid's
+     `align-items: stretch`, and a percentage against an auto-sized row
+     resolves circularly — which left one tile per row taller than its
+     neighbour and made the grid look staggered. */
+  padding: 30px 32px;
   border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border: 2px solid transparent;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
   overflow: hidden;
+  isolation: isolate;
+  /* Gradient hairline border via the padding-box/border-box trick. */
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, rgba(213, 113, 86, 0.22), rgba(39, 158, 182, 0.22), rgba(243, 219, 110, 0.22)) border-box;
+  box-shadow: 0 4px 18px rgba(31, 41, 55, 0.06);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.45s ease,
+              background 0.45s ease;
+  animation: thrustIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 65ms);
 }
 
+@keyframes thrustIn {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.thrust-item:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 46px rgba(213, 113, 86, 0.22);
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, #D57156, #279EB6, #F3DB6E) border-box;
+}
+
+/* Cursor-following spotlight. --mx/--my are set on mousemove. */
+.thrust-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(213, 113, 86, 0.13),
+    rgba(39, 158, 182, 0.07) 45%,
+    transparent 70%
+  );
+}
+
+.thrust-item:hover .thrust-glow {
+  opacity: 1;
+}
+
+/* Sweeping sheen across the top edge on hover. */
 .thrust-item::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, #D57156, #279EB6, #F3DB6E);
   transform: scaleX(0);
-  transition: transform 0.4s ease;
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .thrust-item:hover::before {
   transform: scaleX(1);
 }
 
-.thrust-item:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(213, 113, 86, 0.2);
-  border-color: rgba(213, 113, 86, 0.3);
-}
-
 .thrust-number {
-  width: 60px;
-  height: 60px;
+  position: relative;
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #D57156 0%, #F3DB6E 100%);
-  color: white;
-  font-size: 24px;
-  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 8px 24px rgba(213, 113, 86, 0.4);
-  transition: all 0.4s ease;
-  position: relative;
-}
-
-.thrust-number::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #D57156, #F3DB6E);
-  opacity: 0;
-  filter: blur(12px);
-  transition: opacity 0.4s ease;
+  font-size: 21px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, #D57156 0%, #F3DB6E 100%);
+  box-shadow: 0 8px 22px rgba(213, 113, 86, 0.38);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
 }
 
 .thrust-item:hover .thrust-number {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.5);
-}
-
-.thrust-item:hover .thrust-number::after {
-  opacity: 0.6;
+  transform: scale(1.1) rotate(-6deg);
+  box-shadow: 0 12px 30px rgba(213, 113, 86, 0.5);
 }
 
 .thrust-content {
   flex: 1;
+  min-width: 0;
 }
 
 .thrust-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 700;
   color: var(--dark-text);
-  margin-bottom: 10px;
+  margin: 0 0 8px;
+  transition: color 0.3s ease;
 }
 
+.thrust-item:hover .thrust-title {
+  color: #B5553C;
+}
+
+/* Capped measure so the copy reads in a comfortable column instead of
+   stretching the full width of a wide card. */
 .thrust-description {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--muted-text);
-  line-height: 1.7;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 46ch;
+}
+
+/* ==========================================================================
+   Partner organizations
+   ========================================================================== */
+.partners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.partner-chip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s ease,
+              border-color 0.35s ease;
+}
+
+.partner-chip:hover {
+  transform: translateY(-4px);
+  border-color: rgba(39, 158, 182, 0.45);
+  box-shadow: 0 12px 28px rgba(39, 158, 182, 0.16);
+}
+
+.partner-monogram {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: linear-gradient(135deg, #279EB6 0%, #1E7F94 100%);
+  box-shadow: 0 6px 16px rgba(39, 158, 182, 0.28);
+}
+
+.partner-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--dark-text);
+  line-height: 1.35;
+}
+
+/* Anchor targets must clear the fixed header. */
+#thrusts,
+#partners {
+  scroll-margin-top: 110px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thrust-item,
+  .thrust-glow,
+  .thrust-number,
+  .partner-chip {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* Offer Cards */
@@ -436,9 +549,14 @@
     flex-direction: column;
     gap: 16px;
     text-align: center;
+    padding: 26px 22px;
   }
 
   .thrust-number {
+    margin: 0 auto;
+  }
+
+  .thrust-description {
     margin: 0 auto;
   }
 

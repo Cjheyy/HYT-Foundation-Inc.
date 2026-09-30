@@ -1,58 +1,61 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../config/supabase';
+import { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { supabase, SUPABASE_CONFIG_ERROR } from '../../config/supabase';
+import { useApp } from '../../context/AppContext';
+import {
+  PASSWORD_POLICY,
+  PASSWORD_RULES,
+  calculatePasswordStrength,
+  describeAuthError,
+  isPasswordRuleMet,
+  validatePassword
+} from '../../utils/password';
 import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
+import { PasswordField } from '../../components/PasswordField';
 import { Card } from '../../components/Card';
 import { toast } from 'react-toastify';
 import hytLogo from '../../assets/HYT.png';
 import './Auth.css';
+import '../../components/Logo.css';
 
 export function ResetPassword() {
   const navigate = useNavigate();
+  const { authStatus, recoveryUserId, signOut } = useApp();
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isValidSession, setIsValidSession] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+
+  // The gate is the PASSWORD_RECOVERY event captured by AppContext, not "any
+  // session exists".  A normal signed-in session must not be able to change a
+  // password from this page, and an expired/reused link must not be masked by
+  // an unrelated live session.
+  const isChecking = authStatus === 'initializing';
+  const hasRecoverySession = Boolean(recoveryUserId);
+
+  const strength = calculatePasswordStrength(newPassword);
+  const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error || !session) {
-          toast.error('Invalid or expired reset link. Please request a new one.');
-          setTimeout(() => navigate('/forgot-password'), 2000);
-          return;
-        }
-
-        setIsValidSession(true);
-      } catch (error) {
-        console.error('Session check error:', error);
-        toast.error('Session verification failed');
-        setTimeout(() => navigate('/forgot-password'), 2000);
-      } finally {
-        setCheckingSession(false);
-      }
-    };
-
-    checkSession();
-  }, [navigate]);
+    if (hasRecoverySession) setErrors({});
+  }, [hasRecoverySession]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || !hasRecoverySession) return;
     setErrors({});
 
+    const validation = validatePassword(newPassword);
     const validationErrors = {};
-    
-    if (!newPassword || newPassword.length < 8 || newPassword.length > 72 || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
-      validationErrors.newPassword = 'Password must be 8-72 characters with 1 uppercase letter, 1 number, and 1 special character';
+    if (!newPassword) {
+      validationErrors.newPassword = 'Password is required';
+    } else if (!validation.valid) {
+      validationErrors.newPassword = validation.message;
     }
-
-    if (newPassword !== confirmPassword) {
+    if (!confirmPassword) {
+      validationErrors.confirmPassword = 'Please confirm your new password';
+    } else if (newPassword !== confirmPassword) {
       validationErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -64,29 +67,49 @@ export function ResetPassword() {
     try {
       setLoading(true);
 
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
 
-      toast.success('✅ Password reset successfully! Redirecting to login...');
-      
-      // Sign out to ensure clean state
-      await supabase.auth.signOut();
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Supabase revokes other sessions on a password change; this closes the
+      // recovery session on this device and clears the app state.
+      try {
+        await signOut();
+      } catch (signOutError) {
+        console.warn('Post-reset sign-out reported an error.', signOutError);
+      }
+
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success('Password updated successfully. Please log in with your new password.');
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Password reset error:', error);
-      toast.error(error.message || 'Failed to reset password. Please try again.');
+      setErrors({ general: describeAuthError(error) });
     } finally {
       setLoading(false);
     }
   };
 
-  if (checkingSession) {
+  if (!supabase) {
+    return (
+      <div className="auth-page">
+        <Card className="auth-card">
+          <div className="auth-header">
+            <img src={hytLogo} alt="HYT Foundation" className="auth-logo-image" />
+            <h1 className="auth-title">Password reset unavailable</h1>
+          </div>
+          <div className="alert alert-error" role="alert">
+            {SUPABASE_CONFIG_ERROR || 'Password reset is unavailable right now.'}
+          </div>
+          <div className="auth-footer">
+            <Link to="/login" className="auth-link">← Back to Login</Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isChecking) {
     return (
       <div className="auth-page">
         <Card className="auth-card">
@@ -100,8 +123,32 @@ export function ResetPassword() {
     );
   }
 
-  if (!isValidSession) {
-    return null; // Will redirect
+  if (!hasRecoverySession) {
+    return (
+      <div className="auth-page">
+        <Card className="auth-card">
+          <div className="auth-header">
+            <img src={hytLogo} alt="HYT Foundation" className="auth-logo-image" />
+            <h1 className="auth-title">This reset link is no longer valid</h1>
+            <p className="auth-subtitle">
+              Password reset links can only be used once and expire shortly after they are issued.
+            </p>
+          </div>
+
+          <div className="auth-form">
+            <div className="alert alert-error" role="alert">
+              Request a new link to choose a new password.
+            </div>
+            <Link to="/forgot-password" className="btn btn-primary" style={{ display: 'block', textAlign: 'center' }}>
+              Request a new link
+            </Link>
+            <div className="auth-footer">
+              <Link to="/login" className="auth-link">← Back to Login</Link>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -110,66 +157,73 @@ export function ResetPassword() {
         <div className="auth-header">
           <img src={hytLogo} alt="HYT Foundation" className="auth-logo-image" />
           <h1 className="auth-title">Create New Password</h1>
-          <p className="auth-subtitle">
-            Choose a strong password for your account
-          </p>
+          <p className="auth-subtitle">Choose a strong password for your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <Input
+        {errors.general && <div className="alert alert-error" role="alert">{errors.general}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form" noValidate>
+          <PasswordField
             label="New Password"
-            type="password"
+            name="newPassword"
             value={newPassword}
             onChange={(e) => {
               setNewPassword(e.target.value);
-              setErrors({ ...errors, newPassword: '' });
+              setErrors((previous) => ({ ...previous, newPassword: '' }));
             }}
-            onPaste={(e) => e.preventDefault()}
-            onCopy={(e) => e.preventDefault()}
-            onCut={(e) => e.preventDefault()}
             error={errors.newPassword}
-            placeholder="8-72 characters"
-            minLength={8}
-            maxLength={72}
+            placeholder={`${PASSWORD_POLICY.minLength}-${PASSWORD_POLICY.maxLength} characters`}
+            maxLength={PASSWORD_POLICY.maxLength}
             autoComplete="new-password"
             required
             autoFocus
           />
 
-          <Input
+          {newPassword && (
+            <div className={`password-strength strength-${strength.key}`} aria-live="polite">
+              <div className="strength-track">
+                <div
+                  className="strength-bar"
+                  style={{ width: `${strength.score * 33.333}%`, background: strength.color }}
+                />
+              </div>
+              <span className="strength-text" style={{ color: strength.color }}>{strength.label}</span>
+            </div>
+          )}
+
+          <PasswordField
             label="Confirm New Password"
-            type="password"
+            name="confirmPassword"
             value={confirmPassword}
             onChange={(e) => {
               setConfirmPassword(e.target.value);
-              setErrors({ ...errors, confirmPassword: '' });
+              setConfirmTouched(true);
+              setErrors((previous) => ({ ...previous, confirmPassword: '' }));
             }}
-            onPaste={(e) => e.preventDefault()}
-            onCopy={(e) => e.preventDefault()}
-            onCut={(e) => e.preventDefault()}
+            onBlur={() => setConfirmTouched(true)}
             error={errors.confirmPassword}
             placeholder="Re-enter your password"
-            minLength={8}
-            maxLength={72}
+            maxLength={PASSWORD_POLICY.maxLength}
             autoComplete="new-password"
             required
           />
 
+          {confirmTouched && newPassword && (
+            <div className={`password-match ${passwordsMatch ? 'match' : 'no-match'}`} aria-live="polite">
+              {passwordsMatch
+                ? <span className="match-text">✓ Passwords match</span>
+                : <span className="no-match-text">✗ Passwords don&apos;t match</span>}
+            </div>
+          )}
+
           <div className="password-requirements">
             <p className="requirements-title">Password must contain:</p>
             <ul>
-              <li className={newPassword.length >= 8 ? 'valid' : ''}>
-                At least 8 characters
-              </li>
-              <li className={/[A-Z]/.test(newPassword) ? 'valid' : ''}>
-                One uppercase letter
-              </li>
-              <li className={/[^A-Za-z0-9]/.test(newPassword) ? 'valid' : ''}>
-                One special character
-              </li>
-              <li className={/[0-9]/.test(newPassword) ? 'valid' : ''}>
-                One number
-              </li>
+              {PASSWORD_RULES.map((rule) => (
+                <li key={rule.id} className={isPasswordRuleMet(rule.id, newPassword) ? 'valid' : ''}>
+                  {rule.label}
+                </li>
+              ))}
             </ul>
           </div>
 

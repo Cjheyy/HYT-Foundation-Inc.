@@ -74,7 +74,7 @@ export function ContactForm() {
 
       await emailjs.send(serviceId, templateId, templateParams);
 
-      toast.success('✅ Message sent successfully! We\'ll get back to you soon.');
+      toast.success('Message sent successfully. We will get back to you soon.');
       
       // Clear form
       setFormData({

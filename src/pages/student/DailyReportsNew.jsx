@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
+import { Skeleton } from '../../components/Skeleton';
 import { 
   getDailyReports, 
   createDailyReport
@@ -26,24 +27,48 @@ export function DailyReportsNew() {
     accomplishments: ''
   });
   const [errors, setErrors] = useState({});
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    if (currentUser) {
-      loadReports();
+    mountedRef.current = true;
+    if (!currentUser?.id) {
+      setReports([]);
+      setLoading(false);
+      return undefined;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (!cancelled) setLoading(true);
+        const data = await getDailyReports(currentUser.id);
+        if (!cancelled && mountedRef.current) setReports(data || []);
+      } catch (error) {
+        if (!cancelled && mountedRef.current) toast.error('Failed to load daily reports');
+      } finally {
+        if (!cancelled && mountedRef.current) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+    };
+  }, [currentUser?.id]);
 
   const loadReports = async () => {
+    if (!currentUser?.id) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await getDailyReports(currentUser.id);
-      setReports(data || []);
+      if (mountedRef.current) setReports(data || []);
     } catch (error) {
-      console.error('Error loading reports:', error);
-      toast.error('Failed to load daily reports');
+      if (mountedRef.current) toast.error('Failed to load daily reports');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -79,7 +104,7 @@ export function DailyReportsNew() {
         accomplishments: formData.accomplishments.trim()
       });
       
-      toast.success('✅ Daily report submitted successfully!');
+      toast.success('Daily report submitted successfully.');
       setShowForm(false);
       setFormData({
         reportDate: new Date().toISOString().split('T')[0],
@@ -97,14 +122,22 @@ export function DailyReportsNew() {
 
   if (loading) {
     return (
-      <div className="page-container">
-        <div className="loading-spinner">Loading...</div>
+      <div className="page-container daily-reports-page">
+        <div className="page-header">
+          <Skeleton width="40%" height={28} style={{ marginBottom: 8 }} />
+          <Skeleton width="60%" height={14} />
+        </div>
+        <Card className="submit-report-card">
+          <Skeleton width="35%" height={20} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={72} style={{ marginBottom: 12 }} />
+          <Skeleton width="40%" height={40} />
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container daily-reports-page">
       <div className="page-header">
         <h1 className="page-title">Daily Accomplishment Reports</h1>
         <p className="page-subtitle">Submit and track your daily work summaries</p>
@@ -214,7 +247,7 @@ export function DailyReportsNew() {
                   {report.adminNote && (
                     <div className={`admin-note ${report.status === 'Rejected' ? 'rejected' : 'approved'}`}>
                       <span className="note-label">
-                        {report.status === 'Rejected' ? '❌ Admin Rejection Note:' : '✅ Admin Note:'}
+                        {report.status === 'Rejected' ? ' Admin Rejection Note:' : ' Admin Note:'}
                       </span>
                       <p className="note-text">{report.adminNote}</p>
                     </div>
@@ -231,7 +264,6 @@ export function DailyReportsNew() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
             <h3>No Reports Yet</h3>
             <p>Submit your first daily report to track your progress</p>
           </div>

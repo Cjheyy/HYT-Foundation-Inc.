@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../config/supabase';
 import { Card } from '../../components/Card';
@@ -7,8 +7,11 @@ import { Input } from '../../components/Input';
 import { Badge } from '../../components/Badge';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { LiveTimeTracker } from '../../components/LiveTimeTracker';
+import { Skeleton } from '../../components/Skeleton';
+import { AttendanceStepper } from '../../components/AttendanceStepper';
 import {
   getAttendanceLogs,
+  getApplications,
   getUserById,
   clockIn,
   clockOut,
@@ -19,9 +22,32 @@ import {
   getAttendanceStage,
   normalizeStatus
 } from '../../services/supabaseService';
+import { checkGeofence, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED } from '../../utils/geofence';
+import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { formatDate, formatTime } from '../../utils/helpers';
+import { getRoleTerms } from '../../utils/roleTerms';
 import { toast } from 'react-toastify';
 import './Attendance.css';
+
+const POLL_INTERVAL_MS = 60_000;
+
+// Re-exported for unit tests and shared callers.
+export const describeGeolocationError = describeLocationError;
+
+// Enforcing the geofence needs a precise fix, so accept the slow two-tier
+// lookup.  With enforcement off we only need *some* coordinates — and waiting
+// up to 15 s for a high-accuracy fix is what made Clock In feel slow.
+const getCoordinates = () => (GEOFENCE_ENFORCEMENT_ENABLED
+  ? getCoordinatesWithFallback()
+  : getQuickCoordinates());
+
+export const hasApprovedOjtPosting = (applications = [], userId = null) => (applications || []).some((app) => {
+  const owner = app.userId || app.studentId;
+  if (userId && owner && owner !== userId) return false;
+  const isOjtPosting = Boolean(app.opportunityId || app.opportunity_id || String(app.type || '').toUpperCase() === 'OPPORTUNITY');
+  if (!isOjtPosting) return false;
+  return ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(normalizeStatus(app.status));
+});
 
 const getWindowState = () => {
   const now = new Date();
@@ -30,32 +56,20 @@ const getWindowState = () => {
     minutes,
     isOpen: minutes >= 8 * 60 + 55 && minutes <= 18 * 60 + 5,
     message: minutes < 8 * 60 + 55
-      ? '⏰ Attendance window opens at 8:55 AM'
-      : '⏰ Attendance window closed at 6:05 PM'
+      ? 'Attendance window opens at 8:55 AM'
+      : 'Attendance window closed at 6:05 PM'
   };
 };
-
-const getCoordinates = () => new Promise((resolve, reject) => {
-  if (!navigator.geolocation) {
-    reject(new Error('Geolocation is not supported by this browser.'));
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    (position) => resolve({
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy
-    }),
-    reject,
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-  );
-});
 
 export function AttendanceNew() {
   const { state, dispatch } = useApp();
   const { currentUser } = state;
+  // This page is shared by the OJT/Intern and Trainee portals, so every label
+  // that mentions "OJT" comes from the role terms map.
+  const terms = getRoleTerms(currentUser?.role);
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [applications, setApplications] = useState(state.applications || []);
   const [otRequests, setOtRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -65,36 +79,56 @@ export function AttendanceNew() {
   const [otFormData, setOtFormData] = useState({ requestedHours: '', reason: '' });
   const [otErrors, setOtErrors] = useState({});
   const [windowState, setWindowState] = useState(getWindowState);
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const loadAttendanceData = useCallback(async ({ showLoader = false } = {}) => {
     if (!currentUser?.id) return;
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     if (showLoader) setLoading(true);
     try {
-      const [today, history, requests, profile] = await Promise.all([
+      const [todayResult, historyResult, requestsResult, profileResult, applicationsResult] = await Promise.allSettled([
         getTodayAttendance(currentUser.id),
         getAttendanceLogs(currentUser.id),
-        getOtRequests(currentUser.id).catch(() => []),
-        getUserById(currentUser.id).catch(() => null)
+        getOtRequests(currentUser.id),
+        getUserById(currentUser.id),
+        getApplications(currentUser.id)
       ]);
-      setTodayAttendance(today || null);
-      setAttendanceHistory(history || []);
-      setOtRequests(requests || []);
-      if (profile) dispatch({ type: 'UPDATE_USER', payload: profile });
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
+      if (todayResult.status === 'rejected') throw todayResult.reason;
+      if (historyResult.status === 'rejected') throw historyResult.reason;
+
+      setTodayAttendance(todayResult.value || null);
+      setAttendanceHistory(historyResult.value || []);
+      setOtRequests(requestsResult.status === 'fulfilled' ? (requestsResult.value || []) : []);
+      if (applicationsResult.status === 'fulfilled') {
+        setApplications(applicationsResult.value || []);
+      } else if (Array.isArray(state.applications)) {
+        setApplications(state.applications);
+      }
+      if (profileResult.status === 'fulfilled' && profileResult.value) {
+        dispatch({ type: 'UPDATE_USER', payload: profileResult.value });
+      }
     } catch (error) {
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
       console.error('Error loading attendance:', error);
       toast.error('Failed to load attendance data');
     } finally {
-      if (showLoader) setLoading(false);
+      if (mountedRef.current && showLoader && requestId === requestIdRef.current) setLoading(false);
     }
-  }, [currentUser?.id, dispatch]);
+  }, [currentUser?.id, dispatch, state.applications]);
 
   useEffect(() => {
     if (!currentUser?.id) return undefined;
+    mountedRef.current = true;
     loadAttendanceData({ showLoader: true });
     let refreshTimer;
     const refresh = () => {
       window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => loadAttendanceData(), 120);
+      refreshTimer = window.setTimeout(() => {
+        if (mountedRef.current) loadAttendanceData();
+      }, 120);
     };
     const attendanceChannel = supabase
       ?.channel(`trainee-attendance-${currentUser.id}`)
@@ -113,8 +147,19 @@ export function AttendanceNew() {
       )
       .subscribe();
 
+    // Realtime alone can leave a stale status behind when the publication is
+    // missing, the socket drops, or the tab was asleep during an approval.
+    const pollTimer = window.setInterval(() => loadAttendanceData(), POLL_INTERVAL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') loadAttendanceData();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
+      mountedRef.current = false;
       window.clearTimeout(refreshTimer);
+      window.clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
       if (attendanceChannel) supabase.removeChannel(attendanceChannel);
       if (userChannel) supabase.removeChannel(userChannel);
     };
@@ -126,6 +171,16 @@ export function AttendanceNew() {
   const pendingClockOut = stage === 'CLOCK_OUT';
   const activeClock = status === 'CLOCKED_IN';
   const finalState = isFinalAttendanceStatus(status);
+  // A clock-in request is stamped by created_at (the row is born with the
+  // request).  A clock-out request freezes pending_end_time at the moment it was
+  // submitted, so that is the honest timestamp for that stage.
+  const submittedAt = pendingClockOut
+    ? (todayAttendance?.pendingEndTime || todayAttendance?.updatedAt || todayAttendance?.createdAt)
+    : (todayAttendance?.createdAt || todayAttendance?.requestedAt || todayAttendance?.timeIn);
+  const approvedOjtPosting = useMemo(
+    () => hasApprovedOjtPosting(applications, currentUser?.id),
+    [applications, currentUser?.id]
+  );
   useEffect(() => {
     const timer = window.setInterval(() => setWindowState(getWindowState()), 60_000);
     return () => window.clearInterval(timer);
@@ -140,6 +195,10 @@ export function AttendanceNew() {
   }, [currentUser?.requiredHours, currentUser?.renderedHours]);
 
   const handleClockIn = () => {
+    if (!approvedOjtPosting) {
+      toast.warning('Please apply for an OJT Posting and wait for Admin acceptance before clocking in.');
+      return;
+    }
     if (!windowState.isOpen) {
       toast.error(windowState.message);
       return;
@@ -150,27 +209,39 @@ export function AttendanceNew() {
   const executeClockIn = async () => {
     setActionLoading(true);
     try {
-      let coordinates;
-      try {
-        coordinates = await getCoordinates();
-      } catch (locationError) {
-        const isLocalDevelopment = process.env.NODE_ENV === 'development' ||
-          window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        if (!isLocalDevelopment) throw locationError;
-        coordinates = { latitude: 14.6401, longitude: 121.0189, accuracy: 0 };
-        toast.warning('Development mode is using the configured HYT location.');
+      if (!approvedOjtPosting) {
+        throw new Error('Please apply for an OJT Posting and wait for Admin approval before clocking in.');
       }
+      // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
+      const coordinates = await getCoordinates();
 
-      if (coordinates.accuracy > 50) {
+      if (coordinates.source !== 'ip' && coordinates.accuracy > 50) {
         toast.warning(`Location accuracy is ${Math.round(coordinates.accuracy)} meters.`);
+      }
+      const geofence = checkGeofence(coordinates.latitude, coordinates.longitude, GEOFENCE_RADIUS_METERS);
+      // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
+      // Re-enable by flipping the flag in src/utils/geofence.js before production.
+      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
+        const away = geofence.distance != null ? Math.round(geofence.distance) : null;
+        throw new Error(
+          away != null
+            ? `You are currently ${away} meters away from the nearest approved office.`
+            : 'You must be within 100 meters of an approved HYT location to clock in.'
+        );
       }
       const result = await clockIn(currentUser.id, coordinates.latitude, coordinates.longitude);
       setTodayAttendance(result);
-      toast.info('Clock-in request submitted. Waiting for Admin approval.');
+      toast.success('Application submitted successfully.');
       await loadAttendanceData();
     } catch (error) {
-      console.error('Clock-in request error:', error);
-      toast.error(error.message || 'Failed to submit clock-in request');
+      // Geolocation hints are toasted once by ConfirmationModal; every other
+      // failure (geofence, approval, database) is reported here with its real
+      // message.
+      if (!isGeolocationError(error)) {
+        toast.error(error.message || 'Failed to submit clock-in request');
+      }
+      // Re-throw so ConfirmationModal keeps the dialog open for a retry.
+      throw error;
     } finally {
       setActionLoading(false);
     }
@@ -184,16 +255,29 @@ export function AttendanceNew() {
   const executeClockOut = async () => {
     setActionLoading(true);
     try {
+      // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
+      const frozenCoordinates = await getCoordinates();
+      const geofence = checkGeofence(frozenCoordinates.latitude, frozenCoordinates.longitude, GEOFENCE_RADIUS_METERS);
+      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
+        const away = geofence.distance != null ? Math.round(geofence.distance) : null;
+        throw new Error(
+          away != null
+            ? `You are currently ${away} meters away from the nearest approved office.`
+            : 'You must be within 100 meters of an approved HYT location to clock in.'
+        );
+      }
       const result = await clockOut(currentUser.id);
       setTodayAttendance(result);
-      toast.info('Clock-out request submitted. Waiting for Admin approval. Your timer is frozen.');
+      toast.success('Application submitted successfully.');
       await loadAttendanceData();
     } catch (error) {
-      console.error('Clock-out request error:', error);
-      toast.error(error.message || 'Failed to submit clock-out request');
+      if (!isGeolocationError(error)) {
+        toast.error(error.message || 'Failed to submit clock-out request');
+      }
+      // Re-throw so ConfirmationModal keeps the dialog open for a retry.
+      throw error;
     } finally {
       setActionLoading(false);
-      setShowClockOutConfirm(false);
     }
   };
 
@@ -237,10 +321,24 @@ export function AttendanceNew() {
   };
 
   if (!currentUser) return null;
-  if (loading) return <div className="page-container"><div className="loading-spinner">Loading attendance...</div></div>;
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <Skeleton width="40%" height={28} style={{ marginBottom: 8 }} />
+          <Skeleton width="60%" height={14} />
+        </div>
+        <Card className="today-attendance-card">
+          <Skeleton width="35%" height={20} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={72} style={{ marginBottom: 12 }} />
+          <Skeleton width="60%" height={44} />
+        </Card>
+      </div>
+    );
+  }
 
   const statusLabel = pendingClockIn
-    ? 'Awaiting clock-in approval'
+    ? 'Pending Admin Approval'
     : pendingClockOut
       ? 'Clock-out pending approval'
       : status || 'NOT STARTED';
@@ -273,8 +371,15 @@ export function AttendanceNew() {
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Attendance & DTR</h1>
-          <p className="page-subtitle">Submit attendance requests and track approved OJT progress</p>
+          <p className="page-subtitle">{terms.attendanceSubtitle}</p>
         </div>
+
+        {!approvedOjtPosting && (
+          <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
+            <strong>{terms.approvalRequiredTitle}</strong>
+            <p style={{ margin: '8px 0 0', fontSize: '14px' }}>{terms.attendanceLockedCopy}</p>
+          </div>
+        )}
 
         {!windowState.isOpen && (
           <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
@@ -291,10 +396,20 @@ export function AttendanceNew() {
 
           {todayAttendance ? (
             <div className="attendance-status">
+              {(pendingClockIn || pendingClockOut) && (
+                <AttendanceStepper
+                  submittedAt={submittedAt}
+                  stage={pendingClockOut ? 'CLOCK_OUT' : 'CLOCK_IN'}
+                />
+              )}
               <div className="status-grid">
                 <div className="status-item">
                   <span className="status-label">Time In:</span>
-                  <span className="status-value">{todayAttendance.timeIn ? formatTime(todayAttendance.timeIn) : 'Pending approval'}</span>
+                  <span className="status-value">
+                    {todayAttendance.timeIn
+                      ? formatTime(todayAttendance.timeIn)
+                      : pendingClockIn ? 'Not started yet' : '—'}
+                  </span>
                 </div>
                 <div className="status-item">
                   <span className="status-label">Time Out:</span>
@@ -318,37 +433,37 @@ export function AttendanceNew() {
 
               {pendingClockIn && (
                 <div className="attendance-notice pending-notice">
-                  <strong>⏳ Clock-in request submitted. Waiting for Admin approval.</strong>
+                  <strong>Clock-in request submitted. Waiting for Admin approval.</strong>
                   <div>Your timer has not started. It will start automatically after the request is accepted.</div>
                 </div>
               )}
               {activeClock && (
                 <div className="attendance-notice active-notice">
-                  <strong>🎯 You are currently clocked in</strong>
+                  <strong>You are currently clocked in</strong>
                   <div>Your live timer is running. Clock out when your work shift is complete.</div>
                 </div>
               )}
               {pendingClockOut && (
                 <div className="attendance-notice pending-notice">
-                  <strong>⏸️ Clock-out request submitted. Waiting for Admin approval.</strong>
-                  <div>Your timer is frozen at <strong>{Number(todayAttendance.renderedHours || 0).toFixed(4)} hours</strong>. Approved hours will be added to your OJT progress after review.</div>
+                  <strong>Clock-out request submitted. Waiting for Admin approval.</strong>
+                  <div>Your timer is frozen at <strong>{Number(todayAttendance.renderedHours || 0).toFixed(4)} hours</strong>. Approved hours will be added to your {terms.progressNoun} after review.</div>
                 </div>
               )}
               {status === 'APPROVED' && (
                 <div className="attendance-notice approved-notice">
-                  <strong>✅ Attendance approved</strong>
-                  <div>Your approved hours have been added to OJT progress. Your live timer is reset for the next day.</div>
+                  <strong>Attendance approved</strong>
+                  <div>Your approved hours have been added to {terms.progressNoun}. Your live timer is reset for the next day.</div>
                 </div>
               )}
               {status === 'REJECTED' && (
                 <div className="attendance-notice rejected-notice">
-                  <strong>❌ Attendance rejected</strong>
+                  <strong>Attendance rejected</strong>
                   <div>{todayAttendance.adminNote || 'No hours were credited. Please contact an administrator.'}</div>
                 </div>
               )}
               {status === 'VOID' && (
                 <div className="attendance-notice rejected-notice">
-                  <strong>⚠️ Attendance voided</strong>
+                  <strong>Attendance voided</strong>
                   <div>This request was closed automatically and no hours were credited.</div>
                 </div>
               )}
@@ -367,18 +482,23 @@ export function AttendanceNew() {
           )}
 
           <div className="attendance-actions">
-            {!todayAttendance ? (
-              <Button onClick={handleClockIn} disabled={actionLoading || !windowState.isOpen} size="lg">🕐 Clock In</Button>
+            {!approvedOjtPosting ? (
+              <div className="attendance-locked-message">
+                <strong>{terms.approvalRequiredTitle}</strong>
+                <span>{terms.attendanceLockedCopy}</span>
+              </div>
+            ) : !todayAttendance ? (
+              <Button onClick={handleClockIn} disabled={actionLoading || !windowState.isOpen} size="lg">Clock In</Button>
             ) : activeClock ? (
-              <Button onClick={handleClockOut} disabled={actionLoading} variant="success" size="lg">🕐 Clock Out</Button>
+              <Button onClick={handleClockOut} disabled={actionLoading} variant="success" size="lg">Clock Out</Button>
             ) : pendingClockIn || pendingClockOut ? (
               <div className="attendance-locked-message">
-                <strong>⏸️ Timer waiting for Admin approval</strong>
+                <strong>Timer waiting for Admin approval</strong>
                 <span>You cannot submit another attendance request today.</span>
               </div>
             ) : (
               <div className="attendance-locked-message final-message">
-                <strong>{status === 'APPROVED' ? '✅ Attendance approved' : status === 'REJECTED' ? '❌ Attendance rejected' : 'Attendance closed'}</strong>
+                <strong>{status === 'APPROVED' ? 'Attendance approved' : status === 'REJECTED' ? 'Attendance rejected' : 'Attendance closed'}</strong>
                 <span>Clock-in is locked until the next calendar day.</span>
               </div>
             )}
@@ -386,7 +506,7 @@ export function AttendanceNew() {
         </Card>
 
         <Card className="hours-progress-card">
-          <div className="card-header"><h2 className="card-title">OJT Hours Progress</h2></div>
+          <div className="card-header"><h2 className="card-title">{terms.hoursTitle}</h2></div>
           <div className="progress-stats">
             <div className="stat-item"><span className="stat-label">Required Hours:</span><span className="stat-value">{progress.required.toFixed(2)} hrs</span></div>
             <div className="stat-item"><span className="stat-label">Approved Hours:</span><span className="stat-value success">{progress.rendered.toFixed(4)} hrs</span></div>

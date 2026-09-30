@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from './Card';
+import { Icon } from './icons';
 
 /**
  * Error Boundary Component
@@ -31,14 +32,11 @@ export class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    this.setState({ 
-      hasError: false, 
+    this.setState({
+      hasError: false,
       error: null,
-      errorInfo: null 
+      errorInfo: null
     });
-    
-    // Reload the page to reset application state
-    window.location.href = '/';
   };
 
   render() {
@@ -57,7 +55,7 @@ export class ErrorBoundary extends React.Component {
             padding: '40px',
             textAlign: 'center' 
           }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>⚠️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }} aria-hidden="true"><Icon name="alert" size={56} color="#D57156" /></div>
             <h1 style={{ 
               fontSize: '24px', 
               fontWeight: '700',

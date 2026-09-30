@@ -73,7 +73,7 @@ export function ReportApprovals() {
     try {
       setActionLoading(true);
       await approveDailyReport(selectedReport.id, adminNote.trim() || null);
-      toast.success('✅ Report approved successfully.');
+      toast.success(' Report approved successfully.');
       setShowModal(false);
       await loadReports();
       await refreshData().catch(() => undefined);
@@ -156,7 +156,7 @@ export function ReportApprovals() {
 
                 <div className="report-meta">
                   <span>📅 {formatDate(report.reportDate)}</span>
-                  <span>🕐 Submitted: {formatDate(report.createdAt)}</span>
+                  <span> Submitted: {formatDate(report.createdAt)}</span>
                 </div>
 
                 <div className="report-content">
@@ -185,7 +185,7 @@ export function ReportApprovals() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">✅</div>
+            <div className="empty-icon"></div>
             <h3>All Caught Up!</h3>
             <p>No pending reports to review</p>
           </div>

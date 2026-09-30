@@ -1,0 +1,610 @@
+/* ============================================================================
+   HomeMotion.css — motion layer for the public Home page.
+
+   Kept separate from Home.css (which is already ~930 lines of layout) so this
+   whole feature is one reviewable, revertible file. Imported AFTER Home.css in
+   Home.jsx, so these rules win ties on equal specificity.
+
+   Contents:
+     0. Design tokens — easing + ink scale
+     1. Hero — aurora blobs, cursor spotlight, word mask-reveal, magnetic
+     2. "What We Do" — pinned horizontal scroll
+     3. Scroll reveal — the page-wide [data-reveal] system
+     4. 8 HYT Thrusts — the floor's CTA (the rail's motion is gone with it)
+     5. Impact figures — bento motion
+     6. Ribbon band — link + caption motion
+     7. Your Journey — self-drawing SVG path
+     8. (removed) the old CTA's rotating conic-glow button
+     9. Featured cards — clip-path circle reveal
+    10. Reduced-motion overrides
+
+   Dream Academy, the section the page now closes on, keeps its layout AND its
+   motion in src/components/DreamAcademy.css so the whole section is one
+   reviewable, revertible unit.
+
+   Every effect degrades to the plain layout if JS never runs, and none of them
+   run at all under `prefers-reduced-motion: reduce`.
+   ========================================================================== */
+
+/* ==========================================================================
+   0. DESIGN TOKENS
+
+   One motion vocabulary for the whole page. The old thrust tiles mixed an
+   overshoot curve (.175,.885,.32,1.275) with plain `ease`, which is the single
+   biggest reason the page read playful rather than deliberate.
+   `--e-back` is RESERVED for the icon pop — never for layout.
+   ========================================================================== */
+
+:root {
+  --e-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --e-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Ink scale. #0E1726 already exists as the ribbon ink in MarqueeRibbon.css;
+     these give the Home page a consistent dark family to build on. */
+  --ink-900: #0E1726;
+  --ink-800: #16233A;
+  --ink-700: #1E2E4A;
+}
+
+/* ==========================================================================
+   1. HERO
+   ========================================================================== */
+
+.hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-aurora {
+  position: absolute;
+  inset: -18%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-aurora .blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  /* `screen` over the teal→terracotta gradient reads as light, not paint. */
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+.hero-aurora .blob-1 {
+  width: 44%;
+  height: 62%;
+  left: 2%;
+  top: 2%;
+  background: var(--very-light-cyan, #B4E5F1);
+  animation: heroDrift1 17s ease-in-out infinite;
+}
+
+.hero-aurora .blob-2 {
+  width: 38%;
+  height: 54%;
+  right: 4%;
+  top: 8%;
+  background: var(--yellow, #F3DB6E);
+  animation: heroDrift2 21s ease-in-out infinite;
+}
+
+.hero-aurora .blob-3 {
+  width: 34%;
+  height: 48%;
+  left: 33%;
+  bottom: -10%;
+  background: #FFB99A;
+  animation: heroDrift3 25s ease-in-out infinite;
+}
+
+@keyframes heroDrift1 {
+  50% { transform: translate3d(9%, 12%, 0) scale(1.14); }
+}
+
+@keyframes heroDrift2 {
+  50% { transform: translate3d(-11%, 8%, 0) scale(1.1); }
+}
+
+@keyframes heroDrift3 {
+  50% { transform: translate3d(6%, -12%, 0) scale(1.16); }
+}
+
+/* Cursor spotlight — a soft white pool that follows the pointer. */
+.hero-spot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    340px 340px at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.28),
+    transparent 70%
+  );
+}
+
+.hero:hover .hero-spot {
+  opacity: 1;
+}
+
+/* Word-by-word mask reveal. The outer span is the clip box; the inner span
+   starts below it and slides up. `padding-bottom` / negative `margin-bottom`
+   keeps descenders (the "g" in "Bringing") from being clipped. */
+.hero-title {
+  /* The original fadeInUp would fight the per-word reveal. */
+  animation: none;
+}
+
+.hero-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+  margin-right: 0.24em;
+}
+
+.hero-word-inner {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: heroWordUp 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--wd, 0s);
+}
+
+@keyframes heroWordUp {
+  to { transform: translateY(0); }
+}
+
+.hero-word-inner.is-accent {
+  color: var(--yellow, #F3DB6E);
+}
+
+/* Magnetic buttons need their own short transform transition; the base `.btn`
+   transition is 0.3s with an overshoot curve, which feels mushy while the
+   cursor is moving. */
+.hero-actions .btn {
+  transition: transform 0.22s ease-out, box-shadow 0.3s ease, background 0.3s ease,
+    color 0.3s ease;
+}
+
+/* ==========================================================================
+   2. "WHAT WE DO" — pinned horizontal scroll
+   Only active when JS confirms `overflow: clip` is supported, the viewport is
+   wide, and motion is allowed. Otherwise `.wwd-track` stays a normal grid.
+   ========================================================================== */
+
+.wwd-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+
+.what-we-do.is-pinned {
+  height: 240vh;
+  padding: 0;
+}
+
+.what-we-do.is-pinned .wwd-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.what-we-do.is-pinned .wwd-pin > .container {
+  width: 100%;
+}
+
+.what-we-do.is-pinned .section-header {
+  margin-bottom: 40px;
+}
+
+.what-we-do.is-pinned .wwd-track {
+  display: flex;
+  gap: 32px;
+  will-change: transform;
+}
+
+/* Clips the track to the container and fades its outer edges, so cards dissolve
+   out instead of being sliced mid-word at the viewport edge. Scoped to pinned
+   mode so the plain grid keeps its normal overflow. */
+.what-we-do.is-pinned .wwd-viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+}
+
+.what-we-do.is-pinned .wwd-track .feature-card {
+  flex: 0 0 420px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scroll affordance — only meaningful in pinned mode. */
+.wwd-progress {
+  margin: 36px auto 0;
+  height: 4px;
+  width: 100%;
+  max-width: 320px;
+  border-radius: 4px;
+  background: rgba(31, 41, 55, 0.1);
+  overflow: hidden;
+}
+
+.wwd-progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--teal, #279EB6), var(--primary-orange, #D57156));
+}
+
+/* ==========================================================================
+   3. SCROLL REVEAL — page-wide
+   `has-reveal` is added by useRevealOnScroll only once the observer is live,
+   so if JS never runs nothing is ever hidden.
+   ========================================================================== */
+
+.home-page.has-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.68s var(--e-out), transform 0.68s var(--e-out);
+}
+
+/* The revealed state is an ATTRIBUTE, not a class, on purpose. Several reveal
+   targets — .journey-step above all — carry a className that React rewrites on
+   re-render, and React sets the whole attribute, silently wiping any class
+   added imperatively and dropping the element back to opacity 0. React never
+   manages `data-reveal-in`, so the state survives. */
+.home-page.has-reveal [data-reveal][data-reveal-in] {
+  opacity: 1;
+  transform: none;
+}
+
+/* The section accent rule draws itself in just after the heading lands. */
+.home-page.has-reveal .section-header[data-reveal] .section-title::after {
+  transform: translateX(-50%) scaleX(0);
+  transition: transform 0.7s var(--e-out) 0.18s;
+}
+
+.home-page.has-reveal .section-header[data-reveal][data-reveal-in] .section-title::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* ==========================================================================
+   4. 8 HYT THRUSTS — the floor's CTA
+   The rail + detail pane that used to animate here were removed along with the
+   rail itself (see the note in Home.css). The only interactive thing left in
+   the section is the button out to the About page.
+   ========================================================================== */
+
+.seam-cta-link {
+  transition: transform 0.28s var(--e-out), background 0.28s var(--e-soft),
+    box-shadow 0.28s var(--e-out);
+}
+
+.seam-cta-link:hover {
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px -22px rgba(0, 0, 0, 0.9);
+}
+
+/* ==========================================================================
+   5. IMPACT FIGURES — bento motion
+   ========================================================================== */
+
+.bento-cell {
+  transition: transform 0.4s var(--e-out), border-color 0.4s var(--e-soft),
+    box-shadow 0.4s var(--e-out);
+}
+
+.bento-cell:not(.bento-hero):hover {
+  transform: translateY(-4px);
+  border-color: #CBD5E1;
+  box-shadow: 0 20px 44px -24px rgba(16, 24, 40, 0.34);
+}
+
+/* Aurora inside the hero cell, echoing the ribbon band's treatment. */
+.bento-cell.bento-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+      420px 260px at 78% 18%,
+      rgba(39, 158, 182, 0.42),
+      transparent 66%
+    ),
+    radial-gradient(
+      360px 260px at 10% 100%,
+      rgba(213, 113, 86, 0.32),
+      transparent 66%
+    );
+}
+
+.bento-cell.bento-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   6. THE SEAM — deliberately static
+   The seam is the logo ramp itself, so it does not animate: it is a divider,
+   and a moving divider would compete with the heading above it. Only the two
+   ribbons move, and their motion belongs to MarqueeRibbon.css.
+   ========================================================================== */
+
+/* ==========================================================================
+   7. REMAINING SECTIONS — brought onto the same easing vocabulary
+   These override the overshoot curves declared in Home.css. Same specificity,
+   later stylesheet, so they win.
+   ========================================================================== */
+
+.feature-card {
+  transition: transform 0.4s var(--e-out), box-shadow 0.4s var(--e-out),
+    border-color 0.4s var(--e-soft);
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+}
+
+/* Was scale(1.15) rotate(5deg) — the rotation was the playful tell. */
+.feature-card:hover .feature-icon {
+  transform: scale(1.08);
+}
+
+.journey-step {
+  transition: opacity 0.5s var(--e-soft), background 0.3s var(--e-soft),
+    transform 0.3s var(--e-out);
+}
+
+/* Was scale(1.15) rotate(5deg). */
+.journey-step:hover .step-number {
+  transform: scale(1.06);
+}
+
+/* ==========================================================================
+   4. YOUR JOURNEY — self-drawing SVG path
+   The path uses `pathLength="1"` so the dash maths is normalised: set
+   `stroke-dashoffset` from 1 → 0 and it draws. No getTotalLength() needed.
+   ========================================================================== */
+
+.journey-timeline {
+  position: relative;
+}
+
+/* Five steps in a single row, so the connector can actually reach all of them.
+   The base `repeat(auto-fit, minmax(200px, 1fr))` in Home.css only fits 4
+   columns inside the 1100px cap, which wrapped step 5 onto a second row. */
+@media (min-width: 1025px) {
+  .journey-timeline {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 32px;
+  }
+}
+
+/* --- Pre-existing collision, fixed here -----------------------------------
+   Auth.css declares a generic `.step-number` (40px, flat grey #E5E7EB) for the
+   registration wizard's stepper. Every route is bundled into one stylesheet,
+   so that rule also lands on these journey circles — shrinking them from the
+   intended 80px and replacing the brand gradient with grey. Scoping to
+   `.journey-timeline` raises specificity to (0,2,0), which beats Auth.css's
+   (0,1,0) regardless of stylesheet order. Auth.css itself is left untouched.
+   ------------------------------------------------------------------------- */
+.journey-timeline .step-number {
+  width: 80px;
+  height: 80px;
+  font-size: 32px;
+  background: linear-gradient(135deg, #D57156 0%, #F3DB6E 100%);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .journey-timeline .step-number {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+}
+
+.journey-path {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 62px + half of the 4px stroke = the 64px centre of the 80px step circle
+     (24px step padding + 40px radius). */
+  top: 62px;
+  width: 100%;
+  height: 4px;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.journey-path path {
+  fill: none;
+  stroke: url(#journeyPathGrad);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.journey-step {
+  z-index: 1;
+  transition: opacity 0.5s ease, background 0.3s ease, transform 0.3s ease;
+}
+
+.journey-step .step-title {
+  transition: color 0.4s ease;
+}
+
+/* Only dim once JS has confirmed it is running, so a script failure can never
+   leave the timeline stuck at 42% opacity. */
+.journey-timeline.is-ready .journey-step:not(.is-lit) {
+  opacity: 0.42;
+}
+
+.journey-step.is-lit .step-number {
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.45),
+    0 0 0 8px rgba(213, 113, 86, 0.08);
+}
+
+.journey-step.is-lit .step-title {
+  color: var(--primary-orange, #D57156);
+}
+
+/* Declared after the `is-lit` rule so hover still wins for a lit step. */
+.journey-step:hover .step-number {
+  box-shadow: 0 12px 32px rgba(213, 113, 86, 0.5);
+}
+
+/* The path is a horizontal line across one row, so it makes no sense once the
+   timeline stops being a single row. */
+@media (max-width: 1024px) {
+  .journey-path {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   5. CTA — the rotating conic-glow button
+   REMOVED with the "Ready to Start Your Journey?" section it belonged to. Its
+   rules (.glow-wrap, .glow-ring, glowRingSpin) went with it: nothing else on the
+   site used them. The page now closes on Dream Academy, whose motion lives in
+   src/components/DreamAcademy.css.
+   ========================================================================== */
+
+/* ==========================================================================
+   6. FEATURED CARDS — clip-path circle reveal
+   ========================================================================== */
+
+.reveal-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.reveal-wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(150deg, var(--teal, #279EB6), var(--primary-orange, #D57156));
+  clip-path: circle(0% at 100% 0%);
+  transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.reveal-card:hover .reveal-wipe {
+  /* 140%, not 100% — a circle of exactly 100% does not reach the far corner. */
+  clip-path: circle(140% at 100% 0%);
+}
+
+/* Lift the real content above the wipe. */
+.reveal-card > *:not(.reveal-wipe) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Invert the card's text so it stays readable on the gradient. */
+.reveal-card .card-title,
+.reveal-card .card-org,
+.reveal-card .card-description,
+.reveal-card .meta-item {
+  transition: color 0.35s ease;
+}
+
+.reveal-card:hover .card-title {
+  color: #fff;
+}
+
+.reveal-card:hover .card-org,
+.reveal-card:hover .card-description,
+.reveal-card:hover .meta-item {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Icons inherit `currentColor` from .meta-item, so no extra rule is needed —
+   but the SVG needs its own transition to avoid a hard flip. */
+.reveal-card .meta-item svg {
+  transition: stroke 0.35s ease;
+}
+
+/* Buttons invert too: solid → white-on-dark, outline → translucent white. */
+.reveal-card .btn-primary {
+  transition: background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.reveal-card:hover .btn-primary {
+  background: #fff;
+  color: var(--primary-orange, #D57156);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.reveal-card:hover .btn-outline {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+
+/* ==========================================================================
+   10. Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-aurora .blob,
+  .glow-ring {
+    animation: none;
+  }
+
+  .hero-word-inner {
+    transform: none;
+    animation: none;
+  }
+
+  .hero-title {
+    animation: none;
+  }
+
+  /* Under reduced motion the hook never adds `has-reveal`, so this block is
+     belt-and-braces: it only matters if the class ever lands from elsewhere. */
+  .home-page.has-reveal [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .seam-cta-link {
+    transition: none;
+  }
+
+  /* Keep every step fully legible rather than relying on a scroll reveal. */
+  .journey-timeline.is-ready .journey-step:not(.is-lit) {
+    opacity: 1;
+  }
+
+  .reveal-wipe {
+    transition: none;
+  }
+}

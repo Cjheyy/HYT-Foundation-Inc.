@@ -97,15 +97,32 @@
   height: 8px;
   background: #10B981;
   border-radius: 50%;
-  animation: pulse 2s infinite;
+  /* Scoped keyframe name: other stylesheets define their own `pulse`, and CRA
+     bundles every keyframe globally, so the last-loaded one used to win. */
+  animation: admin-metrics-live-pulse 2s infinite;
 }
 
-@keyframes pulse {
+@keyframes admin-metrics-live-pulse {
   0%, 100% {
     opacity: 1;
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+
+  .metric-card,
+  .metric-card-button {
+    transition: none;
+  }
+
+  .metric-card:hover {
+    transform: none;
   }
 }
 

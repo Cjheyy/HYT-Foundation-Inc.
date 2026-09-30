@@ -98,7 +98,7 @@ export function Contact() {
                 </Card>
 
                 <Card className="contact-detail-card">
-                  <div className="detail-icon">⏰</div>
+                  <div className="detail-icon"></div>
                   <h3 className="detail-title">Office Hours</h3>
                   <p className="detail-text">Monday - Friday: 9:00 AM - 5:00 PM</p>
                 </Card>

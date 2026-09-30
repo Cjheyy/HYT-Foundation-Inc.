@@ -1,41 +1,23 @@
 import { Card } from '../../components/Card';
+import { Icon } from '../../components/icons';
+import { HYT_THRUSTS } from '../../data/hytThrusts';
+import { PARTNER_ORGANIZATIONS, partnerMonogram } from '../../data/partnerOrganizations';
 import './About.css';
 
+/**
+ * Feeds the cursor position into the card so the spotlight highlight follows
+ * the pointer.  Written straight to the element's style to avoid a React
+ * re-render on every mouse move.
+ */
+const trackPointerGlow = (event) => {
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  el.style.setProperty('--mx', `${event.clientX - rect.left}px`);
+  el.style.setProperty('--my', `${event.clientY - rect.top}px`);
+};
+
 export function About() {
-  const thrusts = [
-    {
-      name: 'Education',
-      description: 'Providing access to quality education and learning resources to empower youth with knowledge and skills.'
-    },
-    {
-      name: 'Enhancement',
-      description: 'Developing competencies and capabilities through training, workshops, and skill-building programs.'
-    },
-    {
-      name: 'Experience',
-      description: 'Creating opportunities for practical, hands-on experience through internships, OJT, and real-world projects.'
-    },
-    {
-      name: 'Entrepreneurship',
-      description: 'Fostering entrepreneurial mindset and supporting youth in developing business ideas and ventures.'
-    },
-    {
-      name: 'Endurance',
-      description: 'Building resilience, perseverance, and the ability to overcome challenges and setbacks.'
-    },
-    {
-      name: 'Exploration',
-      description: 'Encouraging curiosity, discovery, and the exploration of new ideas, cultures, and opportunities.'
-    },
-    {
-      name: 'Empowerment',
-      description: 'Giving youth the confidence, resources, and support to take control of their future and make positive changes.'
-    },
-    {
-      name: 'Enlightenment',
-      description: 'Promoting awareness, understanding, and wisdom through reflection, learning, and personal growth.'
-    }
-  ];
+  const thrusts = HYT_THRUSTS;
 
   return (
     <div className="about-page">
@@ -78,7 +60,7 @@ export function About() {
         </div>
       </section>
 
-      <section className="section bg-white">
+      <section className="section bg-white" id="thrusts">
         <div className="container">
           <div className="section-header">
             <h2 className="section-title">The 8 HYT Thrusts</h2>
@@ -86,16 +68,46 @@ export function About() {
               Our comprehensive framework for youth development
             </p>
           </div>
-          
+
           <div className="thrusts-list">
             {thrusts.map((thrust, index) => (
-              <Card key={index} className="thrust-item">
-                <div className="thrust-number">{index + 1}</div>
+              <article
+                key={thrust.name}
+                className="thrust-item"
+                style={{ '--i': index }}
+                onMouseMove={trackPointerGlow}
+              >
+                <span className="thrust-glow" aria-hidden="true" />
+                <span className="thrust-number" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
                 <div className="thrust-content">
                   <h3 className="thrust-title">{thrust.name}</h3>
                   <p className="thrust-description">{thrust.description}</p>
                 </div>
-              </Card>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section" id="partners">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">Our Partner Organizations</h2>
+            <p className="section-subtitle">
+              Companies and institutions hosting HYT youth across Metro Manila
+            </p>
+          </div>
+
+          <div className="partners-grid">
+            {PARTNER_ORGANIZATIONS.map((partner) => (
+              <div key={partner} className="partner-chip">
+                <span className="partner-monogram" aria-hidden="true">
+                  {partnerMonogram(partner)}
+                </span>
+                <span className="partner-name">{partner}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -109,55 +121,55 @@ export function About() {
           
           <div className="grid grid-3">
             <Card>
-              <div className="offer-icon">🎯</div>
+              <div className="offer-icon"><Icon name="target" size={28} /></div>
               <h3 className="offer-title">Opportunity Matching</h3>
               <p className="offer-description">
-                We connect youth with internships, OJT programs, training opportunities, and community programs 
+                We connect youth with internships, OJT programs, training opportunities, and community programs
                 that align with their interests and career goals.
               </p>
             </Card>
-            
+
             <Card>
-              <div className="offer-icon">📚</div>
+              <div className="offer-icon"><Icon name="book" size={28} /></div>
               <h3 className="offer-title">Skills Development</h3>
               <p className="offer-description">
-                Access workshops, seminars, training programs, and resources designed to develop both technical 
+                Access workshops, seminars, training programs, and resources designed to develop both technical
                 and soft skills essential for personal and professional growth.
               </p>
             </Card>
-            
+
             <Card>
-              <div className="offer-icon">🤝</div>
+              <div className="offer-icon"><Icon name="users" size={28} /></div>
               <h3 className="offer-title">Community Network</h3>
               <p className="offer-description">
-                Join a supportive community of fellow youth, mentors, professionals, and organizations 
+                Join a supportive community of fellow youth, mentors, professionals, and organizations
                 committed to youth development and empowerment.
               </p>
             </Card>
-            
+
             <Card>
-              <div className="offer-icon">💼</div>
+              <div className="offer-icon"><Icon name="briefcase" size={28} /></div>
               <h3 className="offer-title">Experience Tracking</h3>
               <p className="offer-description">
-                Comprehensive system for tracking attendance, progress, daily activities, and achievements 
+                Comprehensive system for tracking attendance, progress, daily activities, and achievements
                 throughout your development journey.
               </p>
             </Card>
-            
+
             <Card>
-              <div className="offer-icon">📋</div>
+              <div className="offer-icon"><Icon name="file" size={28} /></div>
               <h3 className="offer-title">Application Management</h3>
               <p className="offer-description">
-                Streamlined application process with document management, requirement tracking, and 
+                Streamlined application process with document management, requirement tracking, and
                 real-time status updates throughout your application journey.
               </p>
             </Card>
-            
+
             <Card>
-              <div className="offer-icon">🏆</div>
+              <div className="offer-icon"><Icon name="award" size={28} /></div>
               <h3 className="offer-title">Recognition</h3>
               <p className="offer-description">
-                Earn certificates and recognition for completed programs, verified experiences, and 
+                Earn certificates and recognition for completed programs, verified experiences, and
                 achievements that demonstrate your growth and capabilities.
               </p>
             </Card>

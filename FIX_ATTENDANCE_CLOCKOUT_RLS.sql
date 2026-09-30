@@ -1,3 +1,17 @@
+-- ============================================================================
+-- DO NOT RUN - OPPOSITE OF THE INTENDED DESIGN
+-- ----------------------------------------------------------------------------
+-- This policy grants every authenticated user UPDATE on their own
+-- attendance_logs rows with no column restriction, so a client could set
+-- status, time_in, time_out, rendered_hours, approved_by and approved_at
+-- directly and approve its own attendance.
+--
+-- Attendance writes are RPC-only by design:
+--   request_clock_in / request_clock_out / approve_clock_in_request /
+--   approve_attendance_request / reject_attendance_request
+-- enforced by OJT_TRACKING_PRODUCTION_MIGRATION.sql, which also REVOKEs
+-- INSERT/UPDATE/DELETE on attendance_logs from authenticated.
+-- ============================================================================
 -- ============================================
 -- FIX ATTENDANCE CLOCK-OUT 406 ERROR
 -- ============================================

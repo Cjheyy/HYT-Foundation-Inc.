@@ -1,100 +1,85 @@
-import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { supabase } from '../config/supabase';
-import { isAccountApproved, isPendingAccount, isRejectedAccount } from '../services/authService';
+import { normalizeRole } from '../services/supabaseService';
 import { toast } from 'react-toastify';
 
+const CENTERED = { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' };
+const DASHBOARD_BY_ROLE = {
+  ADMIN: '/admin/dashboard',
+  'OJT/INTERN': '/student/dashboard',
+  TRAINEE: '/trainee/dashboard'
+};
+
+/**
+ * The AppContext provider is the single authority for authentication: it only
+ * reports `authenticated` after a live Supabase session and the matching
+ * public profile have both been validated.  This guard therefore performs no
+ * network calls of its own, which removes the duplicate `getSession()` and the
+ * stale `isValid` state that used to let a protected tree render for one frame
+ * after the identity changed.
+ */
 export function ProtectedRoute({ children, requiredRole }) {
-  const { state, dispatch, authInitialized } = useApp();
+  const { state, authStatus, authNotice, clearAuthNotice, retryAuth } = useApp();
   const { currentUser, loading } = state;
-  const [checking, setChecking] = useState(true);
-  const [isValid, setIsValid] = useState(false);
+  const location = useLocation();
+  const lastNoticeRef = useRef(null);
 
   useEffect(() => {
-    let mounted = true;
+    if (!authNotice?.message) return;
+    if (lastNoticeRef.current === authNotice) return;
+    lastNoticeRef.current = authNotice;
+    const content = authNotice.message;
+    if (authNotice.tone === 'warning') toast.warning(content);
+    else toast.error(content);
+    clearAuthNotice();
+  }, [authNotice, clearAuthNotice]);
 
-    const validateSession = async () => {
-      setChecking(true);
-      try {
-        if (!supabase) throw new Error('Supabase is not configured.');
-        const { data: sessionData, error } = await supabase.auth.getSession();
-        if (error) {
-          // Supabase will emit SIGNED_OUT for a genuinely invalid session.
-          // A transient read failure must not log the user out during F5.
-          if (mounted) {
-            setIsValid(Boolean(currentUser));
-            setChecking(false);
-          }
-          return;
-        }
-        if (!sessionData?.session) {
-          if (mounted) {
-            dispatch({ type: 'LOGOUT' });
-            setIsValid(false);
-          }
-          return;
-        }
-
-        if (!currentUser) {
-          if (mounted) setIsValid(false);
-          return;
-        }
-
-        if (isPendingAccount(currentUser)) {
-          await supabase.auth.signOut().catch(() => undefined);
-          if (mounted) {
-            dispatch({ type: 'LOGOUT' });
-            toast.warning('Please wait for the admin to confirm your account.');
-            setIsValid(false);
-          }
-          return;
-        }
-
-        if (isRejectedAccount(currentUser) || !isAccountApproved(currentUser)) {
-          await supabase.auth.signOut().catch(() => undefined);
-          if (mounted) {
-            dispatch({ type: 'LOGOUT' });
-            toast.error('Your account is not active. Please contact HYT support.');
-            setIsValid(false);
-          }
-          return;
-        }
-
-        if (mounted) setIsValid(true);
-      } catch (error) {
-        console.error('Session validation error:', error);
-        if (mounted) {
-          dispatch({ type: 'LOGOUT' });
-          setIsValid(false);
-        }
-      } finally {
-        if (mounted) setChecking(false);
-      }
-    };
-
-    validateSession();
-    return () => { mounted = false; };
-  }, [currentUser, dispatch]);
-
-  if (!authInitialized || loading || checking) {
+  if (authStatus === 'initializing' || authStatus === 'verifying' || loading) {
     return (
-      <div className="route-loading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <p>Verifying session...</p>
+      <div className="route-loading" style={CENTERED}>
+        <p>Verifying your session...</p>
       </div>
     );
   }
 
-  if (!currentUser || !isValid) return <Navigate to="/login" replace />;
+  if (authStatus === 'error') {
+    return (
+      <div className="route-loading" style={CENTERED}>
+        <div
+          role="alert"
+          style={{
+            maxWidth: '420px',
+            margin: '0 16px',
+            padding: '24px',
+            borderRadius: '16px',
+            background: '#fff',
+            boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
+            textAlign: 'center'
+          }}
+        >
+          <h2 style={{ margin: '0 0 8px', fontSize: '18px', color: '#111827' }}>We could not verify your session</h2>
+          <p style={{ margin: '0 0 20px', color: '#4B5563', lineHeight: 1.5 }}>
+            {authNotice?.message || 'Check your connection and try again. You will not be signed out automatically.'}
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button type="button" onClick={retryAuth} className="btn btn-primary">Try again</button>
+            <a className="btn btn-outline" href="/login">Go to login</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus !== 'authenticated' || !currentUser) {
+    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+  }
 
   if (requiredRole) {
-    const actualRole = String(currentUser.role || '').toUpperCase();
-    const expectedRole = String(requiredRole || '').toUpperCase();
+    const actualRole = normalizeRole(currentUser.role);
+    const expectedRole = normalizeRole(requiredRole);
     if (actualRole !== expectedRole) {
-      if (actualRole === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
-      if (actualRole === 'OJT/INTERN') return <Navigate to="/student/dashboard" replace />;
-      if (actualRole === 'TRAINEE') return <Navigate to="/trainee/dashboard" replace />;
-      return <Navigate to="/" replace />;
+      return <Navigate to={DASHBOARD_BY_ROLE[actualRole] || '/'} replace />;
     }
   }
 

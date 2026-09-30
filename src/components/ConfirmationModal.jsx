@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Card } from './Card';
 import { Button } from './Button';
+import { Icon } from './icons';
+import { isGeolocationError } from '../utils/location';
 import './ConfirmationModal.css';
 
 export function ConfirmationModal({
@@ -18,7 +21,7 @@ export function ConfirmationModal({
   const [submitting, setSubmitting] = useState(false);
   if (!isOpen) return null;
 
-  const typeIcons = { info: '❓', warning: '⚠️', danger: '🚨', success: '✅' };
+  const typeIcons = { info: 'info', warning: 'alert', danger: 'alert', success: 'check' };
   const typeColors = { info: '#667eea', warning: '#F59E0B', danger: '#DC2626', success: '#059669' };
 
   const handleConfirm = async () => {
@@ -29,8 +32,12 @@ export function ConfirmationModal({
       onClose?.();
     } catch (error) {
       // The action owns user-facing error feedback.  Keep the dialog open so a
-      // transient network failure can be retried without losing context.
-      console.error('Confirmation action failed:', error);
+      // transient network or GPS failure can be retried without losing context.
+      // Geolocation timeouts on desktops are surfaced here as a friendly
+      // permission hint instead of a raw GeolocationPositionError.
+      if (isGeolocationError(error)) {
+        toast.error(error?.message || 'Please enable location permission on your browser to clock in.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -39,7 +46,9 @@ export function ConfirmationModal({
   return (
     <div className="confirmation-modal-overlay" onClick={loading || submitting ? undefined : onClose}>
       <Card className="confirmation-modal-card" onClick={(event) => event.stopPropagation()}>
-        <div className="confirmation-icon" style={{ color: typeColors[type] }}>{typeIcons[type]}</div>
+        <div className="confirmation-icon" style={{ color: typeColors[type] }}>
+          <Icon name={typeIcons[type]} size={32} color={typeColors[type]} />
+        </div>
         <h3 className="confirmation-title">{title}</h3>
         {message && <p className="confirmation-message">{message}</p>}
         {children}

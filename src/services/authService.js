@@ -1,4 +1,4 @@
-import { supabase, toCamelCase, toSnakeCase } from '../config/supabase';
+import { clearPersistedSession, supabase, toCamelCase, toSnakeCase } from '../config/supabase';
 import { toast } from 'react-toastify';
 import { isApprovedAccountStatus, normalizeRole, normalizeStatus, SAFE_USER_COLUMNS } from './supabaseService';
 
@@ -43,13 +43,22 @@ export const isRejectedAccount = (user) => {
 export const isAccountApproved = (user) => {
   if (!user) return false;
   if (isAdminAccount(user)) return true;
-  if (isPendingAccount(user) || isRejectedAccount(user)) return false;
+  if (isRejectedAccount(user)) return false;
 
-  // Fail closed for non-admin accounts.  A missing status or an inactive
-  // approved profile must never grant portal access; the migration backfills
-  // legacy active accounts before this rule is enforced.
+  // Direct login flow: newly registered Trainees and OJT applicants may sign
+  // in immediately. Admin approval is enforced when applying for an OJT
+  // Posting or Program, and when clocking in — not at login.
   const status = normalizeStatus(user.applicationStatus ?? user.application_status);
-  return user.isActive === true && isApprovedAccountStatus(status);
+  if (['PENDING', 'PENDING_APPROVAL', 'PENDING_APPLICATION', 'SUBMITTED', 'APPLIED'].includes(status)) {
+    return true;
+  }
+
+  // Admin-deactivated accounts remain blocked.
+  if (user.isActive === false) return false;
+
+  // Fail closed for unknown states without an approved status.
+  if (!status) return Boolean(user.isActive !== false);
+  return isApprovedAccountStatus(status);
 };
 
 const roleForAccountType = (accountType) => {
@@ -71,14 +80,47 @@ const isMissingProfileError = (error) => {
   return code === 'PGRST116' || code === '404' || message.includes('no rows') || message.includes('not found');
 };
 
+/**
+ * End the Supabase session and confirm it is really gone.  `signOut()` resolves
+ * with `{ error }` and the SDK can keep the stored session when the read fails,
+ * so a best-effort call is not enough for a logout the UI reports as success.
+ */
+const endSession = async (client) => {
+  let failure = null;
+  try {
+    const { error } = await client.auth.signOut();
+    if (error) failure = error;
+  } catch (error) {
+    failure = error;
+  }
+
+  const readSession = async () => {
+    try {
+      const { data } = await client.auth.getSession();
+      return data?.session || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  let remaining = await readSession();
+  if (remaining) {
+    // Offline or transient failure: drop the local token so a reload cannot
+    // restore the session, then verify again.
+    clearPersistedSession();
+    remaining = await readSession();
+  }
+
+  return { failure, remaining };
+};
+
 // ==========================================================================
 // Registration
 // ==========================================================================
 
 /**
- * Register a trainee.  Sign-up deliberately never leaves the browser logged
- * in.  The profile trigger/RPC creates a pending application and the admin
- * must approve it before the account can sign in.
+ * Register a trainee.  New accounts can log in directly; admin approval is
+ * enforced when the user applies for an OJT Posting or Program.
  */
 export async function register(userData) {
   try {
@@ -127,7 +169,10 @@ export async function register(userData) {
       is_active: false
     };
 
-    const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+    // The confirmation link must land on /login: a confirmed account is still
+    // pending approval and ProtectedRoute refuses portal access.
+    const siteUrl = (process.env.REACT_APP_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+    const redirectTo = siteUrl ? `${siteUrl}/login` : undefined;
     const { data: authData, error: authError } = await client.auth.signUp({
       email,
       password: userData.password,
@@ -140,10 +185,9 @@ export async function register(userData) {
     if (authError) throw authError;
 
     // When email confirmation is disabled Supabase returns a session.  The
-    // SECURITY DEFINER auth trigger has already created the pending profile;
-    // do not write role/approval columns from the browser.  Destroy the
-    // temporary session immediately so a pending account cannot enter a
-    // trainee portal.
+    // SECURITY DEFINER auth trigger has already created the profile.
+    // Destroy the temporary session so the signup form can redirect to login
+    // where the user signs in directly into their dashboard.
     if (authData.session) {
       const { error: signOutError } = await client.auth.signOut();
       if (signOutError) throw makeAuthError('Registration completed, but the temporary session could not be closed. Please contact support.', 'REGISTRATION_SESSION_CLEANUP_FAILED');
@@ -174,7 +218,7 @@ export async function login(email, password, selectedAccountType = null) {
   });
 
   if (authError) {
-    toast.error('❌ Invalid email or password');
+    toast.error('Invalid email or password');
     throw authError;
   }
 
@@ -191,13 +235,16 @@ export async function login(email, password, selectedAccountType = null) {
     const profileError = profileResult.error;
 
     if (profileError && !isMissingProfileError(profileError)) {
-      // Preserve the valid Supabase session on a temporary database/network
-      // failure.  The caller can retry instead of experiencing an artificial
-      // logout during a token refresh.
-      throw makeAuthError('We could not verify your account right now. Please try again.', 'PROFILE_READ_ERROR');
+      // An explicit credential attempt must never leave a half-validated
+      // session behind.  Token refresh is handled separately by the provider.
+      await endSession(client);
+      rememberUser(null);
+      const error = makeAuthError('We could not verify your account right now. Please try again.', 'PROFILE_READ_ERROR');
+      toast.error(error.message);
+      throw error;
     }
     if (!profile) {
-      await client.auth.signOut();
+      await endSession(client);
       rememberUser(null);
       const error = makeAuthError('Your account profile is incomplete. Please contact HYT support.', 'PROFILE_MISSING');
       toast.error(error.message);
@@ -205,18 +252,10 @@ export async function login(email, password, selectedAccountType = null) {
     }
 
     const user = toCamelCase(profile);
-    if (isPendingAccount(user)) {
-      await client.auth.signOut();
-      rememberUser(null);
-      const error = makeAuthError(
-        'Please wait for the admin to confirm your account before logging in.',
-        'PENDING_APPROVAL'
-      );
-      toast.warning(error.message);
-      throw error;
-    }
+    // Direct login: pending accounts are allowed. Only rejected or
+    // admin-deactivated accounts are blocked here.
     if (isRejectedAccount(user)) {
-      await client.auth.signOut();
+      await endSession(client);
       rememberUser(null);
       const error = makeAuthError(
         'Your application was not approved. Please contact HYT support for more information.',
@@ -226,7 +265,7 @@ export async function login(email, password, selectedAccountType = null) {
       throw error;
     }
     if (!isAccountApproved(user)) {
-      await client.auth.signOut();
+      await endSession(client);
       rememberUser(null);
       const error = makeAuthError('Your account is not active yet. Please contact HYT support.', 'ACCOUNT_INACTIVE');
       toast.error(error.message);
@@ -242,21 +281,28 @@ export async function login(email, password, selectedAccountType = null) {
       return user;
     }
 
+    // The account type is required for everyone except admins (handled above).
+    // It is the student's declaration of which portal they belong to, and it
+    // must match the role stored on their profile — otherwise a Trainee could
+    // sign into the OJT portal, or vice versa.
     if (!selectedAccountType) {
-      await client.auth.signOut();
+      await endSession(client);
       rememberUser(null);
-      const error = makeAuthError('Please select your account type to log in.', 'ACCOUNT_TYPE_REQUIRED');
+      const error = makeAuthError(
+        'Please choose whether you are signing in as an OJT Student or a Trainee.',
+        'ACCOUNT_TYPE_REQUIRED'
+      );
       toast.error(error.message);
       throw error;
     }
 
     const expectedRole = roleForAccountType(selectedAccountType);
     if (normalizeRole(user.role) !== normalizeRole(expectedRole)) {
-      await client.auth.signOut();
+      await endSession(client);
       rememberUser(null);
       const roleLabel = normalizeRole(user.role) === 'OJT/INTERN' ? 'OJT Student' : 'Trainee';
       const error = makeAuthError(`Please select the ${roleLabel} account type to log in.`, 'ROLE_MISMATCH');
-      toast.error(`❌ Access Denied! ${error.message}`);
+      toast.error(`Access Denied! ${error.message}`);
       throw error;
     }
 
@@ -283,16 +329,28 @@ export async function login(email, password, selectedAccountType = null) {
 
 export async function logout() {
   const client = supabase;
-  try {
-    if (client) await client.auth.signOut();
-  } catch (error) {
-    console.warn('Supabase sign-out error; continuing with local logout.', error);
-  } finally {
-    rememberUser(null);
+  let failure = null;
+  let forced = false;
+
+  if (client) {
+    const result = await endSession(client);
+    failure = result.failure;
+    forced = Boolean(failure);
+    if (result.remaining) {
+      failure = makeAuthError(
+        'We could not end your session. Please clear your browser data and try again.',
+        'LOGOUT_FAILED'
+      );
+    }
+  } else {
+    clearPersistedSession();
   }
 
-  toast.info('👋 Logged out successfully');
-  return { success: true };
+  rememberUser(null);
+
+  if (failure) throw failure;
+  toast.info('Logged out successfully');
+  return { success: true, forced };
 }
 
 export async function getCurrentUser() {
@@ -341,7 +399,7 @@ export async function updateProfile(userId, updates) {
     .select()
     .single();
   if (error) throw error;
-  toast.success('✅ Profile updated successfully!');
+  toast.success('Profile updated successfully.');
   return toCamelCase(data);
 }
 

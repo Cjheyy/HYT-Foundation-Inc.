@@ -1,7 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { logout } from '../services/authService';
+import { Icon } from '../components/icons';
+import { ProfileModal } from '../components/ProfileModal';
+import { AttentionCenter } from '../components/AttentionCenter';
+import { TRAINEE_NAV, groupNavItems, resolveActiveNavPath } from '../utils/portalNav';
+import { getRoleTerms } from '../utils/roleTerms';
+import { resolveNavBadges } from '../utils/attention';
+import { useAnnouncementReads } from '../utils/announcementReads';
 import hytLogo from '../assets/HYT.png';
 import './PortalLayout.css';
 import '../components/Logo.css';
@@ -9,50 +15,43 @@ import '../components/Logo.css';
 export function TraineeLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const { state, dispatch } = useApp();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { state, signOut } = useApp();
   const { currentUser } = state;
   const location = useLocation();
   const navigate = useNavigate();
 
+  const terms = getRoleTerms(currentUser?.role);
+  const navGroups = useMemo(() => groupNavItems(TRAINEE_NAV), []);
+
+  const activePath = useMemo(
+    () => resolveActiveNavPath(TRAINEE_NAV, location.pathname),
+    [location.pathname]
+  );
+
+  const { readIds } = useAnnouncementReads(currentUser?.id);
+  const badges = useMemo(
+    () => resolveNavBadges({ state, userId: currentUser?.id, readIds }),
+    [state, currentUser?.id, readIds]
+  );
+
   const handleLogout = async () => {
     if (loggingOut) return; // Prevent double-click
-    
+    setLoggingOut(true);
     try {
-      setLoggingOut(true);
-      
-      // CRITICAL: Clear context state IMMEDIATELY to prevent null role access
-      dispatch({ type: 'LOGOUT' });
-      
-      // Small delay to allow state to propagate
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Call logout service (handles storage, Supabase, redirect)
-      await logout();
-      
-      // Sign out the Supabase session, then return through the router.
+      await signOut();
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout handler error:', error);
-      // Force redirect even on error
       window.location.href = '/login';
+    } finally {
+      setLoggingOut(false);
     }
   };
 
-  const isActive = (path) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  const navItems = [
-    { path: '/trainee/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/trainee/profile', label: 'My Profile', icon: '👤' },
-    { path: '/trainee/programs', label: 'Programs', icon: '📚' },
-    { path: '/trainee/opportunities', label: 'Opportunities', icon: '🎯' },
-    { path: '/trainee/applications', label: 'My Applications', icon: '📝' },
-    { path: '/trainee/requirements', label: 'Requirements', icon: '📄' },
-    { path: '/trainee/attendance', label: 'Attendance', icon: '✓' },
-    { path: '/trainee/certificates', label: 'Certificates', icon: '🏆' },
-    { path: '/trainee/announcements', label: 'Announcements', icon: '📢' }
-  ];
+  const avatarInitial = currentUser?.fullName?.trim()?.charAt(0)?.toUpperCase()
+    || currentUser?.firstName?.charAt(0)?.toUpperCase()
+    || 'T';
 
   return (
     <div className="portal-layout">
@@ -61,45 +60,69 @@ export function TraineeLayout({ children }) {
           <div className="logo">
             <img src={hytLogo} alt="HYT Foundation" className="sidebar-logo-image" />
           </div>
-          <button 
+          <button
             className="sidebar-close"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
           >
-            ×
+            <Icon name="x" size={18} />
           </button>
         </div>
 
-        <div className="sidebar-user">
-          <div className="user-avatar">
-            {currentUser?.firstName?.charAt(0) || 'T'}
-          </div>
-          <div className="user-info">
-            <div className="user-name">{currentUser?.fullName}</div>
-            <div className="user-role">Trainee</div>
-          </div>
-        </div>
+        <button
+          type="button"
+          className="sidebar-user sidebar-user-button"
+          onClick={() => setProfileOpen(true)}
+          title="Open Profile Settings"
+          aria-label="Open Profile Settings"
+          style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
+          <span className="user-avatar" style={{ overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden="true">
+            {currentUser?.profilePicture || currentUser?.profile_picture ? (
+              <img src={currentUser.profilePicture || currentUser.profile_picture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              avatarInitial
+            )}
+          </span>
+          <span className="user-info">
+            <span className="user-name" style={{ display: 'block' }}>{currentUser?.fullName}</span>
+            <span className="user-role" style={{ display: 'block' }}>{terms.roleLabel}</span>
+          </span>
+        </button>
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </Link>
+        <nav className="sidebar-nav" aria-label={`${terms.portalName} navigation`}>
+          {navGroups.map((group) => (
+            <div className="nav-group" key={group.name || 'default'}>
+              {group.name && <div className="nav-group-label">{group.name}</div>}
+              {group.items.map((item) => {
+                const badgeCount = item.badge ? badges[item.badge] : 0;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`nav-item ${activePath === item.path ? 'active' : ''}`}
+                    aria-current={activePath === item.path ? 'page' : undefined}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <span className="nav-icon nav-icon-svg"><Icon name={item.icon} size={19} /></span>
+                    <span className="nav-label">{item.label}</span>
+                    {badgeCount > 0 && (
+                      <span className="nav-badge" aria-label={`${badgeCount} pending`}>{badgeCount}</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <button 
-            className="logout-btn" 
+          <button
+            className="logout-btn"
             onClick={handleLogout}
             disabled={loggingOut}
           >
-            <span>🚪</span>
+            <Icon name="logout" size={17} />
             <span>{loggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
@@ -107,15 +130,22 @@ export function TraineeLayout({ children }) {
 
       <div className="main-content">
         <header className="portal-header">
-          <button 
+          <button
             className="mobile-menu-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle navigation"
           >
-            ☰
+            <Icon name="menu" size={19} color="#fff" />
           </button>
-          <div className="header-title">Trainee Portal</div>
-          <div className="header-user">
-            {currentUser?.fullName}
+          <div className="header-title">{terms.portalName}</div>
+          <div className="portal-header-actions">
+            <Link to="/" className="portal-header-btn" title="Visit the public home page">
+              <Icon name="home" size={15} /><span>Home</span>
+            </Link>
+            <Link to="/trainee/dashboard" className="portal-header-btn primary" title="Back to dashboard">
+              <Icon name="dashboard" size={15} /><span>Dashboard</span>
+            </Link>
+            <AttentionCenter basePath="/trainee" />
           </div>
         </header>
 
@@ -125,11 +155,12 @@ export function TraineeLayout({ children }) {
       </div>
 
       {sidebarOpen && (
-        <div 
-          className="sidebar-overlay" 
+        <div
+          className="sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
         />
       )}
+      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

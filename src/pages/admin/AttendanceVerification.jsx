@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../config/supabase';
@@ -19,6 +19,8 @@ import { toast } from 'react-toastify';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import './Admin.css';
 
+const POLL_INTERVAL_MS = 45_000;
+
 const formatDuration = (seconds) => {
   const total = Math.max(0, Number(seconds) || 0);
   const hours = Math.floor(total / 3600);
@@ -27,9 +29,13 @@ const formatDuration = (seconds) => {
   return [hours, minutes, remainder].map((value) => String(value).padStart(2, '0')).join(':');
 };
 
-const getStage = (log) => getAttendanceStage(log) || 'CLOCK_IN';
+// Fail closed: an unrecognised pending status must not be presented as a
+// clock-in request, because approving it would start a timer incorrectly.
+const getStage = (log) => getAttendanceStage(log);
 
 const stageLabel = (stage) => stage === 'CLOCK_IN' ? 'Clock-in request' : 'Clock-out request';
+
+const isAlreadyProcessed = (error) => /already processed|no longer pending|not found/i.test(String(error?.message || ''));
 
 export function AttendanceVerification() {
   const { state, refreshData } = useApp();
@@ -43,28 +49,37 @@ export function AttendanceVerification() {
   const [modalAction, setModalAction] = useState(null);
   const [adminNote, setAdminNote] = useState('');
   const [noteError, setNoteError] = useState('');
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
   const requestedStatus = searchParams.get('status');
   const requestedUser = searchParams.get('user');
 
   const loadLogs = useCallback(async ({ loader = false } = {}) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     if (loader) setLoading(true);
     try {
       const data = await getAttendanceLogs();
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
       setLogs(data || []);
     } catch (error) {
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
       console.error('Error loading attendance logs:', error);
       toast.error('Failed to load attendance logs');
     } finally {
-      if (loader) setLoading(false);
+      if (mountedRef.current && loader && requestId === requestIdRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadLogs({ loader: true });
     let refreshTimer;
     const refresh = () => {
       window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => loadLogs(), 120);
+      refreshTimer = window.setTimeout(() => {
+        if (mountedRef.current) loadLogs();
+      }, 120);
     };
     let channel;
     if (supabase) {
@@ -73,8 +88,19 @@ export function AttendanceVerification() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, refresh)
         .subscribe();
     }
+    // Realtime is the fast path; polling and focus recovery guarantee the queue
+    // still updates when the publication is missing or the socket dropped.
+    const pollTimer = window.setInterval(() => loadLogs(), POLL_INTERVAL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') loadLogs();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
+      mountedRef.current = false;
       window.clearTimeout(refreshTimer);
+      window.clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
       if (channel) supabase.removeChannel(channel);
     };
   }, [loadLogs]);
@@ -111,10 +137,10 @@ export function AttendanceVerification() {
 
   const handleApprove = async () => {
     if (!selectedLog || !currentUser?.id) return;
+    const stage = getStage(selectedLog);
     try {
       setActionLoading(true);
       await approveAttendance(selectedLog.id, currentUser.id, adminNote.trim());
-      const stage = getStage(selectedLog);
       toast.success(stage === 'CLOCK_IN'
         ? 'Clock-in approved. The trainee timer has started.'
         : 'Attendance approved and rendered hours credited.');
@@ -124,7 +150,15 @@ export function AttendanceVerification() {
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Approve attendance error:', error);
-      toast.error(error.message || 'Failed to approve attendance');
+      if (isAlreadyProcessed(error)) {
+        // Another admin already handled it: treat it as the outcome it is.
+        toast.info('This request was already processed by another admin.');
+        closeModal(true);
+        await loadLogs();
+        await refreshData().catch(() => undefined);
+      } else {
+        toast.error(error.message || 'Failed to approve attendance');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -146,7 +180,14 @@ export function AttendanceVerification() {
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
       console.error('Reject attendance error:', error);
-      toast.error(error.message || 'Failed to reject attendance');
+      if (isAlreadyProcessed(error)) {
+        toast.info('This request was already processed by another admin.');
+        closeModal(true);
+        await loadLogs();
+        await refreshData().catch(() => undefined);
+      } else {
+        toast.error(error.message || 'Failed to reject attendance');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -220,12 +261,20 @@ export function AttendanceVerification() {
                           <div className="student-email">{log.user?.email || '--'}</div>
                         </div>
                       </td>
-                      <td><Badge color={stage === 'CLOCK_IN' ? 'blue' : 'yellow'}>{stageLabel(stage)}</Badge></td>
+                      <td>
+                        <Badge color={!stage ? 'gray' : stage === 'CLOCK_IN' ? 'blue' : 'yellow'}>
+                          {stage ? stageLabel(stage) : 'Unrecognised status'}
+                        </Badge>
+                      </td>
                       <td>{formatDate(log.date)}</td>
                       <td>{log.timeIn ? formatTime(log.timeIn) : 'Not started'}</td>
                       <td>{log.pendingEndTime ? formatTime(log.pendingEndTime) : '--:--'}</td>
                       <td>
-                        {stage === 'CLOCK_IN' ? <span className="muted-cell">Timer starts after approval</span> : (
+                        {!stage ? (
+                          <span className="muted-cell" title="Normalise this legacy status before approving.">
+                            Cannot be approved automatically
+                          </span>
+                        ) : stage === 'CLOCK_IN' ? <span className="muted-cell">Timer starts after approval</span> : (
                           <>
                             <div className="duration-display">{formatDuration(log.durationSeconds)}</div>
                             <strong className="hours-display">{Number(log.renderedHours || 0).toFixed(4)} hrs</strong>
@@ -235,8 +284,24 @@ export function AttendanceVerification() {
                       <td><Badge status={log.status}>Pending</Badge></td>
                       <td>
                         <div className="action-buttons">
-                          <Button size="sm" variant="success" onClick={() => openActionModal(log, 'approve')}>Accept</Button>
-                          <Button size="sm" variant="danger" onClick={() => openActionModal(log, 'reject')}>Reject</Button>
+                          <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => openActionModal(log, 'approve')}
+                            disabled={!stage}
+                            title={stage ? undefined : 'This status is not part of the approved attendance workflow.'}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => openActionModal(log, 'reject')}
+                            disabled={!stage}
+                            title={stage ? undefined : 'This status is not part of the approved attendance workflow.'}
+                          >
+                            Reject
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -247,7 +312,7 @@ export function AttendanceVerification() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">✅</div>
+            <div className="empty-icon"></div>
             <h3>All caught up!</h3>
             <p>No pending attendance requests match this filter.</p>
           </div>
@@ -286,12 +351,20 @@ export function AttendanceVerification() {
           <div>
             <div className="modal-info attendance-review-summary">
               <p><strong>Student:</strong> {selectedLog.user?.fullName || 'Unknown'}</p>
-              <p><strong>Stage:</strong> {stageLabel(getStage(selectedLog))}</p>
+              <p>
+                <strong>Stage:</strong>{' '}
+                {getStage(selectedLog) ? stageLabel(getStage(selectedLog)) : `Unrecognised status (${selectedLog.status})`}
+              </p>
               <p><strong>Date:</strong> {formatDate(selectedLog.date)}</p>
               {getStage(selectedLog) === 'CLOCK_OUT' && (
                 <>
                   <p><strong>Frozen duration:</strong> {formatDuration(selectedLog.durationSeconds)}</p>
                   <p><strong>Hours to credit:</strong> {Number(selectedLog.renderedHours || 0).toFixed(4)} hrs</p>
+                  {!selectedLog.pendingEndTime && (
+                    <p className="form-error" style={{ marginTop: '8px' }}>
+                      This request has no frozen end time. Reject it and ask the trainee to clock out again.
+                    </p>
+                  )}
                 </>
               )}
             </div>

@@ -1,0 +1,26 @@
+HOVER SOUND PLACEHOLDER
+
+Since we cannot programmatically create audio files, the gallery is configured to:
+1. Try to load "gallery-hover.mp3" 
+2. Fail silently if it doesn't exist (no console errors)
+3. Continue working normally
+
+TO ADD ACTUAL SOUND:
+1. Download a free UI sound effect from:
+   - https://mixkit.co/free-sound-effects/
+   - https://freesound.org/
+   - https://soundbible.com/
+
+2. Recommended sounds:
+   - Soft click
+   - Gentle whoosh
+   - Subtle beep
+   - UI notification
+
+3. Name it "gallery-hover.mp3"
+
+4. Place it in this folder: /public/sounds/
+
+5. Keep it short (100-300ms) and quiet
+
+The hover effect will automatically use it once added!

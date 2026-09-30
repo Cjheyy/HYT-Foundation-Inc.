@@ -1,56 +1,160 @@
+/* ============================================================================
+   Daily Reports — student / trainee portal
+
+   Everything below is scoped under `.daily-reports-page` on purpose.
+
+   CRA bundles every route's CSS into a single stylesheet, so generic names such
+   as `.report-header`, `.report-content`, `.report-meta` and `.section-text`
+   are already claimed elsewhere — Admin.css defines the first three for the
+   admin Report Approvals page, Contact.css defines `.section-text`. This page
+   was therefore being styled by accident from three unrelated stylesheets,
+   while twelve of its own class names (`submit-report-card`,
+   `reports-history-card`, `reports-list`, `report-item`, `report-date`,
+   `report-section`, `section-label`, `admin-note`, `note-label`, `note-text`,
+   `report-footer`) matched nothing at all — and the ten selectors this file
+   used to contain matched no JSX anywhere.
+
+   Scoping to (0,2,0) lets this page own its own look without editing
+   Admin.css, Contact.css or Attendance.css.
+   ========================================================================== */
+
 .daily-reports-page {
   min-height: 100vh;
 }
 
-.daily-reports-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ---- cards ---- */
+.daily-reports-page .submit-report-card,
+.daily-reports-page .reports-history-card {
   margin-bottom: 24px;
 }
 
-.daily-reports-list {
+/* ---- submit form ---- */
+.daily-reports-page .report-form {
+  display: grid;
+}
+
+/* `.form-input` / `.form-textarea` live in index.css, but only the textarea had
+   an `.error` variant (defined in Attendance.css), so an invalid date showed no
+   red border at all. */
+.daily-reports-page .form-input.error,
+.daily-reports-page .form-textarea.error {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* ---- history ---- */
+.daily-reports-page .reports-list {
   display: grid;
   gap: 16px;
 }
 
-.report-card-header {
+.daily-reports-page .report-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  background: #fff;
+}
+
+.daily-reports-page .report-item.rejected {
+  border-color: #FCA5A5;
+  background: #FFFBFB;
+}
+
+.daily-reports-page .report-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
-.report-card-title {
-  font-size: 16px;
-  font-weight: 600;
+.daily-reports-page .report-date {
+  font-size: 15px;
+  color: var(--dark-text);
 }
 
-.report-card-hours {
-  font-size: 14px;
-  color: var(--muted-text);
-}
-
-.report-card-content {
-  font-size: 14px;
-  color: var(--muted-text);
-}
-
-.report-admin-remarks {
-  margin-top: 8px;
-  padding: 8px;
-  background: #FEF3C7;
-  border-radius: 4px;
-  color: #92400E;
-}
-
-.report-form-grid {
+.daily-reports-page .report-content {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
-.report-form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+.daily-reports-page .report-section {
+  display: grid;
+  gap: 4px;
+}
+
+.daily-reports-page .section-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+/* pre-wrap keeps the line breaks the student typed into the textarea; without
+   it a multi-line accomplishment collapses into a single paragraph. */
+.daily-reports-page .section-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--dark-text);
+  white-space: pre-wrap;
+}
+
+/* ---- admin note ---- */
+.daily-reports-page .admin-note {
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid;
+}
+
+.daily-reports-page .admin-note.approved {
+  background: #ECFDF5;
+  border-color: #10B981;
+}
+
+.daily-reports-page .admin-note.rejected {
+  background: #FEF2F2;
+  border-color: #DC2626;
+}
+
+.daily-reports-page .note-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.daily-reports-page .admin-note.approved .note-label,
+.daily-reports-page .admin-note.approved .note-text {
+  color: #065F46;
+}
+
+.daily-reports-page .admin-note.rejected .note-label,
+.daily-reports-page .admin-note.rejected .note-text {
+  color: #991B1B;
+}
+
+.daily-reports-page .note-text {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ---- footer ---- */
+.daily-reports-page .report-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.daily-reports-page .report-meta {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+@media (max-width: 640px) {
+  .daily-reports-page .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }

@@ -19,8 +19,9 @@ describe('OJT status normalization', () => {
     expect(isPendingAttendanceStatus('APPROVED')).toBe(false);
   });
 
-  test('fails closed for pending or inactive accounts', () => {
-    expect(isAccountApproved({ role: 'Trainee', applicationStatus: 'PENDING_APPROVAL', isActive: false })).toBe(false);
+  test('allows direct login for pending accounts; blocks inactive approved accounts', () => {
+    // Direct login flow: newly registered Trainees/OJT can log in immediately.
+    expect(isAccountApproved({ role: 'Trainee', applicationStatus: 'PENDING_APPROVAL', isActive: false })).toBe(true);
     expect(isAccountApproved({ role: 'Trainee', applicationStatus: 'APPROVED', isActive: false })).toBe(false);
     expect(isAccountApproved({ role: 'Trainee', applicationStatus: 'APPROVED', isActive: true })).toBe(true);
   });

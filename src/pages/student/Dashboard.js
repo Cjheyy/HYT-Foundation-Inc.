@@ -4,9 +4,10 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { ProgressBar } from '../../components/ProgressBar';
+import { Icon } from '../../components/icons';
 import { getApplicationsByStudent } from '../../services/applicationService';
 import { getOJTByStudent } from '../../services/ojtService';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getFirstName } from '../../utils/helpers';
 import './Dashboard.css';
 
 export function StudentDashboard() {
@@ -38,7 +39,7 @@ export function StudentDashboard() {
     <div className="student-dashboard">
       <div className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">Welcome back, {currentUser?.firstName}!</h1>
+          <h1 className="dashboard-title">Welcome back, {getFirstName(currentUser)}!</h1>
           <p className="dashboard-subtitle">Track your progress and manage your opportunities</p>
         </div>
       </div>
@@ -58,7 +59,7 @@ export function StudentDashboard() {
               <p className="application-date">Applied on {formatDate(activeApplication.appliedAt)}</p>
               <Button 
                 size="sm" 
-                onClick={() => navigate(`/student/applications/${activeApplication.id}`)}
+                onClick={() => navigate('/student/applications')}
                 style={{ marginTop: '12px' }}
               >
                 View Details
@@ -122,7 +123,7 @@ export function StudentDashboard() {
             {pendingRequirements.length > 0 ? (
               <>
                 <div className="requirement-alert">
-                  <span className="alert-icon">⚠️</span>
+                  <span className="alert-icon"><Icon name="alert" size={16} /></span>
                   <span>{pendingRequirements.length} requirement(s) need attention</span>
                 </div>
                 <Button 
@@ -162,34 +163,34 @@ export function StudentDashboard() {
             <h3 className="card-title">Quick Actions</h3>
           </div>
           <div className="quick-actions">
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/student/opportunities')}
             >
-              <span className="action-icon">🎯</span>
+              <span className="action-icon"><Icon name="target" size={20} /></span>
               <span className="action-label">Browse Opportunities</span>
             </button>
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/student/applications')}
             >
-              <span className="action-icon">📝</span>
+              <span className="action-icon"><Icon name="file" size={20} /></span>
               <span className="action-label">My Applications</span>
             </button>
             {myOJT && (
-              <button 
+              <button
                 className="action-button"
                 onClick={() => navigate('/student/daily-reports')}
               >
-                <span className="action-icon">📋</span>
+                <span className="action-icon"><Icon name="file" size={20} /></span>
                 <span className="action-label">Submit Daily Report</span>
               </button>
             )}
-            <button 
+            <button
               className="action-button"
               onClick={() => navigate('/student/certificates')}
             >
-              <span className="action-icon">🏆</span>
+              <span className="action-icon"><Icon name="award" size={20} /></span>
               <span className="action-label">View Certificates</span>
             </button>
           </div>
@@ -233,7 +234,7 @@ export function StudentDashboard() {
                 className="announcement-item"
                 onClick={() => navigate('/student/announcements')}
               >
-                <div className="announcement-icon">📢</div>
+                <div className="announcement-icon"><Icon name="bell" size={18} /></div>
                 <div className="announcement-content">
                   <h4 className="announcement-title">{announcement.title}</h4>
                   <p className="announcement-preview">

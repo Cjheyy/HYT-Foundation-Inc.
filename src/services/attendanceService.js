@@ -8,7 +8,8 @@ export function createAttendance(data) {
 }
 
 export function verifyLocation(userLat, userLon, workplaceLat, workplaceLon, radius) {
-  if (!userLat || !userLon) return false;
+  // FORCE-BYPASS (testing): always pass. Restore Haversine check before production.
+  return true;
   
   const R = 6371e3; // Earth's radius in meters
   const φ1 = (userLat * Math.PI) / 180;

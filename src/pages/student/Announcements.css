@@ -1,32 +1,201 @@
+/* Announcements — page-scoped.
+ *
+ * CRA bundles every route stylesheet into one global file, and
+ * `.announcements-list` is *also* defined in student/Dashboard.css for the
+ * dashboard's "Recent Announcements" card.  An unscoped rule here silently
+ * restyled the dashboard list.  Every selector is therefore nested under
+ * `.announcements-page` (specificity 0,2,0) so it cannot escape this page.
+ */
+
 .announcements-page {
-  min-height: 100vh;
+  display: block;
 }
 
-.announcements-list {
+.announcements-page .announcements-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.announcements-page .announcements-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 380px;
+}
+
+.announcements-page .announcements-search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.announcements-page .announcements-search-input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--dark-text);
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.announcements-page .announcements-search-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(213, 113, 86, 0.12);
+}
+
+.announcements-page .announcements-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.announcements-page .announcements-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.announcements-page .announcements-tab:hover {
+  border-color: rgba(213, 113, 86, 0.45);
+  color: var(--primary-orange);
+}
+
+.announcements-page .announcements-tab.active {
+  background: linear-gradient(135deg, rgba(213, 113, 86, 0.14), rgba(39, 158, 182, 0.14));
+  border-color: rgba(213, 113, 86, 0.4);
+  color: var(--primary-orange);
+}
+
+.announcements-page .announcements-tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #DC2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.announcements-page .announcements-list {
   display: grid;
   gap: 16px;
 }
 
-.announcement-card-header {
+.announcements-page .announcement-card {
+  position: relative;
+}
+
+.announcements-page .announcement-card.unread {
+  border-left: 3px solid var(--primary-orange);
+}
+
+.announcements-page .announcement-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
-.announcement-card-title {
-  font-size: 18px;
-  font-weight: 600;
+.announcements-page .announcement-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-.announcement-card-content {
+.announcements-page .announcement-unread-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-orange);
+}
+
+.announcements-page .announcement-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--dark-text);
+}
+
+.announcements-page .announcement-card-content {
   font-size: 15px;
   color: var(--muted-text);
   line-height: 1.7;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
+  white-space: pre-wrap;
 }
 
-.announcement-card-date {
+.announcements-page .announcement-card-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: var(--muted-text);
+}
+
+.announcements-page .announcement-card-date.unread-label {
+  color: var(--primary-orange);
+  font-weight: 600;
+}
+
+.announcements-page .announcements-result-count {
+  font-size: 13px;
+  color: var(--muted-text);
+  margin: 0 0 12px;
+}
+
+.announcements-page .announcement-mark-read {
+  margin-top: 12px;
+  padding: 7px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.announcements-page .announcement-mark-read:hover {
+  border-color: rgba(213, 113, 86, 0.45);
+  color: var(--primary-orange);
+  background: rgba(213, 113, 86, 0.06);
+}
+
+@media (max-width: 640px) {
+  .announcements-page .announcements-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .announcements-page .announcements-search {
+    max-width: none;
+  }
 }

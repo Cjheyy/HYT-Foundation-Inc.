@@ -1,3 +1,18 @@
+-- ============================================================================
+-- DO NOT RUN - SUPERSEDED BY OJT_TRACKING_PRODUCTION_MIGRATION.sql
+-- ----------------------------------------------------------------------------
+-- Problems with running this file today:
+--   1. Writes hours_rendered, but the canonical column is rendered_hours, so
+--      the function fails against a migrated database.
+--   2. Only voids status = 'PENDING'; active rows are 'CLOCKED_IN' and clock-out
+--      requests are 'PENDING_CLOCK_OUT', so it never voids what it targets.
+--   3. Has no scheduler, so nothing runs unless a new row is inserted.
+--   4. Uses the database server timezone instead of Asia/Manila.
+--
+-- Replacement: public.hyt_void_stale_attendance() plus
+-- public.hyt_close_previous_attendance(), both created and scheduled by
+-- OJT_TRACKING_PRODUCTION_MIGRATION.sql.
+-- ============================================================================
 -- =====================================================
 -- AUTO-VOID INCOMPLETE ATTENDANCE LOGS
 -- 

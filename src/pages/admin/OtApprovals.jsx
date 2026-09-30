@@ -73,7 +73,7 @@ export function OtApprovals() {
     try {
       setActionLoading(true);
       await approveOtRequest(selectedRequest.id, adminNote.trim() || null);
-      toast.success('✅ OT request approved! Hours added to student record.');
+      toast.success(' OT request approved! Hours added to student record.');
       setShowModal(false);
       await loadOtRequests();
       await refreshData().catch(() => undefined);
@@ -199,7 +199,7 @@ export function OtApprovals() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">✅</div>
+            <div className="empty-icon"></div>
             <h3>All Caught Up!</h3>
             <p>No pending OT requests to review</p>
           </div>

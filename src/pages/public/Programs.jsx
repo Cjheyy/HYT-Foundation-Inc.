@@ -7,8 +7,9 @@ import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
+import { Icon } from '../../components/icons';
 import { PROGRAM_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
-import { isEventActive } from '../../services/supabaseService';
+import { isEventActive, getEventSlotState } from '../../services/supabaseService';
 import './Programs.css';
 
 export function Programs() {
@@ -38,7 +39,7 @@ export function Programs() {
     <div className="programs-page">
       <section className="page-hero">
         <div className="container">
-          <h1 className="page-title">Programs</h1>
+          <h1 className="page-title">Trainee Programs & Events</h1>
           <p className="page-subtitle">
             Discover development programs designed to enhance your skills and capabilities
           </p>
@@ -69,48 +70,54 @@ export function Programs() {
 
           {filteredPrograms.length > 0 ? (
             <div className="programs-grid">
-              {filteredPrograms.map((program) => (
-                <Card 
-                  key={program.id}
-                  clickable
-                  onClick={() => navigate(`/programs/${program.id}`)}
-                  className="program-card"
-                >
-                  <div className="program-header">
-                    <Badge status={program.status}>{program.status}</Badge>
-                  </div>
-                  <h3 className="program-title">{program.title}</h3>
-                  <p className="program-description">
-                    {String(program.description || '').substring(0, 150)}{program.description?.length > 150 ? '...' : ''}
-                  </p>
-                  <div className="program-meta">
-                    <div className="meta-item">
-                      <span className="meta-icon">📚</span>
-                      <span>{program.category}</span>
+              {filteredPrograms.map((program) => {
+                const slots = getEventSlotState(program);
+                return (
+                  <Card
+                    key={program.id}
+                    clickable
+                    onClick={() => navigate(`/programs/${program.id}`)}
+                    className="program-card"
+                  >
+                    <div className="program-header">
+                      <Badge status={program.status}>{program.status}</Badge>
+                      <Badge color={slots.isFull ? 'red' : 'green'}>
+                        {slots.isFull ? 'Full' : `${slots.available} slots remaining`}
+                      </Badge>
                     </div>
-                    <div className="meta-item">
-                      <span className="meta-icon">📅</span>
-                      <span>{program.schedule}</span>
+                    <h3 className="program-title">{program.title}</h3>
+                    <p className="program-description">
+                      {String(program.description || '').substring(0, 150)}{program.description?.length > 150 ? '...' : ''}
+                    </p>
+                    <div className="program-meta">
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="book" size={15} /></span>
+                        <span>{program.category}</span>
+                      </div>
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="calendar" size={15} /></span>
+                        <span>{program.schedule}</span>
+                      </div>
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="pin" size={15} /></span>
+                        <span>{program.location}</span>
+                      </div>
                     </div>
-                    <div className="meta-item">
-                      <span className="meta-icon">📍</span>
-                      <span>{program.location}</span>
+                    <div className="program-thrusts">
+                      {(Array.isArray(program.thrusts) ? program.thrusts : []).map((thrust, idx) => (
+                        <span key={idx} className="thrust-tag">{thrust}</span>
+                      ))}
                     </div>
-                  </div>
-                  <div className="program-thrusts">
-                    {(Array.isArray(program.thrusts) ? program.thrusts : []).map((thrust, idx) => (
-                      <span key={idx} className="thrust-tag">{thrust}</span>
-                    ))}
-                  </div>
-                  <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
-                    View Details
-                  </Button>
-                </Card>
-              ))}
+                    <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
+                      View Details
+                    </Button>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <EmptyState
-              icon="📚"
+              icon="book"
               title="No Programs Found"
               message="Try adjusting your filters or search terms"
             />

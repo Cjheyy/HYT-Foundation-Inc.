@@ -7,8 +7,9 @@ import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
+import { Icon } from '../../components/icons';
 import { OPPORTUNITY_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
-import { isEventActive } from '../../services/supabaseService';
+import { isEventActive, getEventSlotState } from '../../services/supabaseService';
 import './Opportunities.css';
 
 export function Opportunities() {
@@ -39,7 +40,7 @@ export function Opportunities() {
     <div className="opportunities-page">
       <section className="page-hero">
         <div className="container">
-          <h1 className="page-title">Opportunities</h1>
+          <h1 className="page-title">OJT Postings</h1>
           <p className="page-subtitle">
             Explore internships, OJT programs, training, and community opportunities
           </p>
@@ -70,50 +71,55 @@ export function Opportunities() {
 
           {filteredOpportunities.length > 0 ? (
             <div className="opportunities-grid">
-              {filteredOpportunities.map((opp) => (
-                <Card 
-                  key={opp.id}
-                  clickable
-                  onClick={() => navigate(`/opportunities/${opp.id}`)}
-                  className="opportunity-card"
-                >
-                  <div className="opportunity-header">
-                    <Badge color="blue">{opp.category}</Badge>
-                    <Badge color="green">{opp.availableSlots} slots</Badge>
-                  </div>
-                  <h3 className="opportunity-title">{opp.title}</h3>
-                  <p className="opportunity-org">{opp.organization}</p>
-                  <p className="opportunity-description">
-                    {String(opp.description || '').substring(0, 120)}{opp.description?.length > 120 ? '...' : ''}
-                  </p>
-                  <div className="opportunity-meta">
-                    <div className="meta-item">
-                      <span className="meta-icon">📍</span>
-                      <span>{opp.location}</span>
+              {filteredOpportunities.map((opp) => {
+                const slots = getEventSlotState(opp);
+                return (
+                  <Card
+                    key={opp.id}
+                    clickable
+                    onClick={() => navigate(`/opportunities/${opp.id}`)}
+                    className="opportunity-card"
+                  >
+                    <div className="opportunity-header">
+                      <Badge color="blue">{opp.category}</Badge>
+                      <Badge color={slots.isFull ? 'red' : 'green'}>
+                        {slots.isFull ? 'Full' : `${slots.available} slots`}
+                      </Badge>
                     </div>
-                    <div className="meta-item">
-                      <span className="meta-icon">⏰</span>
-                      <span>{opp.requiredHours} hours</span>
+                    <h3 className="opportunity-title">{opp.title}</h3>
+                    <p className="opportunity-org">{opp.organization}</p>
+                    <p className="opportunity-description">
+                      {String(opp.description || '').substring(0, 120)}{opp.description?.length > 120 ? '...' : ''}
+                    </p>
+                    <div className="opportunity-meta">
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="pin" size={15} /></span>
+                        <span>{opp.location}</span>
+                      </div>
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="clock" size={15} /></span>
+                        <span>{opp.requiredHours} hours</span>
+                      </div>
+                      <div className="meta-item">
+                        <span className="meta-icon"><Icon name="briefcase" size={15} /></span>
+                        <span>{opp.setup}</span>
+                      </div>
                     </div>
-                    <div className="meta-item">
-                      <span className="meta-icon">🏢</span>
-                      <span>{opp.setup}</span>
+                    <div className="opportunity-thrusts">
+                      {(Array.isArray(opp.thrusts) ? opp.thrusts : []).slice(0, 3).map((thrust, idx) => (
+                        <span key={idx} className="thrust-tag">{thrust}</span>
+                      ))}
                     </div>
-                  </div>
-                  <div className="opportunity-thrusts">
-                    {(Array.isArray(opp.thrusts) ? opp.thrusts : []).slice(0, 3).map((thrust, idx) => (
-                      <span key={idx} className="thrust-tag">{thrust}</span>
-                    ))}
-                  </div>
-                  <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
-                    View Details & Apply
-                  </Button>
-                </Card>
-              ))}
+                    <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
+                      View Details & Apply
+                    </Button>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <EmptyState
-              icon="🎯"
+              icon="target"
               title="No Opportunities Found"
               message="Try adjusting your filters or search terms"
             />

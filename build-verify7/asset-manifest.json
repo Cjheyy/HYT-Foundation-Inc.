@@ -1,0 +1,24 @@
+{
+  "files": {
+    "main.css": "/static/css/main.01853266.css",
+    "main.js": "/static/js/main.b76b1cd6.js",
+    "static/media/achievement.jpg": "/static/media/achievement.8b3baa3b924e27e542e6.jpg",
+    "static/media/outreach.jpg": "/static/media/outreach.e1d88258176c8d341787.jpg",
+    "static/media/youth-summit.jpg": "/static/media/youth-summit.b77196b2d645e93bcbd2.jpg",
+    "static/media/awards.jpg": "/static/media/awards.78628740e78d563d6ff3.jpg",
+    "static/media/workshop.jpg": "/static/media/workshop.0833f08ab75256e2ea84.jpg",
+    "static/media/career.jpg": "/static/media/career.8d3e4c4cbe56846906fe.jpg",
+    "static/media/innovation.jpg": "/static/media/innovation.6fa37d725fbb302f6faf.jpg",
+    "static/media/empowerment.jpg": "/static/media/empowerment.fc68c9b9dec5e22bfe86.jpg",
+    "static/media/ojt.jpg": "/static/media/ojt.47647e69de0862a21ad9.jpg",
+    "static/media/partnership.jpg": "/static/media/partnership.5c66c6bd38facf189ccb.jpg",
+    "static/media/HYT.png": "/static/media/HYT.a4b497fd69791e79c73b.png",
+    "index.html": "/index.html",
+    "main.01853266.css.map": "/static/css/main.01853266.css.map",
+    "main.b76b1cd6.js.map": "/static/js/main.b76b1cd6.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.01853266.css",
+    "static/js/main.b76b1cd6.js"
+  ]
+}
