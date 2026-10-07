@@ -44,7 +44,7 @@ export const TRAINEE_TERMS = {
   portalName: 'Trainee Portal',
   programLabel: 'Programs & Events',
   postingLabel: 'Programs',
-  experienceLabel: 'Training / Experience',
+  experienceLabel: 'Experience',
   hoursTitle: 'Training Hours Progress',
   progressLabel: 'Training Progress',
   progressNoun: 'training progress',

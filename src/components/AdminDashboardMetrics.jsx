@@ -30,7 +30,7 @@ const metricDefinitions = [
     key: 'totalStudents',
     label: 'Total Students',
     icon: 'users',
-    color: '#667eea',
+    color: '#4F46E5',
     description: 'All Trainee and OJT/Intern accounts',
     path: '/admin/students'
   },
@@ -38,7 +38,7 @@ const metricDefinitions = [
     key: 'totalApplications',
     label: 'Total Applications',
     icon: 'file',
-    color: '#10B981',
+    color: '#047857',
     description: 'New sign-ups awaiting review',
     path: '/admin/application-review?role=all&status=PENDING_APPROVAL'
   },
@@ -46,7 +46,7 @@ const metricDefinitions = [
     key: 'acceptedApplications',
     label: 'Accepted Applications',
     icon: 'check',
-    color: '#059669',
+    color: '#047857',
     description: 'Approved trainee accounts',
     path: '/admin/application-review?role=all&status=APPROVED'
   },
@@ -54,7 +54,7 @@ const metricDefinitions = [
     key: 'completedOJT',
     label: 'Completed OJT',
     icon: 'award',
-    color: '#8B5CF6',
+    color: '#5B21B6',
     description: 'Active students at 100% of required hours',
     path: '/admin/students?progress=completed'
   },
@@ -62,7 +62,7 @@ const metricDefinitions = [
     key: 'totalProgramsOpportunities',
     label: 'Active Programs & Opportunities',
     icon: 'target',
-    color: '#F59E0B',
+    color: '#92400E',
     description: 'Published, non-expired listings',
     path: '/admin/programs?status=active'
   },
@@ -70,7 +70,7 @@ const metricDefinitions = [
     key: 'pendingAttendance',
     label: 'Pending Attendance',
     icon: 'clock',
-    color: '#EF4444',
+    color: '#B42318',
     description: 'Clock-in or clock-out requests',
     path: '/admin/attendance-verification?status=pending'
   },
@@ -78,7 +78,7 @@ const metricDefinitions = [
     key: 'pendingDailyReports',
     label: 'Pending Reports',
     icon: 'file',
-    color: '#EC4899',
+    color: '#9D174D',
     description: 'Daily reports awaiting review',
     path: '/admin/report-approvals?status=pending'
   }
@@ -87,10 +87,24 @@ const metricDefinitions = [
 const REFRESH_DEBOUNCE_MS = 150;
 const POLL_INTERVAL_MS = 30_000;
 
+/**
+ * Session-wide snapshot, deliberately OUTSIDE the component.
+ *
+ * A `useRef` is recreated on every mount, so navigating away from the admin
+ * dashboard and back showed the skeleton grid again — the stats "reloaded"
+ * every single time the route was opened.  Hoisting the cache to module scope
+ * means only the FIRST render of the session loads; every later mount paints
+ * the last known numbers immediately and refreshes silently in the background.
+ * The page is therefore responsive at all times instead of flashing a loader.
+ */
+const metricsSnapshotCache = { data: initialMetrics, timestamp: 0 };
+
 export function AdminDashboardMetrics() {
   const navigate = useNavigate();
-  const [metrics, setMetrics] = useState(initialMetrics);
-  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState(() => metricsSnapshotCache.data);
+  // Only the first render of the session shows a loader; a remount paints the
+  // cached snapshot straight away.
+  const [loading, setLoading] = useState(() => metricsSnapshotCache.timestamp === 0);
   const [error, setError] = useState('');
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [realtimeStatus, setRealtimeStatus] = useState('connecting');
@@ -98,7 +112,8 @@ export function AdminDashboardMetrics() {
   // A monotonic request id: an older response can never overwrite a newer one.
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
-  const metricsCacheRef = useRef({ data: initialMetrics, timestamp: 0 });
+  // Seeded from the module cache so a remount starts warm.
+  const metricsCacheRef = useRef(metricsSnapshotCache);
 
   const loadMetrics = useCallback(async ({ showLoader = false, force = false } = {}) => {
     const now = Date.now();
@@ -111,6 +126,8 @@ export function AdminDashboardMetrics() {
       const nextMetrics = await getAdminDashboardStats();
       if (!mountedRef.current || requestId !== requestIdRef.current) return;
       metricsCacheRef.current = { data: nextMetrics, timestamp: Date.now() };
+      metricsSnapshotCache.data = nextMetrics;
+      metricsSnapshotCache.timestamp = Date.now();
       setMetrics((previous) => ({ ...previous, ...nextMetrics }));
       setLastUpdatedAt(Date.now());
       setError('');
@@ -128,7 +145,10 @@ export function AdminDashboardMetrics() {
 
   useEffect(() => {
     mountedRef.current = true;
-    loadMetrics({ showLoader: true, force: true });
+    // Warm cache (a remount) refreshes silently; only a cold start shows the
+    // skeleton, so the dashboard is responsive at all times.
+    const coldStart = metricsCacheRef.current.timestamp === 0;
+    loadMetrics({ showLoader: coldStart, force: true });
 
     const scheduleRefresh = () => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -183,14 +203,17 @@ export function AdminDashboardMetrics() {
     value: metrics[metric.key] ?? 0
   })), [metrics]);
 
+  // Never say "Polling": the numbers on screen are always current, so the
+  // indicator must not read like a pending load.
   const statusLabel = useMemo(() => {
     if (error) return 'Stale';
-    return realtimeStatus === 'live' ? 'Live' : 'Polling';
+    return realtimeStatus === 'live' ? 'Live' : 'Synced';
   }, [error, realtimeStatus]);
 
   const statusTitle = useMemo(() => {
     if (error) return `Last successful update: ${lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleTimeString() : 'unknown'}`;
-    return realtimeStatus === 'live' ? 'Realtime connected' : 'Realtime unavailable — refreshing every 30 seconds';
+    if (realtimeStatus === 'live') return 'Realtime connected';
+    return `Up to date${lastUpdatedAt ? ` as of ${new Date(lastUpdatedAt).toLocaleTimeString()}` : ''} — refreshing in the background`;
   }, [error, lastUpdatedAt, realtimeStatus]);
 
   if (loading) {
@@ -227,7 +250,7 @@ export function AdminDashboardMetrics() {
               <Icon name={metric.icon} size={26} color="#fff" />
             </div>
             <div className="metric-content">
-              <div className="metric-value" style={{ color: metric.color }}>{metric.value}</div>
+              <div className="metric-value">{metric.value}</div>
               <div className="metric-label">{metric.label}</div>
               <div className="metric-description">{metric.description}</div>
             </div>

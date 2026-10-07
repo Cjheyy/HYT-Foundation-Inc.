@@ -145,6 +145,29 @@
   gap: 12px;
 }
 
+/* The header's primary call to action. Given its own size, weight and lift so it
+   reads as a BUTTON at a glance instead of as one more nav link — it used to be
+   btn-sm, which made the main CTA the smallest thing in the header. */
+.header-login-btn {
+  padding: 11px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 8px 20px -8px rgba(213, 113, 86, 0.65);
+}
+
+.header-login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px -8px rgba(213, 113, 86, 0.75);
+}
+
+.header-login-btn:focus-visible {
+  outline: 2px solid #0E1726;
+  outline-offset: 2px;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .header-content {
@@ -226,7 +249,9 @@
     display: flex;
   }
 
-  .header-actions button {
+  /* Both the Dashboard <button> and the Log In <Link> fill the stacked menu. */
+  .header-actions button,
+  .header-actions .btn {
     width: 100%;
   }
 

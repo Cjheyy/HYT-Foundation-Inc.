@@ -78,8 +78,10 @@ export function Opportunities() {
                     key={opp.id}
                     clickable
                     onClick={() => navigate(`/opportunities/${opp.id}`)}
-                    className="opportunity-card"
+                    className="opportunity-card reveal-card"
                   >
+                    {/* Same clip-path circle reveal as the Home rails. */}
+                    <span className="reveal-wipe" aria-hidden="true" />
                     <div className="opportunity-header">
                       <Badge color="blue">{opp.category}</Badge>
                       <Badge color={slots.isFull ? 'red' : 'green'}>

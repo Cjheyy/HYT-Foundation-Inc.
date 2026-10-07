@@ -1,7 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import { ProgressBar } from './ProgressBar';
 
+/**
+ * The fill element is a bare <div> with no text and no ARIA role — its width is
+ * the only observable output — so a class lookup is the only way to reach it.
+ * The exemption is confined to this one helper.
+ */
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 const fill = (container) => container.querySelector('.progress-bar-fill');
+/* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
 describe('ProgressBar', () => {
   test('renders the percentage for a normal value', () => {

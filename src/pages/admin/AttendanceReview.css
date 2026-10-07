@@ -16,7 +16,8 @@
 .pending-count {
   font-size: 48px;
   font-weight: 700;
-  color: #F59E0B;
+  /* #F59E0B is 2.0:1 on the #FDE68A card end. */
+  color: #92400E;
   line-height: 1;
 }
 
@@ -47,7 +48,7 @@
 .hours-display {
   font-weight: 600;
   font-size: 15px;
-  color: #10B981;
+  color: #047857;
 }
 
 .progress-impact {
@@ -62,7 +63,7 @@
 }
 
 .progress-increase {
-  color: #10B981;
+  color: #047857;
   font-weight: 600;
 }
 

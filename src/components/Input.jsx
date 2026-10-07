@@ -28,7 +28,7 @@ export function Input({
       {label && (
         <label className="form-label" htmlFor={inputId}>
           {label}
-          {required && <span style={{ color: 'red' }}> *</span>}
+          {required && <span className="required-marker" aria-hidden="true"> *</span>}
         </label>
       )}
       <input

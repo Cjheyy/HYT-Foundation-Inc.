@@ -16,7 +16,7 @@ export function Select({
       {label && (
         <label className="form-label">
           {label}
-          {required && <span style={{ color: 'red' }}> *</span>}
+          {required && <span className="required-marker" aria-hidden="true"> *</span>}
         </label>
       )}
       <select

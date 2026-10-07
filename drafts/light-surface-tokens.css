@@ -1,0 +1,1309 @@
+/* ==== GENERATED: light surfaces re-point the card text tokens ====
+ *
+ * Produced by drafts/gen-light-surface-tokens.js.  Every rule below paints a
+ * light background, so it must hand its subtree dark text tokens — otherwise
+ * a card ancestor would push near-white text onto a pale chip.
+ *
+ * Safe to over-apply: a custom property is inert unless consumed, and the only
+ * consumers are `.card` and its descendants.  A remap outside a card is a no-op.
+ */
+
+/* components/AdminDashboardMetrics.css */
+.metrics-error {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+
+/* components/AttentionCenter.css */
+.attention-bell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-panel {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-item-icon {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.attention-item.tone-warning .attention-item-icon {
+  --dark-text: #C2410C;
+  --muted-text: #C2410C;
+  color: #C2410C;
+}
+.attention-item.tone-danger .attention-item-icon {
+  --dark-text: #B91C1C;
+  --muted-text: #B91C1C;
+  color: #B91C1C;
+}
+.attention-item.tone-info .attention-item-icon {
+  --dark-text: #0E7490;
+  --muted-text: #0E7490;
+  color: #0E7490;
+}
+
+/* components/ConfirmationModal.css */
+.confirmation-modal-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/DreamAcademy.css */
+.da {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-fact:nth-child(2)::before {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.da-about {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-spec-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/GalleryCard.css */
+.gallery-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-card-image-container {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/GalleryModal.css */
+.gallery-modal-container {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-modal-info::-webkit-scrollbar-track, .gallery-modal-container::-webkit-scrollbar-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/LiveTimeTracker.css */
+.live-time-tracker {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.live-time-tracker.is-paused {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.tracker-status {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.is-live .tracker-status {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.is-paused .tracker-status {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.is-capped .tracker-status {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.tracker-note {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.is-paused .tracker-note {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.is-capped .tracker-note {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/MarqueeRibbon.css */
+.ribbon-track span i {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+
+/* components/OnboardingModal.css */
+.requirement-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.onboarding-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/PublicHeader.css */
+@media (max-width: 768px) {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/RegisterWizard.css */
+.rw-dialog {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rw-step-dot {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rw-role {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-guidance-head {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-foot {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/TermsModal.css */
+.terms-intro {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.terms-content::-webkit-scrollbar-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/VideoModal.css */
+.video-modal-container {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.video-modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.video-error-button {
+  --dark-text: #1a1a1a;
+  --muted-text: #1a1a1a;
+  color: #1a1a1a;
+}
+.video-error-button:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* index.css */
+body {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.btn-outline {
+  --dark-text: #B8441F;
+  --muted-text: #B8441F;
+  color: #B8441F;
+}
+.form-input, .form-select, .form-textarea {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.badge-blue {
+  --dark-text: #1E40AF;
+  --muted-text: #1E40AF;
+  color: #1E40AF;
+}
+.badge-green {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+.badge-yellow {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.badge-red {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.badge-gray {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.badge-purple {
+  --dark-text: #5B21B6;
+  --muted-text: #5B21B6;
+  color: #5B21B6;
+}
+.badge-orange {
+  --dark-text: #9A3412;
+  --muted-text: #9A3412;
+  color: #9A3412;
+}
+.progress-bar {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.modal {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.table {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table th {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.portal-header-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.schedule-preview {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.certificate-preview-frame {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table-responsive {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table thead {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table tbody tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* layouts/PortalLayout.css */
+.portal-layout {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-header {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-user {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-footer {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.logout-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.logout-btn:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/admin/Admin.css */
+.admin-page {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-page-header {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-stat-box {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-filters {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.action-button.secondary {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-table {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.hours-badge {
+  --dark-text: #1E40AF;
+  --muted-text: #1E40AF;
+  color: #1E40AF;
+}
+.hours-badge.highlight {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.modal-info {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.reason-box, .accomplishments-box {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.tab:hover {
+  --dark-text: #374151;
+  --muted-text: #374151;
+  color: #374151;
+}
+.approval-confirmation {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.filter-notice {
+  --dark-text: #1D4ED8;
+  --muted-text: #1D4ED8;
+  color: #1D4ED8;
+}
+.requested-row {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-review-summary {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.ojt-stat {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+
+/* pages/admin/AttendanceReview.css */
+.pending-summary-card {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.data-table tbody tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.approval-details {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rejection-details {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/admin/Dashboard.css */
+.admin-search-input {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.admin-search-result {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.admin-search-result:hover, .admin-search-result:focus-visible {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.admin-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/admin/Students.css */
+.progress-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/public/About.css */
+.section.bg-white {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.info-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrust-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrust-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.partner-chip {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.partner-chip:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.about-stat-box {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.team-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/Auth.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-shell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-brand-logo-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-panel {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.alert-success {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+.alert-warning {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.account-type-icon {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.success-message {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.password-requirements {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.step-number {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.step-line {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.otp-info {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.strength-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.pending-approval-note {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/public/Home.css */
+.section.bg-white {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.feature-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.bento-cell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrusts-seam {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.seam-cta-link {
+  --dark-text: #0E1726;
+  --muted-text: #0E1726;
+  color: #0E1726;
+}
+.stats-section {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-image {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.gallery-placeholder {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.accomplishments-swiper .view-details-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/HomeMotion.css */
+.hero-aurora .blob-1 {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.hero-aurora .blob-2 {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.hero-aurora .blob-3 {
+  --dark-text: #1F2937;
+  --muted-text: #374151;
+  color: #1F2937;
+}
+.seam-cta-link:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.reveal-card .btn-primary, .reveal-card:hover .btn-primary {
+  --dark-text: #B8441F;
+  --muted-text: #B8441F;
+  color: #B8441F;
+}
+
+/* pages/public/Impact.css */
+.author-avatar {
+  --dark-text: #0F5566;
+  --muted-text: #0F5566;
+  color: #0F5566;
+}
+
+/* pages/public/Login.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-divider span {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/Register.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.id-format-info {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/student/Announcements.css */
+.announcements-page .announcements-search-input {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.announcements-page .announcements-tab {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.announcements-page .announcement-mark-read {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/student/Applications.css */
+.application-accepted-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.application-declined-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Attendance.css */
+.pending-notice {
+  --dark-text: #92400e;
+  --muted-text: #92400e;
+  color: #92400e;
+}
+.active-notice {
+  --dark-text: #1e40af;
+  --muted-text: #1e40af;
+  color: #1e40af;
+}
+.approved-notice {
+  --dark-text: #065f46;
+  --muted-text: #065f46;
+  color: #065f46;
+}
+.rejected-notice {
+  --dark-text: #991b1b;
+  --muted-text: #991b1b;
+  color: #991b1b;
+}
+.attendance-locked-message {
+  --dark-text: #92400e;
+  --muted-text: #92400e;
+  color: #92400e;
+}
+.final-message {
+  --dark-text: #065f46;
+  --muted-text: #065f46;
+  color: #065f46;
+}
+.progress-bar-container {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.ot-form {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table thead {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table tr.rejected-row {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-stepper {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attendance-stepper-step:not(:last-child)::after {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-stepper-marker {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/DailyReports.css */
+.daily-reports-page .report-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.daily-reports-page .report-item.rejected {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.daily-reports-page .admin-note.approved {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.daily-reports-page .admin-note.rejected {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Dashboard.css */
+.requirement-alert {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.requirement-success {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+
+/* pages/student/OJT.css */
+.ojt-hour-stat {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.ojt-completion-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Requirements.css */
+.requirement-dropzone {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-file-chip {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-file-chip-icon {
+  --dark-text: #C2410C;
+  --muted-text: #C2410C;
+  color: #C2410C;
+}
+
+/* ==== GENERATED: dark hardcoded text re-pointed to the card tokens ==== */
+
+/* components/AdminDashboardMetrics.css */
+.card .metrics-error { color: var(--muted-text); }
+.card .metrics-loading p { color: var(--muted-text); }
+
+/* components/AttentionCenter.css */
+.card .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-warning .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-danger .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-info .attention-item-icon { color: var(--muted-text); }
+
+/* components/ConfirmationModal.css */
+.card .confirmation-title { color: var(--dark-text); }
+.card .confirmation-message { color: var(--muted-text); }
+
+/* components/ContactForm.css */
+.card .contact-form-title { color: var(--dark-text); }
+.card .contact-form-subtitle { color: var(--muted-text); }
+.card .contact-alternative p { color: var(--muted-text); }
+.card .email-link { color: var(--muted-text); }
+
+/* components/DreamAcademy.css */
+.card .da-kicker { color: var(--dark-text); }
+.card .da-eyebrow { color: var(--muted-text); }
+.card .da-h3 { color: var(--dark-text); }
+.card .da-body { color: var(--dark-text); }
+.card .da-spec-num { color: var(--muted-text); }
+.card .da-spec-title { color: var(--dark-text); }
+.card .da-duty { color: var(--dark-text); }
+
+/* components/GalleryCard.css */
+.card .gallery-card-title { color: var(--dark-text); }
+.card .gallery-card-description { color: var(--muted-text); }
+
+/* components/GalleryModal.css */
+.card .gallery-modal-close { color: var(--dark-text); }
+.card .gallery-modal-description { color: var(--muted-text); }
+.card .gallery-modal-details h3 { color: var(--dark-text); }
+.card .gallery-modal-details p { color: var(--dark-text); }
+.card .gallery-modal-details li { color: var(--dark-text); }
+.card .gallery-modal-images h3 { color: var(--dark-text); }
+
+/* components/LiveTimeTracker.css */
+.card .tracker-status { color: var(--muted-text); }
+.card .is-live .tracker-status { color: var(--muted-text); }
+.card .is-paused .tracker-status { color: var(--muted-text); }
+.card .is-capped .tracker-status { color: var(--muted-text); }
+.card .tracker-note { color: var(--muted-text); }
+.card .is-paused .tracker-note { color: var(--muted-text); }
+.card .is-capped .tracker-note { color: var(--muted-text); }
+
+/* components/OnboardingModal.css */
+.card .onboarding-description { color: var(--dark-text); }
+.card .requirement-title { color: var(--dark-text); }
+.card .requirement-description { color: var(--muted-text); }
+.card .onboarding-notice { color: var(--muted-text); }
+
+/* components/RegisterWizard.css */
+.card .rw-commitment strong { color: var(--muted-text); }
+.card .rw-notice { color: var(--muted-text); }
+.card .rw-success-note { color: var(--muted-text); }
+
+/* components/SignInWall.css */
+.card .signin-wall-title { color: var(--dark-text); }
+.card .signin-wall-message { color: var(--muted-text); }
+.card .benefits-title { color: var(--dark-text); }
+.card .benefits-list li { color: var(--muted-text); }
+
+/* components/VideoModal.css */
+.card .video-modal-close { color: var(--dark-text); }
+.card .video-modal-title { color: var(--dark-text); }
+.card .video-modal-description { color: var(--muted-text); }
+.card .video-error-button { color: var(--dark-text); }
+
+/* index.css */
+.card .btn-outline { color: var(--muted-text); }
+.card .badge-blue { color: var(--dark-text); }
+.card .badge-green { color: var(--muted-text); }
+.card .badge-yellow { color: var(--muted-text); }
+.card .badge-red { color: var(--dark-text); }
+.card .badge-gray { color: var(--muted-text); }
+.card .badge-purple { color: var(--dark-text); }
+.card .badge-orange { color: var(--muted-text); }
+.card .data-table td { color: var(--dark-text); }
+.card .attention-bell { color: var(--dark-text); }
+.card .attention-panel { color: var(--dark-text); }
+.card .confirmation-modal-card { color: var(--dark-text); }
+.card .da { color: var(--dark-text); }
+.card .da-fact:nth-child(2)::before { color: var(--dark-text); }
+.card .da-about { color: var(--dark-text); }
+.card .da-spec-card { color: var(--dark-text); }
+.card .da-card { color: var(--dark-text); }
+.card .gallery-card { color: var(--dark-text); }
+.card .gallery-card-image-container { color: var(--dark-text); }
+.card .gallery-modal-container { color: var(--dark-text); }
+.card .gallery-modal-info::-webkit-scrollbar-track, .gallery-modal-container::-webkit-scrollbar-track { color: var(--dark-text); }
+.card .live-time-tracker { color: var(--dark-text); }
+.card .live-time-tracker.is-paused { color: var(--dark-text); }
+.card .is-live .tracker-status { color: var(--dark-text); }
+.card .is-capped .tracker-status { color: var(--dark-text); }
+.card .is-capped .tracker-note { color: var(--dark-text); }
+.card .ribbon-track span i { color: var(--dark-text); }
+.card .requirement-item { color: var(--dark-text); }
+.card .onboarding-notice { color: var(--dark-text); }
+.card .rw-dialog { color: var(--dark-text); }
+.card .rw-step-dot { color: var(--dark-text); }
+.card .rw-role { color: var(--dark-text); }
+.card .rw-guidance-head { color: var(--dark-text); }
+.card .rw-foot { color: var(--dark-text); }
+.card .terms-intro { color: var(--dark-text); }
+.card .terms-content::-webkit-scrollbar-track { color: var(--dark-text); }
+.card .video-modal-container { color: var(--dark-text); }
+.card body { color: var(--dark-text); }
+.card .form-input, .form-select, .form-textarea { color: var(--dark-text); }
+.card .progress-bar { color: var(--dark-text); }
+.card .modal { color: var(--dark-text); }
+.card .table { color: var(--dark-text); }
+.card .table th { color: var(--dark-text); }
+.card .portal-header-btn { color: var(--dark-text); }
+.card .schedule-preview { color: var(--dark-text); }
+.card .certificate-preview-frame { color: var(--dark-text); }
+.card .table-responsive { color: var(--dark-text); }
+.card .data-table thead { color: var(--dark-text); }
+.card .portal-layout { color: var(--dark-text); }
+.card .sidebar { color: var(--dark-text); }
+.card .sidebar-header { color: var(--dark-text); }
+.card .sidebar-user { color: var(--dark-text); }
+.card .sidebar-footer { color: var(--dark-text); }
+.card .logout-btn { color: var(--dark-text); }
+.card .admin-page { color: var(--dark-text); }
+.card .admin-page-header { color: var(--dark-text); }
+.card .admin-stat-box { color: var(--dark-text); }
+.card .admin-filters { color: var(--dark-text); }
+.card .action-button.secondary { color: var(--dark-text); }
+.card .admin-table { color: var(--dark-text); }
+.card .hours-badge { color: var(--dark-text); }
+.card .hours-badge.highlight { color: var(--muted-text); }
+.card .modal-info { color: var(--dark-text); }
+.card .reason-box, .accomplishments-box { color: var(--dark-text); }
+.card .approval-confirmation { color: var(--dark-text); }
+.card .filter-notice { color: var(--muted-text); }
+.card .requested-row { color: var(--dark-text); }
+.card .attendance-review-summary { color: var(--dark-text); }
+.card .ojt-stat { color: var(--dark-text); }
+.card .pending-summary-card { color: var(--dark-text); }
+.card .approval-details { color: var(--dark-text); }
+.card .rejection-details { color: var(--dark-text); }
+.card .admin-search-input { color: var(--dark-text); }
+.card .admin-search-result { color: var(--dark-text); }
+.card .admin-item { color: var(--dark-text); }
+.card .progress-track { color: var(--dark-text); }
+.card .section.bg-white { color: var(--dark-text); }
+.card .info-card { color: var(--dark-text); }
+.card .thrust-item { color: var(--dark-text); }
+.card .partner-chip { color: var(--dark-text); }
+.card .about-stat-box { color: var(--dark-text); }
+.card .team-card { color: var(--dark-text); }
+.card .auth-page { color: var(--dark-text); }
+.card .auth-shell { color: var(--dark-text); }
+.card .auth-brand-logo-card { color: var(--dark-text); }
+.card .auth-panel { color: var(--dark-text); }
+.card .auth-card { color: var(--dark-text); }
+.card .alert-error { color: var(--dark-text); }
+.card .alert-success { color: var(--muted-text); }
+.card .alert-warning { color: var(--muted-text); }
+.card .account-type-card { color: var(--dark-text); }
+.card .account-type-icon { color: var(--dark-text); }
+.card .success-message { color: var(--dark-text); }
+.card .password-requirements { color: var(--dark-text); }
+.card .step-number { color: var(--dark-text); }
+.card .step-line { color: var(--dark-text); }
+.card .otp-info { color: var(--dark-text); }
+.card .strength-track { color: var(--dark-text); }
+.card .pending-approval-note { color: var(--dark-text); }
+.card .feature-card { color: var(--dark-text); }
+.card .bento-cell { color: var(--dark-text); }
+.card .thrusts-seam { color: var(--dark-text); }
+.card .seam-cta-link { color: var(--dark-text); }
+.card .stats-section { color: var(--dark-text); }
+.card .gallery-item { color: var(--dark-text); }
+.card .gallery-image { color: var(--dark-text); }
+.card .gallery-placeholder { color: var(--dark-text); }
+.card .accomplishments-swiper .view-details-btn { color: var(--dark-text); }
+.card .hero-aurora .blob-1 { color: var(--dark-text); }
+.card .hero-aurora .blob-2 { color: var(--dark-text); }
+.card .hero-aurora .blob-3 { color: var(--dark-text); }
+.card .author-avatar { color: var(--dark-text); }
+.card .auth-divider span { color: var(--dark-text); }
+.card .id-format-info { color: var(--dark-text); }
+.card .announcements-page .announcements-search-input { color: var(--dark-text); }
+.card .announcements-page .announcements-tab { color: var(--dark-text); }
+.card .announcements-page .announcement-mark-read { color: var(--dark-text); }
+.card .application-accepted-notice { color: var(--dark-text); }
+.card .application-declined-notice { color: var(--dark-text); }
+.card .pending-notice { color: var(--muted-text); }
+.card .active-notice { color: var(--dark-text); }
+.card .approved-notice { color: var(--muted-text); }
+.card .rejected-notice { color: var(--dark-text); }
+.card .attendance-locked-message { color: var(--muted-text); }
+.card .final-message { color: var(--muted-text); }
+.card .progress-bar-container { color: var(--dark-text); }
+.card .ot-form { color: var(--dark-text); }
+.card .data-table tr.rejected-row { color: var(--dark-text); }
+.card .attendance-stepper { color: var(--dark-text); }
+.card .attendance-stepper-step:not(:last-child)::after { color: var(--dark-text); }
+.card .attendance-stepper-marker { color: var(--dark-text); }
+.card .daily-reports-page .report-item { color: var(--dark-text); }
+.card .daily-reports-page .report-item.rejected { color: var(--dark-text); }
+.card .daily-reports-page .admin-note.approved { color: var(--dark-text); }
+.card .daily-reports-page .admin-note.rejected { color: var(--dark-text); }
+.card .requirement-alert { color: var(--muted-text); }
+.card .requirement-success { color: var(--muted-text); }
+.card .ojt-hour-stat { color: var(--dark-text); }
+.card .ojt-completion-notice { color: var(--dark-text); }
+.card .requirement-dropzone { color: var(--dark-text); }
+.card .requirement-file-chip { color: var(--dark-text); }
+.card .requirement-file-chip-icon { color: var(--muted-text); }
+
+/* pages/admin/Admin.css */
+.card .page-title { color: var(--dark-text); }
+.card .student-name { color: var(--dark-text); }
+.card .student-email { color: var(--muted-text); }
+.card .report-meta { color: var(--muted-text); }
+.card .content-label { color: var(--dark-text); }
+.card .content-text { color: var(--muted-text); }
+.card .admin-note-cell { color: var(--muted-text); }
+.card .modal-info p { color: var(--dark-text); }
+.card .empty-state h3 { color: var(--dark-text); }
+.card .empty-state p { color: var(--muted-text); }
+.card .tab { color: var(--muted-text); }
+.card .tab.active { color: var(--muted-text); }
+.card .applicant-name { color: var(--dark-text); }
+.card .applicant-email { color: var(--muted-text); }
+.card .detail-label { color: var(--muted-text); }
+.card .detail-value { color: var(--dark-text); }
+.card .confirmation-text { color: var(--muted-text); }
+.card .card-subtitle { color: var(--muted-text); }
+.card .muted-cell { color: var(--muted-text); }
+.card .duration-display { color: var(--dark-text); }
+.card .ojt-stat-value.is-required { color: var(--dark-text); }
+.card .ojt-stat-value.is-verified { color: var(--muted-text); }
+.card .ojt-stat-value.is-remaining { color: var(--muted-text); }
+.card .ojt-stat-value.is-progress { color: var(--dark-text); }
+.card .ojt-stat-label { color: var(--muted-text); }
+
+/* pages/admin/AttendanceReview.css */
+.card .pending-count { color: var(--muted-text); }
+.card .pending-label { color: var(--dark-text); }
+.card .pending-description { color: var(--muted-text); }
+.card .hours-display { color: var(--muted-text); }
+.card .progress-before-after { color: var(--muted-text); }
+.card .progress-increase { color: var(--muted-text); }
+.card .empty-state-title { color: var(--dark-text); }
+.card .empty-state-description { color: var(--muted-text); }
+.card .approval-impact-list { color: var(--muted-text); }
+.card .rejection-warning { color: var(--dark-text); }
+
+/* pages/admin/Dashboard.css */
+.card .admin-search-icon { color: var(--muted-text); }
+.card .admin-search-clear { color: var(--muted-text); }
+.card .admin-search-result-copy small { color: var(--muted-text); }
+
+/* pages/admin/Students.css */
+.card .progress-cell { color: var(--muted-text); }
+
+/* pages/public/About.css */
+.card .partner-name { color: var(--dark-text); }
+.card .partner-detail { color: var(--dark-text); }
+.card .partner-detail-tagline { color: var(--muted-text); }
+.card .partner-detail-industry { color: var(--muted-text); }
+.card .partner-detail-about { color: var(--dark-text); }
+.card .partner-detail-heading { color: var(--dark-text); }
+.card .partner-detail-item { color: var(--dark-text); }
+
+/* pages/public/Auth.css */
+.card .auth-title { color: var(--dark-text); }
+.card .auth-subtitle { color: var(--muted-text); }
+.card .auth-footer { color: var(--muted-text); }
+.card .form-label { color: var(--dark-text); }
+.card .account-type-icon { color: var(--muted-text); }
+.card .account-type-label { color: var(--dark-text); }
+.card .account-type-note { color: var(--muted-text); }
+.card .account-type-card:has(input[type="radio"]:checked) .account-type-label { color: var(--muted-text); }
+.card .success-message h3 { color: var(--muted-text); }
+.card .success-message p { color: var(--muted-text); }
+.card .success-message strong { color: var(--dark-text); }
+.card .requirements-title { color: var(--dark-text); }
+.card .password-requirements li { color: var(--muted-text); }
+.card .step-number { color: var(--muted-text); }
+.card .step-label { color: var(--muted-text); }
+.card .otp-info p { color: var(--muted-text); }
+.card .otp-info strong { color: var(--dark-text); }
+.card .pending-approval-modal h3 { color: var(--dark-text); }
+.card .pending-approval-modal p { color: var(--muted-text); }
+
+/* pages/public/Home.css */
+.card .seam-kicker { color: var(--muted-text); }
+
+/* pages/public/Register.css */
+.card .form-error { color: var(--muted-text); }
+
+/* pages/student/Applications.css */
+.card .application-accepted-notice strong { color: var(--muted-text); }
+.card .application-accepted-notice p { color: var(--muted-text); }
+.card .application-declined-notice strong { color: var(--dark-text); }
+.card .application-declined-notice p { color: var(--dark-text); }
+
+/* pages/student/Attendance.css */
+.card .page-subtitle { color: var(--muted-text); }
+.card .card-title { color: var(--dark-text); }
+.card .card-date { color: var(--muted-text); }
+.card .section-subtitle { color: var(--dark-text); }
+.card .data-table th { color: var(--muted-text); }
+.card .loading-spinner { color: var(--muted-text); }
+.card .attendance-stepper-marker { color: var(--muted-text); }
+
+/* pages/student/DailyReports.css */
+.card .daily-reports-page .admin-note.approved .note-label, .daily-reports-page .admin-note.approved .note-text { color: var(--muted-text); }
+.card .daily-reports-page .admin-note.rejected .note-label, .daily-reports-page .admin-note.rejected .note-text { color: var(--dark-text); }
+
+/* pages/student/OJT.css */
+.card .ojt-hour-value { color: var(--dark-text); }
+.card .ojt-hour-value.verified { color: var(--muted-text); }
+.card .ojt-hour-value.pending { color: var(--muted-text); }
+.card .ojt-hour-value.remaining { color: var(--muted-text); }
+.card .ojt-completion-title { color: var(--muted-text); }
+.card .ojt-completion-text { color: var(--muted-text); }
+
+/* pages/student/Requirements.css */
+.card .requirement-admin-remarks { color: var(--muted-text); }
+.card .requirement-file-link.danger { color: var(--muted-text); }
+.card .requirement-form-error { color: var(--muted-text); }

@@ -1,5 +1,6 @@
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
+import './Reports.css';
 
 export function AdminReports() {
   const { state } = useApp();
@@ -13,30 +14,33 @@ export function AdminReports() {
   const pendingAttendance = attendance.filter(a => a.status === 'Pending Verification');
   const pendingReports = dailyReports.filter(r => r.status === 'Submitted');
 
+  // `tone` only drives the small accent rule on the card; the NUMBER itself is
+  // always the card's own text token.  The previous version set the number's
+  // colour to the accent, and every one of those accents measured under 3:1
+  // against the card gradient's orange end (#279EB6 1.71, #D57156 1.63,
+  // #10B981 2.13, #8B5CF6 1.28, #EF4444 1.44, #F59E0B 2.52).
   const stats = [
-    { label: 'Total Students', value: students.length, color: 'var(--teal)' },
-    { label: 'Total Applications', value: applications.length, color: 'var(--primary-orange)' },
-    { label: 'Accepted Applications', value: acceptedApplications.length, color: '#10B981' },
-    { label: 'Active OJT Programs', value: activeOJT.length, color: 'var(--yellow)' },
-    { label: 'Completed OJT', value: completedOJT.length, color: '#8B5CF6' },
-    { label: 'Total Programs', value: programs.length, color: 'var(--teal)' },
-    { label: 'Total Opportunities', value: opportunities.length, color: 'var(--primary-orange)' },
-    { label: 'Total Verified OJT Hours', value: totalVerifiedHours, color: '#10B981' },
-    { label: 'Pending Attendance Verification', value: pendingAttendance.length, color: '#EF4444' },
-    { label: 'Pending Daily Reports', value: pendingReports.length, color: '#F59E0B' }
+    { label: 'Total Students', value: students.length, tone: 'teal' },
+    { label: 'Total Applications', value: applications.length, tone: 'orange' },
+    { label: 'Accepted Applications', value: acceptedApplications.length, tone: 'green' },
+    { label: 'Active OJT Programs', value: activeOJT.length, tone: 'amber' },
+    { label: 'Completed OJT', value: completedOJT.length, tone: 'violet' },
+    { label: 'Total Programs', value: programs.length, tone: 'teal' },
+    { label: 'Total Opportunities', value: opportunities.length, tone: 'orange' },
+    { label: 'Total Verified OJT Hours', value: totalVerifiedHours, tone: 'green' },
+    { label: 'Pending Attendance Verification', value: pendingAttendance.length, tone: 'red' },
+    { label: 'Pending Daily Reports', value: pendingReports.length, tone: 'amber' }
   ];
 
   return (
     <div>
-      <h1 className="page-title">Reports & Analytics</h1>
+      <h1 className="page-title">Reports &amp; Analytics</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-        {stats.map((stat, idx) => (
-          <Card key={idx} style={{ textAlign: 'center', padding: '32px 24px' }}>
-            <div style={{ fontSize: '36px', fontWeight: '700', color: stat.color, marginBottom: '8px' }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--muted-text)' }}>{stat.label}</div>
+      <div className="reports-stat-grid">
+        {stats.map((stat) => (
+          <Card key={stat.label} className={`report-stat-card tone-${stat.tone}`}>
+            <div className="report-stat-value">{stat.value}</div>
+            <div className="report-stat-label">{stat.label}</div>
           </Card>
         ))}
       </div>

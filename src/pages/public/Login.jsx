@@ -142,12 +142,7 @@ export function Login() {
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className="form-group">
-                <span className="form-label">
-                  Sign in as
-                  <span className="form-label-note">
-                    OJT and Trainee only — admins are detected automatically
-                  </span>
-                </span>
+                <span className="form-label">Sign in as</span>
                 <div className="account-type-selection">
                   <label className="account-type-card">
                     <input

@@ -1,0 +1,29 @@
+
+/* --------------------------------------------------------------------------
+ * On-gradient text correction.
+ *
+ * Every page stylesheet in this project was written while .card was a WHITE
+ * surface, so card text was set with hardcoded dark hex (#1a1a1a, #374151,
+ * #666, ...).  Now that .card paints the brand gradient those literals render
+ * dark-on-gradient (measured 2.76:1 for #1A1A1A on #16697A).
+ *
+ * Rather than rewrite 40 stylesheets, this one rule re-points card-descendant
+ * TEXT at the tokens the card itself declares.  It is token-driven, so it
+ * automatically respects every carve-out above: on .card--surface,
+ * .card:has(input, ...) and the .card.X list the tokens are already dark, and
+ * this same rule then yields dark text on the light surface.
+ *
+ * Specificity is the mechanism.  :is(h1..h6, strong, ...) contributes (0,0,1),
+ * so .card :is(...) is (0,1,1) and outranks a single-class local rule such as
+ * .card-title { color: #1a1a1a } (0,1,0) - exactly the accidental case.  A
+ * DELIBERATE accent is written with two classes (.stat-value.success,
+ * .journey-stage.active .stage-name) and still wins at (0,2,0).  Backgrounds,
+ * borders and layout are untouched.
+ * -------------------------------------------------------------------------- */
+.card :is(h1, h2, h3, h4, h5, h6, strong, b, label, legend, dt, th) {
+  color: var(--dark-text);
+}
+
+.card :is(p, span, li, dd, td, small, em, i, time, figcaption, blockquote, cite, address) {
+  color: var(--muted-text);
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../config/supabase';
-import { isPendingApplicationStatus } from '../../services/supabaseService';
+import { isPendingApplicationStatus, resolveUserName } from '../../services/supabaseService';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -160,7 +160,7 @@ export function OtApprovals() {
                   <tr key={request.id}>
                     <td>
                       <div className="student-info">
-                        <div className="student-name">{request.user?.fullName || 'Unknown'}</div>
+                        <div className="student-name">{resolveUserName(request.user, request)}</div>
                         <div className="student-email">{request.user?.email}</div>
                       </div>
                     </td>
@@ -230,7 +230,7 @@ export function OtApprovals() {
                   .slice(0, 10)
                   .map((request) => (
                     <tr key={request.id}>
-                      <td>{request.user?.fullName || 'Unknown'}</td>
+                      <td>{resolveUserName(request.user, request)}</td>
                       <td>{formatDate(request.createdAt)}</td>
                       <td>+{request.requestedHours} hrs</td>
                       <td><Badge status={request.status}>{request.status}</Badge></td>
@@ -262,7 +262,7 @@ export function OtApprovals() {
 
             <div className="form-group" style={{ marginTop: '20px' }}>
               <label className="form-label">
-                Admin Note {modalAction === 'reject' && <span style={{color: 'red'}}>*</span>}
+                Admin Note {modalAction === 'reject' && <span className="required-marker" aria-hidden="true">*</span>}
               </label>
               <textarea
                 className={`form-textarea ${noteError ? 'error' : ''}`}

@@ -1,0 +1,90 @@
+
+########## ADMIN PORTAL ##########
+
+=== /admin  (11 cards, 0 offenders)
+
+=== /admin/dashboard  (11 cards, 0 offenders)
+
+=== /admin/students  (1 cards, 0 offenders)
+
+=== /admin/programs  (1 cards, 0 offenders)
+
+=== /admin/opportunities  (1 cards, 0 offenders)
+
+=== /admin/applications  (2 cards, 0 offenders)  [redirected -> /admin/application-review]
+
+=== /admin/attendance  (2 cards, 0 offenders)  [redirected -> /admin/attendance-verification]
+
+=== /admin/attendance-review  (2 cards, 0 offenders)  [redirected -> /admin/attendance-verification]
+
+=== /admin/ojt  (1 cards, 0 offenders)
+
+=== /admin/daily-reports  (1 cards, 0 offenders)
+
+=== /admin/requirements  (1 cards, 0 offenders)
+
+=== /admin/certificates  (1 cards, 0 offenders)
+
+=== /admin/announcements  (0 cards, 0 offenders)
+
+=== /admin/reports  (10 cards, 0 offenders)
+
+=== /admin/attendance-verification  (2 cards, 0 offenders)
+
+=== /admin/ot-approvals  (2 cards, 0 offenders)
+
+=== /admin/report-approvals  (3 cards, 0 offenders)
+
+=== /admin/application-review  (2 cards, 0 offenders)
+
+########## STUDENT PORTAL ##########
+
+=== /student  (5 cards, 0 offenders)
+
+=== /student/dashboard  (5 cards, 0 offenders)
+
+=== /student/profile  (1 cards, 0 offenders)
+
+=== /student/programs  (1 cards, 0 offenders)
+
+=== /student/opportunities  (2 cards, 0 offenders)
+
+=== /student/applications  (0 cards, 0 offenders)
+
+=== /student/requirements  (0 cards, 0 offenders)
+
+=== /student/ojt  (2 cards, 0 offenders)
+
+=== /student/attendance  (6 cards, 0 offenders)
+
+=== /student/daily-reports  (2 cards, 0 offenders)
+
+=== /student/certificates  (0 cards, 0 offenders)
+
+=== /student/announcements  (0 cards, 0 offenders)
+
+########## TRAINEE PORTAL ##########
+
+=== /trainee  (5 cards, 0 offenders)
+
+=== /trainee/dashboard  (5 cards, 0 offenders)
+
+=== /trainee/profile  (1 cards, 0 offenders)
+
+=== /trainee/programs  (1 cards, 0 offenders)
+
+=== /trainee/opportunities  (1 cards, 0 offenders)
+
+=== /trainee/applications  (0 cards, 0 offenders)
+
+=== /trainee/requirements  (0 cards, 0 offenders)
+
+=== /trainee/attendance  (5 cards, 0 offenders)
+
+=== /trainee/daily-reports  (2 cards, 0 offenders)
+
+=== /trainee/certificates  (0 cards, 0 offenders)
+
+=== /trainee/announcements  (0 cards, 0 offenders)
+
+TOTAL PORTAL OFFENDERS: 0

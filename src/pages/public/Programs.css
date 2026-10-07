@@ -21,7 +21,14 @@
   height: 100%;
 }
 
+/* Flex + gap, matching .opportunity-header. Without it the status pill and the
+   slots pill are inline-block siblings that TOUCH, and when both resolve to the
+   same colour they read as one malformed lozenge instead of two badges. */
 .program-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
@@ -65,11 +72,17 @@
   gap: 6px;
 }
 
+/* A pale teal chip on the WHITE posting card.  The old chip text (--teal,
+   #279EB6) is only 3.16:1 on white, so the label uses the deepened brand teal
+   #0F5566, which measures 7.9:1 on the tinted chip.
+   No hover override is needed: the card's hover sweep is a LIGHT wash, so the
+   chip stays a pale teal lozenge with the same dark-teal label (6.9:1 on the
+   wash's warmest stop). */
 .thrust-tag {
   font-size: 11px;
   padding: 4px 10px;
-  background: rgba(39, 158, 182, 0.1);
-  color: var(--teal);
+  background: rgba(22, 105, 122, 0.1);
+  color: #0F5566;
   border-radius: 12px;
   font-weight: 500;
 }

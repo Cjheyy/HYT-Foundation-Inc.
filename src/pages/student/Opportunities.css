@@ -30,7 +30,9 @@
 }
 
 .opportunity-card-org {
-  color: var(--primary-orange);
+  /* White card again: the deepened brand orange reads at 5.41:1 here, and the
+     token flips to white under the posting card's hover gradient. */
+  color: var(--accent-text, #B8441F);
   margin-bottom: 12px;
   font-size: 15px;
 }

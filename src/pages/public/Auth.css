@@ -338,17 +338,6 @@
   margin-bottom: 8px;
 }
 
-/* The same form serves admins, who never choose an account type.  Without this
-   note the two cards read as a required step for everybody.  #6B7280 is 4.83:1
-   on white. */
-.form-label-note {
-  display: block;
-  margin-top: 3px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #6B7280;
-}
-
 /* --- Account type selector (Login) ---
    Required for OJT Students and Trainees so the chosen portal must match the
    role on their profile.  Admins are exempt in authService and the form does

@@ -499,74 +499,14 @@
 
 /* ==========================================================================
    6. FEATURED CARDS — clip-path circle reveal
+
+   MOVED.  The reveal is no longer a Home-only effect: all five browsable
+   posting surfaces (Home rails, public Programs, public Opportunities,
+   student Opportunities) now share it, so the definition lives with the
+   shared card CSS in src/index.css alongside `.card.reveal-card:hover`.
+   Keeping a second copy here meant the two drifted — this file still held the
+   saturated gradient long after the shared rule had moved to a light wash.
    ========================================================================== */
-
-.reveal-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.reveal-wipe {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(150deg, var(--teal, #279EB6), var(--primary-orange, #D57156));
-  clip-path: circle(0% at 100% 0%);
-  transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
-}
-
-.reveal-card:hover .reveal-wipe {
-  /* 140%, not 100% — a circle of exactly 100% does not reach the far corner. */
-  clip-path: circle(140% at 100% 0%);
-}
-
-/* Lift the real content above the wipe. */
-.reveal-card > *:not(.reveal-wipe) {
-  position: relative;
-  z-index: 1;
-}
-
-/* Invert the card's text so it stays readable on the gradient. */
-.reveal-card .card-title,
-.reveal-card .card-org,
-.reveal-card .card-description,
-.reveal-card .meta-item {
-  transition: color 0.35s ease;
-}
-
-.reveal-card:hover .card-title {
-  color: #fff;
-}
-
-.reveal-card:hover .card-org,
-.reveal-card:hover .card-description,
-.reveal-card:hover .meta-item {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Icons inherit `currentColor` from .meta-item, so no extra rule is needed —
-   but the SVG needs its own transition to avoid a hard flip. */
-.reveal-card .meta-item svg {
-  transition: stroke 0.35s ease;
-}
-
-/* Buttons invert too: solid → white-on-dark, outline → translucent white. */
-.reveal-card .btn-primary {
-  transition: background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
-}
-
-.reveal-card:hover .btn-primary {
-  background: #fff;
-  color: var(--primary-orange, #D57156);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-}
-
-.reveal-card:hover .btn-outline {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.8);
-  color: #fff;
-}
 
 /* ==========================================================================
    10. Reduced motion

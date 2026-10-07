@@ -1,0 +1,53 @@
+/* Reports & Analytics — stat cards.
+ *
+ * The cards are WHITE, so the number reads the card's dark text token and the
+ * accent lives on a thin rule above it.  The earlier version painted the NUMBER
+ * with the accent colour, which failed contrast on every single tone.
+ */
+.reports-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.report-stat-card {
+  position: relative;
+  text-align: center;
+  padding: 32px 24px;
+  overflow: hidden;
+}
+
+.report-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--report-accent, rgba(255, 255, 255, 0.6));
+}
+
+.report-stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 8px;
+  color: var(--dark-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-stat-label {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+/* Accent rules are decorative, so they are exempt from the text-contrast bar —
+   but they still have to be SEEN, and on a white card the old pale tones
+   (#8DD0DE, #F3DB6E, #C4B5FD, #FCA5A5) washed out.  Deepened to the brand's
+   siblings so the 4px rule reads against white. */
+.report-stat-card.tone-teal { --report-accent: #16697A; }
+.report-stat-card.tone-orange { --report-accent: #B8441F; }
+.report-stat-card.tone-green { --report-accent: #047857; }
+.report-stat-card.tone-amber { --report-accent: #B45309; }
+.report-stat-card.tone-violet { --report-accent: #5B21B6; }
+.report-stat-card.tone-red { --report-accent: #B42318; }

@@ -19,7 +19,8 @@ import {
   isPendingReportStatus,
   isPendingAccountStatus,
   getAttendanceStage,
-  isTraineeRole
+  isTraineeRole,
+  resolveUserName
 } from '../../services/supabaseService';
 import { formatDate } from '../../utils/helpers';
 import './Dashboard.css';
@@ -27,16 +28,27 @@ import './Admin.css';
 
 const normalizeSearch = (value) => String(value || '').trim().toLowerCase();
 
+/**
+ * Session-wide cache, deliberately OUTSIDE the component.
+ *
+ * `initialLoading` used to start `true` on every mount, so returning to the
+ * admin dashboard always flashed the skeleton rows again.  Keeping the last
+ * snapshot at module scope means only the first render of the session loads;
+ * every later mount paints the previous lists instantly and refreshes in the
+ * background.  This is what makes the page responsive at all times.
+ */
+const dashboardSnapshot = { ready: false, users: null, applications: null, logs: null, reports: null };
+
 export function AdminDashboard() {
   const { state } = useApp();
   const navigate = useNavigate();
-  const [directoryUsers, setDirectoryUsers] = useState(state.users || []);
-  const [pendingApplications, setPendingApplications] = useState([]);
-  const [pendingLogs, setPendingLogs] = useState([]);
-  const [pendingReports, setPendingReports] = useState([]);
+  const [directoryUsers, setDirectoryUsers] = useState(() => dashboardSnapshot.users || state.users || []);
+  const [pendingApplications, setPendingApplications] = useState(() => dashboardSnapshot.applications || []);
+  const [pendingLogs, setPendingLogs] = useState(() => dashboardSnapshot.logs || []);
+  const [pendingReports, setPendingReports] = useState(() => dashboardSnapshot.reports || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(() => !dashboardSnapshot.ready);
   const [loadError, setLoadError] = useState('');
 
   // The realtime channel is owned by <AdminDashboardMetrics />, which also
@@ -80,12 +92,23 @@ export function AdminDashboard() {
       const rawApplications = applicationsResult.value?.data || applicationsResult.value || [];
       const rawLogs = logsResult.value?.data || logsResult.value || [];
       const rawReports = reportsResult.value?.data || reportsResult.value || [];
-      setDirectoryUsers(Array.isArray(users) ? users : []);
-      setPendingApplications((Array.isArray(rawApplications) ? rawApplications : []).filter((application) =>
+      const nextUsers = Array.isArray(users) ? users : [];
+      const nextApplications = (Array.isArray(rawApplications) ? rawApplications : []).filter((application) =>
         isPendingAccountStatus(application.applicationStatus)
-      ));
-      setPendingLogs((Array.isArray(rawLogs) ? rawLogs : []).filter((log) => isPendingAttendanceStatus(log.status)));
-      setPendingReports((Array.isArray(rawReports) ? rawReports : []).filter((report) => isPendingReportStatus(report.status)));
+      );
+      const nextLogs = (Array.isArray(rawLogs) ? rawLogs : []).filter((log) => isPendingAttendanceStatus(log.status));
+      const nextReports = (Array.isArray(rawReports) ? rawReports : []).filter((report) => isPendingReportStatus(report.status));
+
+      setDirectoryUsers(nextUsers);
+      setPendingApplications(nextApplications);
+      setPendingLogs(nextLogs);
+      setPendingReports(nextReports);
+      // Publish the snapshot so the next mount of this route renders warm.
+      dashboardSnapshot.ready = true;
+      dashboardSnapshot.users = nextUsers;
+      dashboardSnapshot.applications = nextApplications;
+      dashboardSnapshot.logs = nextLogs;
+      dashboardSnapshot.reports = nextReports;
       setLoadError('');
     } finally {
       if (mountedRef.current && showLoader && requestId === requestIdRef.current) setSearchLoading(false);
@@ -95,7 +118,8 @@ export function AdminDashboard() {
 
   useEffect(() => {
     mountedRef.current = true;
-    loadDashboardData({ showLoader: true });
+    // Warm cache refreshes silently; only a cold start shows the skeletons.
+    loadDashboardData({ showLoader: !dashboardSnapshot.ready });
 
     let refreshTimer;
     const scheduleRefresh = () => {
@@ -200,7 +224,7 @@ export function AdminDashboard() {
               <button type="button" className="admin-search-result" key={user.id} onClick={() => openDirectoryResult(user)}>
                 <span className="admin-search-avatar">{user.fullName?.charAt(0) || '?'}</span>
                 <span className="admin-search-result-copy">
-                  <strong>{user.fullName || 'Unknown user'}</strong>
+                  <strong>{resolveUserName(user)}</strong>
                   <small>{user.email}{user.school ? ` · ${user.school}` : ''}</small>
                 </span>
                 <Badge status={user.applicationStatus || 'UNKNOWN'}>
@@ -223,7 +247,7 @@ export function AdminDashboard() {
             <div key={application.id} className="admin-item" onClick={() => navigate(`/admin/application-review?user=${application.id}`)}>
               <div className="admin-item-header">
                 <div>
-                  <div className="admin-item-name">{application.fullName || 'Unknown'}</div>
+                  <div className="admin-item-name">{resolveUserName(application)}</div>
                   <div className="admin-item-date">{formatDate(application.createdAt)}</div>
                 </div>
                 <Badge status="PENDING_APPROVAL">Pending</Badge>
@@ -241,7 +265,7 @@ export function AdminDashboard() {
             <div key={report.id} className="admin-item" onClick={() => navigate('/admin/report-approvals?status=pending')}>
               <div className="admin-item-header">
                 <div>
-                  <div className="admin-item-name">{report.user?.fullName || 'Unknown'}</div>
+                  <div className="admin-item-name">{resolveUserName(report.user, report)}</div>
                   <div className="admin-item-date">{formatDate(report.reportDate || report.date)}</div>
                 </div>
                 <Badge status={report.status}>Pending</Badge>
@@ -259,7 +283,7 @@ export function AdminDashboard() {
             <div key={log.id} className="admin-item" onClick={() => navigate('/admin/attendance-verification?status=pending')}>
               <div className="admin-item-header">
                 <div>
-                  <div className="admin-item-name">{log.user?.fullName || 'Unknown'}</div>
+                  <div className="admin-item-name">{resolveUserName(log.user, log)}</div>
                   <div className="admin-item-date">
                     {formatDate(log.date)} · {getAttendanceStage(log) === 'CLOCK_IN' ? 'Clock-in request' : `${Number(log.renderedHours || 0).toFixed(2)} frozen hours`}
                   </div>

@@ -553,7 +553,6 @@
   }
 }
 
-
 /* Cards - Opportunity Cards */
 .card-title {
   font-size: 20px;
@@ -598,73 +597,6 @@
 .stats-section {
   background: linear-gradient(180deg, #ffffff 0%, var(--background) 100%);
   position: relative;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 32px;
-  position: relative;
-  z-index: 1;
-}
-
-.stat-card {
-  text-align: center;
-  padding: 48px 32px;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: linear-gradient(90deg, #D57156, #279EB6, #F3DB6E);
-  transform: scaleX(0);
-  transition: transform 0.5s ease;
-}
-
-.stat-card:hover::before {
-  transform: scaleX(1);
-}
-
-.stat-card:hover {
-  transform: translateY(-16px) scale(1.05);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border-color: white;
-}
-
-.stat-value {
-  font-size: 56px;
-  font-weight: 900;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #D57156 0%, #279EB6 50%, #F3DB6E 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  transition: all 0.5s ease;
-  line-height: 1;
-}
-
-.stat-card:hover .stat-value {
-  transform: scale(1.15);
-  text-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
-.stat-label {
-  font-size: 17px;
-  color: var(--dark-text);
-  font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
 /* Journey Timeline - Interactive Steps */
@@ -844,19 +776,6 @@
     grid-template-columns: 1fr;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-
-  .stat-value {
-    font-size: 42px;
-  }
-
-  .stat-card {
-    padding: 32px 20px;
-  }
-
   .journey-timeline {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -885,10 +804,6 @@
     font-size: 26px;
   }
 
-  .stat-value {
-    font-size: 36px;
-  }
-
   .step-number {
     width: 60px;
     height: 60px;
@@ -896,18 +811,90 @@
   }
 }
 
+/* This section is sized to sit on one screen. Measured, the card is only part of
+   the height: the shared `.section` rhythm (80px) plus the shared heading margin
+   (64px) plus the swiper's own padding added up to 473.6px of chrome around it,
+   and with the 101px sticky header that left only ~505px for the card on a 1080p
+   screen - less than the card was.
+   So the chrome is trimmed here, scoped to this section only, which lets the card
+   stay large and still clear the fold. Trimmed again in this pass (44 -> 36 and
+   40 -> 32) to pay for the larger card: chrome is now 353.6px = section padding
+   72 + heading 97.6 + its margin 32 + swiper padding 152, and the card formula
+   below reserves the 101px sticky header plus 10px of slack on top of that.
+   Measured result: the section + header stack lands 10.4px inside the fold at
+   every viewport tested, with the card at 65.3% of the viewport width at 1440x1050.
+   Scope with `.section.accomplishments-section`, not just `.accomplishments-section`:
+   both are single-class rules, so the winner would otherwise depend on source
+   order in a 1000-line file. */
+.section.accomplishments-section {
+  padding: 36px 20px;
+}
+
+.section.accomplishments-section .section-header {
+  margin-bottom: 32px;
+}
 
 /* Accomplishments Swiper Slider — LANDSCAPE (16:10) slides */
 .accomplishments-swiper {
   width: 100%;
-  padding: 48px 0 72px 0 !important;
+  /* The coverflow swings the side slides out and up, so the vertical padding has
+     to clear them or `overflow: hidden` clips their corners. `overflow` clips at
+     the padding edge, so the test is simply `padding >= overhang`.
+     Re-measured at the current card sizes by overriding `--slide-w` on the live
+     element (drafts/sweep-carousel.js). The overhang is SUPER-linear in the card
+     width - the swiper's 3D perspective magnifies the rotated neighbour slide by
+     more as the card gets wider - so it cannot be scaled up from a smaller card:
+       card 540px   tall -> overhang 47.4px
+       card 562.5px tall -> overhang 55.1px
+       card 587.5px tall -> overhang 64.5px   <-- the cap below
+       card 612.5px tall -> overhang 74.8px
+     76px covers the 587.5px cap with ~11px of headroom; the bottom is symmetric.
+     A clipped corner is invisible in a settled screenshot, so re-measure this
+     whenever the card grows. */
+  padding: 76px 0 76px 0 !important;
+  /* Card size. Three bounds, all of them real:
+       1. the viewport - this section has to sit on one screen without scrolling.
+          Its chrome is a FIXED cost, so a vh percentage alone would still
+          overflow on a short screen: what is left for the card is
+          (100vh - 465px), where 465 = 353.6px measured chrome (section padding 72
+          + heading 97.6 + its margin 32 + swiper padding 152) + the 101px sticky
+          header + a 10px safety margin. `max(200px, ...)` floors it so a very
+          short viewport cannot collapse the card to nothing - the floor is what
+          the section fits down to, so it sits just under the ~665px viewport
+          height below which nothing reasonable fits anyway.
+       2. 940x587.5 - the size that reads well on a tall screen; without this cap
+          a 1080p screen would give a 615px-tall card, which is the "too big"
+          this is walking back from. It is also what the reference screenshot
+          measures: the centre card spans ~65% of the track there, and 940px is
+          65.3% of a 1440px viewport.
+       3. 66vw - so the card never outgrows the track and loses its corners to
+          `overflow: hidden`.
+     All three bounds are proportional (587.5 x 1.6 = 940, 41.25vw x 1.6 = 66vw,
+     and the viewport bound is 1.6x by construction), so the 8:5 shape holds at
+     every step and `object-fit: cover` never crops the photos.
+     Deliberately NOT `aspect-ratio`: it is unsupported in op_mob 80 and
+     and_uc 15.5, both of which are in this project's browserslist, and there
+     `height: auto` would collapse the card to nothing. Custom properties are
+     supported everywhere the project targets. */
+  --slide-fit-h: max(200px, calc(100vh - 465px));
+  --slide-w: min(940px, calc(var(--slide-fit-h) * 1.6), 66vw);
+  --slide-h: min(587.5px, var(--slide-fit-h), 41.25vw);
 }
 
 .accomplishments-swiper .swiper-slide {
   background-position: center;
   background-size: cover;
-  width: 560px;
-  height: 350px;
+  /* Measured on the rendered page, not chosen by eye. A coverflow card can only
+     grow by eating the visible width of its neighbours, so the size and the track
+     have to move together: the section uses `container-wide` (1400px, so a 1360px
+     track) and the card is 940px, which is 69.1% of the track and leaves 210px of
+     each neighbour showing - still enough that the row reads as a carousel rather
+     than one centred card.
+     Capped against the viewport rather than set flat: `.swiper` is
+     `overflow: hidden`, so a fixed width wider than the track silently crops the
+     card's rounded corners instead of wrapping. */
+  width: var(--slide-w);
+  height: var(--slide-h);
 }
 
 .accomplishments-swiper .swiper-slide-content {
@@ -1026,14 +1013,28 @@
 }
 
 /* Responsive */
+
+/* Stepped down before 768: a 760px slide inside a ~860px container at laptop
+   widths left the neighbouring slides almost entirely hidden, so the carousel
+   stopped reading as a carousel. */
+@media (max-width: 1024px) {
+  .accomplishments-swiper {
+    /* Same three bounds as the base rule; only the constants change. The sticky
+       header measures 108.2px here rather than 101px, so the fixed cost is
+       353.6 + 108.2 + 10 = 472px. The 66vw guard is what actually governs at this
+       width - 66vw peaks at 676px here, under the 714px cap - so the cap is kept
+       only to mirror the base rule's three-bound shape. */
+    --slide-fit-h: max(200px, calc(100vh - 472px));
+    --slide-w: min(714px, calc(var(--slide-fit-h) * 1.6), 66vw);
+    --slide-h: min(446px, var(--slide-fit-h), 41.25vw);
+  }
+}
+
 @media (max-width: 768px) {
   .accomplishments-swiper {
     padding: 36px 0 56px 0 !important;
-  }
-
-  .accomplishments-swiper .swiper-slide {
-    width: 420px;
-    height: 263px;
+    --slide-w: min(560px, 76vw);
+    --slide-h: min(350px, 47.5vw);
   }
 
   .accomplishments-swiper .swiper-slide-caption h3 {
@@ -1051,9 +1052,20 @@
 }
 
 @media (max-width: 480px) {
-  .accomplishments-swiper .swiper-slide {
-    width: 340px;
-    height: 213px;
+  /* Full-bleed on phones. `.container` spends 20px of padding on each side, so at
+     a 390px viewport the track is only 310px wide - and the old 340px card was
+     overhanging it, losing both its rounded corners to `overflow: hidden`. Pulling
+     the track out to the screen edges gives the card 350px, which is wider than
+     before *and* fully visible, with a real peek of the neighbours. */
+  /* `100% + 40px` looked right but only reached 358px, because the percentage
+     resolves against the container's *content* box and so leaves the outer
+     padding uncovered. `100vw` with a half-difference margin is the reliable
+     full-bleed: it lands the track exactly on both screen edges. */
+  .accomplishments-swiper {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    --slide-w: min(400px, 90vw);
+    --slide-h: min(250px, 56.25vw);
   }
 
   .accomplishments-swiper .swiper-slide-caption {

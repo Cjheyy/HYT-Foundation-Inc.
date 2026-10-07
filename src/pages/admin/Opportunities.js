@@ -32,6 +32,7 @@ const emptyForm = {
 };
 
 const SLOT_OPTIONS = PROGRAM_SLOT_OPTIONS.map((value) => ({ value: String(value), label: `${value} slots` }));
+const ORGANIZATION_OPTIONS = PARTNER_ORGANIZATIONS.map((partner) => partner.name);
 
 export function AdminOpportunities() {
   const { state, dispatch, refreshData } = useApp();
@@ -134,18 +135,18 @@ export function AdminOpportunities() {
         <Button onClick={() => setShowCreateModal(true)}>Create OJT Posting</Button>
       </div>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div className="posting-list">
         {visibleOpportunities.length === 0 ? (
-          <Card><div style={{ textAlign: 'center', padding: '40px' }}><p className="no-data">No OJT postings found.</p></div></Card>
+          <Card><div className="posting-empty"><p className="no-data">No OJT postings found.</p></div></Card>
         ) : visibleOpportunities.map((opportunity) => {
           const slots = getEventSlotState(opportunity);
           return (
-            <Card key={opportunity.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+            <Card key={opportunity.id} className="posting-card">
+              <div className="posting-card-head">
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{opportunity.title}</h3>
-                  <p style={{ color: 'var(--primary-orange)', margin: '4px 0 0', fontWeight: '600' }}>{opportunity.organization}</p>
-                  <p className="no-data" style={{ marginTop: '8px' }}>{(opportunity.description || '').substring(0, 120)}{opportunity.description?.length > 120 ? '...' : ''}</p>
+                  <h3 className="posting-card-title">{opportunity.title}</h3>
+                  <p className="posting-card-org">{opportunity.organization}</p>
+                  <p className="no-data posting-card-blurb">{(opportunity.description || '').substring(0, 120)}{opportunity.description?.length > 120 ? '...' : ''}</p>
                   <div className="admin-card-meta">
                     <span><span className="meta-icon-svg"><Icon name="pin" size={15} /></span>{opportunity.location || '--'}</span>
                     <span><span className="meta-icon-svg"><Icon name="users" size={15} /></span>{slots.available} of {slots.total} slots remaining</span>
@@ -162,7 +163,7 @@ export function AdminOpportunities() {
       <Modal isOpen={showCreateModal} onClose={() => closeModal()} title="Create New OJT Posting">
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto', padding: '4px' }}>
           <Input label="Posting Title" name="title" value={formData.title} onChange={handleChange} error={errors.title} required />
-          <Select label="Organization" name="organization" value={formData.organization} onChange={handleChange} error={errors.organization} options={PARTNER_ORGANIZATIONS} placeholder="Select partner organization" required />
+          <Select label="Organization" name="organization" value={formData.organization} onChange={handleChange} error={errors.organization} options={ORGANIZATION_OPTIONS} placeholder="Select partner organization" required />
           <Textarea label="Description" name="description" value={formData.description} onChange={handleChange} error={errors.description} rows={4} required />
           <Input label="Location" name="location" value={formData.location} onChange={handleChange} error={errors.location} required />
           <Select label="Setup" name="setup" value={formData.setup} onChange={handleChange} options={['On-site', 'Remote', 'Hybrid']} />

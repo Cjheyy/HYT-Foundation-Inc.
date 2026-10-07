@@ -70,8 +70,18 @@ export function PublicHeader() {
                 </button>
               </>
             ) : (
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                <button className="btn btn-primary btn-sm">Login</button>
+              /* A single <Link> styled as a button. The previous markup was a
+                 <button> nested inside a <Link> — two interactive elements one
+                 inside the other, which is invalid and gives the control two
+                 conflicting roles. It was also btn-sm, which made the primary
+                 call to action the smallest thing in the header. */
+              <Link
+                to="/login"
+                className="btn btn-primary header-login-btn"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Icon name="user" size={18} />
+                <span>Log In</span>
               </Link>
             )}
           </div>

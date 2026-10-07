@@ -303,9 +303,14 @@ export function Home() {
 
       {/* Accomplishments Gallery — landscape coverflow. Deliberately the first
           section after the hero: this is the highlight, so it should not be
-          buried at the bottom of the page. */}
-      <section className="section bg-white">
-        <div className="container">
+          buried at the bottom of the page.
+          `container-wide` (1400px) rather than `container` (1200px): the coverflow
+          card can only grow by eating the neighbouring cards' visible width, so
+          the extra 200px of track is what lets the photos get bigger without the
+          side cards collapsing to slivers. The heading is centred, so it still
+          lines up with the rest of the page. */}
+      <section className="section bg-white accomplishments-section">
+        <div className="container-wide">
           <div className="section-header" data-reveal>
             <h2 className="section-title">Our Accomplishments</h2>
             <p className="section-subtitle">

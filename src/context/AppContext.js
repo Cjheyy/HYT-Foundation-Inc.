@@ -294,9 +294,11 @@ export function AppProvider({ children }) {
     dispatch({ type: 'LOGOUT' });
   }, [setRecovery, setStatus]);
 
-  const loadPublicData = useCallback(async (isStale) => {
+  const loadPublicData = useCallback(async (isStale, { silent = false } = {}) => {
     if (!supabase) return;
-    dispatch({ type: 'SET_DATA_LOADING', payload: true });
+    // A background refresh (realtime event) must not flip the loading flag:
+    // that would flash a skeleton over data the user is already reading.
+    if (!silent) dispatch({ type: 'SET_DATA_LOADING', payload: true });
     const [programs, opportunities, announcements, settings] = await Promise.allSettled([
       getPrograms({ includeInactive: false }),
       getOpportunities({ includeInactive: false }),
@@ -411,14 +413,36 @@ export function AppProvider({ children }) {
    * the profile, so a token rotation never re-downloads the whole portal.
    */
   const reconcileSession = useCallback(async (session, options = {}) => {
-    const { force = false, loadData = true } = options;
+    const { force = false, loadData = true, profile: prefetchedProfile = null } = options;
 
     if (!supabase) {
       endLocalSession({ tone: 'error', message: SUPABASE_CONFIG_ERROR, retryable: false });
       return;
     }
 
-    const userId = session?.user?.id || null;
+    // A session whose `user` cannot be read is NOT an absent session.  auth-js
+    // substitutes `userNotAvailableProxy()` when it restores a session but
+    // cannot resolve the user (`_recoverAndRefresh`), and `user.id` then reads
+    // as undefined.  Treating that as "no session" signed a valid user out on
+    // reload, so resolve the identity first and only give up if the stored
+    // token is genuinely gone.
+    let resolvedProfile = prefetchedProfile;
+    if (session && !session?.user?.id) {
+      try {
+        resolvedProfile = await getCurrentUser();
+      } catch (error) {
+        console.warn('Profile recovery failed.', error);
+      }
+      if (!resolvedProfile?.id) {
+        // The token is still in storage, so this is a transient read failure
+        // rather than a logout: report it and let the user retry.
+        setStatus('error');
+        setAuthNotice(VERIFY_ERROR_NOTICE);
+        return;
+      }
+    }
+
+    const userId = session?.user?.id || resolvedProfile?.id || null;
     if (!userId) {
       endLocalSession();
       return;
@@ -434,13 +458,15 @@ export function AppProvider({ children }) {
     const epoch = authEpochRef.current;
     const isStale = () => epoch !== authEpochRef.current;
 
-    let profile = null;
-    try {
-      profile = await getCurrentUser();
-    } catch (error) {
-      console.warn('Profile read failed.', error);
+    let profile = resolvedProfile;
+    if (!profile) {
+      try {
+        profile = await getCurrentUser();
+      } catch (error) {
+        console.warn('Profile read failed.', error);
+      }
+      if (isStale()) return;
     }
-    if (isStale()) return;
 
     if (!profile || profile.id !== userId) {
       // A missing profile and a transient database failure must be separated:
@@ -690,6 +716,38 @@ export function AppProvider({ children }) {
     // endLocalSession is stable; state.currentUser.id is the subscription key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentUser?.id]);
+
+  // Postings must appear ON TIME, with no manual refresh.  Publishing a program
+  // or an opportunity writes to `programs` / `opportunities`, and every listing
+  // surface (public Programs/Opportunities, student OJT/Opportunities, trainee
+  // dashboard) reads `state.programs` / `state.opportunities`.  Re-running the
+  // public load on that broadcast keeps all of them in step the moment an admin
+  // publishes — silently, so nothing flashes a skeleton.
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let mounted = true;
+    let timer;
+    const scheduleReload = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!mounted) return;
+        loadPublicData(undefined, { silent: true })
+          .catch((error) => console.warn('Posting refresh failed.', error));
+      }, 250);
+    };
+
+    const channel = supabase
+      .channel('public_postings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, scheduleReload)
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [loadPublicData]);
 
   const value = {
     state,

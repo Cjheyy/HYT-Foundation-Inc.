@@ -148,23 +148,30 @@ export function ApplicationReview() {
                   <div className="application-header">
                     <div className="applicant-info">
                       <div className="applicant-avatar">{(applicant?.fullName || 'A')?.charAt(0)}</div>
-                      <div>
+                      {/* Classed, not a bare <div>: the avatar is a sibling
+                          <div> too, so a `.applicant-info > div` rule would
+                          stretch the circle into an ellipse. */}
+                      <div className="applicant-identity">
                         <h3 className="applicant-name">{applicant?.fullName || 'Applicant'}</h3>
                         <p className="applicant-email">{applicant?.email || application.userId}</p>
                       </div>
                     </div>
                     <Badge status={application.status}>{application.status}</Badge>
                   </div>
+                  {/* Labels carry no colon: the row is already a two-column
+                      label/value pair, so the separator was noise. */}
                   <div className="application-details">
-                    <div className="detail-row"><span className="detail-label">Listing:</span><span className="detail-value">{resolveEventTitle(application)}</span></div>
-                    <div className="detail-row"><span className="detail-label">Type:</span><span className="detail-value">{application.type || (application.programId ? 'program' : 'opportunity')}</span></div>
-                    <div className="detail-row"><span className="detail-label">Applied:</span><span className="detail-value">{formatDate(application.appliedAt || application.createdAt)}</span></div>
-                    {application.notes && <div className="detail-row"><span className="detail-label">Notes:</span><span className="detail-value">{application.notes}</span></div>}
+                    <div className="detail-row"><span className="detail-label">Listing</span><span className="detail-value">{resolveEventTitle(application)}</span></div>
+                    <div className="detail-row"><span className="detail-label">Type</span><span className="detail-value">{application.type || (application.programId ? 'program' : 'opportunity')}</span></div>
+                    <div className="detail-row"><span className="detail-label">Applied</span><span className="detail-value">{formatDate(application.appliedAt || application.createdAt)}</span></div>
+                    {application.notes && <div className="detail-row"><span className="detail-label">Notes</span><span className="detail-value">{application.notes}</span></div>}
                   </div>
                   {isPending && (
                     <div className="application-actions">
                       <Button size="sm" variant="success" disabled={actionLoading} onClick={() => handleApproveEvent(application)}>Approve</Button>
-                      <Button size="sm" variant="danger" disabled={actionLoading} onClick={() => handleRejectEvent(application)}>Reject</Button>
+                      {/* Outline, not a second saturated fill — Approve is the
+                          card's one primary action. */}
+                      <Button size="sm" variant="ghost" className="application-reject" disabled={actionLoading} onClick={() => handleRejectEvent(application)}>Reject</Button>
                     </div>
                   )}
                 </Card>

@@ -82,6 +82,112 @@
   color: var(--muted-text);
 }
 
+/* --------------------------------------------------------------------------
+ * Active Application — one clickable row per live application.
+ *
+ * The card used to render a single entry with no way to open it.  Each row is
+ * now a real <button>, so it is reachable by keyboard and exposes the dialog
+ * through an accessible name.  Colour rules are written with two classes
+ * because `.card :is(p, span, li, …)` is (0,1,1) and outranks a single-class
+ * rule — the same reason `.card .badge-teal` exists further down index.css.
+ * -------------------------------------------------------------------------- */
+.card .active-app-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-text);
+  background: #F3F4F6;
+  border: 1px solid var(--border, #E5E7EB);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.active-app-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Scroll rather than stretch the card once several applications are live. */
+  max-height: 264px;
+  overflow-y: auto;
+}
+
+.active-app-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #E5E7EB);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.active-app-row:hover {
+  border-color: var(--primary-orange, #D57156);
+  background: #FFF8F5;
+}
+
+.active-app-row:focus-visible {
+  outline: 2px solid var(--primary-orange, #D57156);
+  outline-offset: 2px;
+}
+
+.active-app-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card .active-app-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card .active-app-date {
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+/* Detail rows inside the "more info" dialog.  The dialog renders outside any
+   `.card`, but the selectors are still qualified so a future move cannot
+   silently wash the text out. */
+.application-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.application-detail .application-detail-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.application-detail .application-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6B7280);
+}
+
+.application-detail .application-detail-value {
+  font-size: 14px;
+  color: var(--dark-text, #1F2937);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .ojt-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -89,17 +195,255 @@
   margin-bottom: 16px;
 }
 
+/* --------------------------------------------------------------------------
+ * Experience card — compact list, coloured tiles, labelled progress.
+ *
+ * The card used to spend four lines per entry on "START" / "END (EST.)" labels
+ * for two dates that are usually identical on every row, and then drew the two
+ * hour figures as identical 28px tiles with no unit and no direction.  The
+ * changes here, in order of how much they matter:
+ *
+ *   1. Rendered and Remaining are no longer the same shape.  A 3px coloured
+ *      left edge and a matching value colour say which one is progress and
+ *      which one is work still owed.  Deepened siblings, not the brand
+ *      colours: #279EB6 is 3.16:1 and #D57156 is 3.32:1 on --background.
+ *   2. Every figure carries its unit, and the progress row states the
+ *      denominator ("486.00 h required") so 3.6% means something.
+ *   3. The percentage sits beside its bar instead of at the far edge of the
+ *      card, where the 13px grey "Progress" label was the only thing tying the
+ *      two together.
+ * -------------------------------------------------------------------------- */
+
+.experience-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.experience-item {
+  padding: 12px 14px;
+}
+
+.experience-item + .experience-item {
+  border-top: 1px solid var(--border);
+}
+
+.experience-item-head {
+  display: flex;
+  /* `flex-start`, not `center`: the title may wrap to two lines at the narrow
+     card widths, and a centred badge then floats between the two lines as if it
+     belonged to neither.  Pinned to the top it tags the first line, which is
+     what a status pill is for. */
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 2px;
+}
+
+.experience-item-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--dark-text);
+  line-height: 1.3;
+  min-width: 0;
+  /* A title is the one thing on this row that must never be shortened.
+   *
+   * This started life as `nowrap` + `ellipsis`, which is fine right up until
+   * the text does not fit — and then it silently lies.  "Backend Developer
+   * Intern" needs ~170px at 14.5px; the 1024px viewport (two grid columns)
+   * hands this column 159px, so the ellipsis was rendering "Backend Developer
+   * Int…" with nothing anywhere reporting it.  Measured: scrollWidth 188px
+   * into clientWidth 159px.
+   *
+   * It wraps instead.  That costs one extra line at the two narrow widths
+   * (1024px and 1440px, where the grid gives 329-349px per card) and loses no
+   * information, which is the right trade for the field that identifies the
+   * entry.  `overflow-wrap: anywhere` stops a long unbroken token from
+   * escaping the column, and `min-width: 0` lets the flex item shrink to the
+   * column in the first place. */
+  overflow-wrap: anywhere;
+}
+
+/* The badge stays on the title's line rather than floating at the card's
+   top-right, where it read as belonging to the card instead of the entry. */
+.experience-item-head .badge {
+  flex: none;
+}
+
+/* Organisation on the left, the whole date range on the right.
+ *
+ * The dates are `flex: none` + `nowrap`, so the org is the only half that can
+ * give — it ellipsises rather than pushing the range out of the card.
+ *
+ * The narrowest card is 302px, not the 328px the 1024px viewport produces:
+ * the 900px viewport packs the same two columns into less width.  Both were
+ * measured in a real browser rather than derived from the grid arithmetic,
+ * which is what caught the 2px org deficit described below. */
+.experience-item-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  /* 11px, not 11.5px.  The narrowest card the grid actually produces is 302px
+   * (the 900px viewport — narrower than the 328px the 1024px one gives), and
+   * at 11.5px the org needed 104px against 102px available.  That 2px deficit
+   * was enough to fire the ellipsis below, which is the worst possible reason
+   * to shorten a partner organisation's name.  At 11px the pair fits with room
+   * to spare at 302px and stays on one line at every wider card.
+   *
+   * The org keeps its ellipsis as a last-resort guard: a genuinely long
+   * organisation name still degrades rather than pushing the dates, which are
+   * exact data, out of the card. */
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.experience-item-org {
+  color: var(--muted-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.experience-item-dates {
+  flex: none;
+  white-space: nowrap;
+  color: var(--muted-text);
+}
+
+/* The projected-end qualifier appears once for the whole list rather than on
+   every row, which is what made "END (EST.)" so repetitive. */
+.experience-note {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted-text);
+  margin: 0 0 14px;
+}
+
+.experience-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.experience-tile {
+  padding: 13px 14px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.experience-tile-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.experience-tile-value {
+  margin-top: 3px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--dark-text);
+}
+
+.experience-tile-value .unit {
+  margin-left: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.experience-tile.is-rendered {
+  border-left: 3px solid #16697A;
+}
+
+.experience-tile.is-rendered .experience-tile-value {
+  color: #16697A;
+}
+
+.experience-tile.is-remaining {
+  border-left: 3px solid #B8441F;
+}
+
+.experience-tile.is-remaining .experience-tile-value {
+  color: var(--accent-text, #B8441F);
+}
+
+.experience-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.experience-progress-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.experience-progress-label {
+  font-size: 12.5px;
+  color: var(--muted-text);
+  margin-bottom: 7px;
+}
+
+/* The design system's bar is 8px.  Inside this card it shares a row with a
+   label and a percentage, so it gets 10px to hold its own against them. */
+.experience-progress .progress-bar {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.experience-progress .progress-bar-fill {
+  border-radius: 5px;
+}
+
+.experience-progress-value {
+  flex: none;
+  /* Reserved so the bar does not twitch as the percentage changes width. */
+  min-width: 50px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+/* --------------------------------------------------------------------------
+ * Shared stat tiles.
+ *
+ * No longer used by the student Experience card — that card has its own
+ * .experience-tile now.  The trainee dashboard still renders these for its
+ * application counts, so they must stay.
+ * -------------------------------------------------------------------------- */
+
 .stat-item {
   text-align: center;
   padding: 16px;
+  /* Pale chip on the white card.  var(--teal) #279EB6 for .stat-value would be
+     3.16:1 here — acceptable for 28px large text but thinner than the rest of
+     the page, so the value uses the card's dark text token. */
   background: var(--background);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--teal);
+  color: var(--dark-text);
   margin-bottom: 4px;
 }
 
@@ -154,9 +498,11 @@
   align-items: center;
   gap: 8px;
   padding: 20px;
+  /* White card again: a pale tile with a hairline border, dark label. */
   background: var(--background);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
+  color: var(--dark-text);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -169,11 +515,12 @@
 
 .action-icon {
   font-size: 32px;
+  color: #16697A;
 }
 
 .action-label {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--dark-text);
   text-align: center;
 }
@@ -216,8 +563,11 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
+  /* A pale grey step on the white card.  The numeral is deliberately darker
+     than --muted-text: #6B7280 on #E5E7EB measures 3.90:1, under the 4.5:1 an
+     18px/600 numeral needs.  #4B5563 on the same fill is 6.10:1. */
   background: var(--border);
-  color: var(--muted-text);
+  color: #4B5563;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,12 +577,16 @@
 }
 
 .journey-stage.active .stage-indicator {
-  background: var(--primary-orange);
+  /* White on --primary-orange (#D57156) is 3.32:1, under the 4.5:1 an 18px
+     numeral needs; the deepened sibling is 5.41:1. */
+  background: #B8441F;
   color: white;
 }
 
 .journey-stage.completed .stage-indicator {
-  background: var(--teal);
+  /* Was var(--teal) #279EB6 — white on it measures 3.16:1, under the 4.5:1 the
+     18px numeral needs. Deepened teal is 6.30:1 and still reads as the brand. */
+  background: #16697A;
   color: white;
 }
 
@@ -244,7 +598,8 @@
 }
 
 .journey-stage.active .stage-name {
-  color: var(--primary-orange);
+  /* Was var(--primary-orange) #D57156 — 3.32:1 on the white card. */
+  color: var(--accent-text, #B8441F);
   font-weight: 600;
 }
 
@@ -259,14 +614,15 @@
   gap: 12px;
   padding: 16px;
   background: var(--background);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .announcement-item:hover {
   background: white;
-  box-shadow: var(--shadow-md);
+  border-color: var(--primary-orange);
 }
 
 .announcement-icon {

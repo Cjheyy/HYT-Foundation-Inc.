@@ -1,22 +1,40 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
+import { Modal } from '../../components/Modal';
 import { Icon } from '../../components/icons';
 import { getApplicationsByStudent } from '../../services/applicationService';
 import { formatDate, getFirstName } from '../../utils/helpers';
+import {
+  getApplicationListingTitle,
+  isApplicationActive,
+  isApplicationApproved
+} from '../../utils/experience';
 import '../student/Dashboard.css';
 
 export function TraineeDashboard() {
   const { state } = useApp();
-  const { currentUser, applications, announcements, requirements } = state;
+  const { currentUser, applications, announcements, requirements, opportunities, programs } = state;
   const navigate = useNavigate();
 
   const myApplications = getApplicationsByStudent(applications, currentUser?.id);
-  const activeApplication = myApplications.find(app => 
-    ['Applied', 'Under Review', 'Interview', 'Accepted', 'Ongoing'].includes(app.status)
+
+  /** Every program application still in play, plus the first for the journey. */
+  const activeApplications = useMemo(
+    () => myApplications.filter(isApplicationActive),
+    [myApplications]
   );
+  const activeApplication = activeApplications[0];
+
+  const [selectedApplication, setSelectedApplication] = useState(null);
+
+  const listingTitle = (app) =>
+    getApplicationListingTitle(app, { opportunities, programs });
+
+  const acceptedCount = myApplications.filter(isApplicationApproved).length;
   const myRequirements = requirements.filter(req => req.studentId === currentUser?.id);
   const pendingRequirements = myRequirements.filter(req => 
     ['Required', 'Rejected'].includes(req.status)
@@ -46,18 +64,37 @@ export function TraineeDashboard() {
         <Card className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Active Training</h3>
+            {activeApplications.length > 0 && (
+              <span className="active-app-count">{activeApplications.length}</span>
+            )}
           </div>
-          {activeApplication ? (
+          {activeApplications.length > 0 ? (
             <div className="card-content">
-              <div className="application-info">
-                <h4 className="application-title">{activeApplication.opportunityTitle || 'Training Program'}</h4>
-                <Badge status={activeApplication.status}>{activeApplication.status}</Badge>
-              </div>
-              <p className="application-date">Started on {formatDate(activeApplication.appliedAt)}</p>
-              <Button 
-                size="sm" 
+              <ul className="active-app-list">
+                {activeApplications.map((app) => (
+                  <li key={app.id}>
+                    <button
+                      type="button"
+                      className="active-app-row"
+                      onClick={() => setSelectedApplication(app)}
+                      aria-label={`More info about ${listingTitle(app)}`}
+                    >
+                      <span className="active-app-main">
+                        <span className="active-app-title">{listingTitle(app)}</span>
+                        <span className="active-app-date">
+                          Applied on {formatDate(app.appliedAt || app.createdAt) || '--'}
+                        </span>
+                      </span>
+                      <Badge status={app.status}>{app.status}</Badge>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => navigate('/trainee/applications')}
-                style={{ marginTop: '12px' }}
+                style={{ marginTop: '12px', width: '100%' }}
               >
                 View Details
               </Button>
@@ -129,9 +166,7 @@ export function TraineeDashboard() {
                     <div className="stat-label">Total Applications</div>
                   </div>
                   <div className="stat-item">
-                    <div className="stat-value">
-                      {myApplications.filter(a => a.status === 'Accepted').length}
-                    </div>
+                    <div className="stat-value">{acceptedCount}</div>
                     <div className="stat-label">Accepted</div>
                   </div>
                 </div>
@@ -242,6 +277,55 @@ export function TraineeDashboard() {
           </div>
         </Card>
       )}
+
+      {/* "More info" for one active program application. */}
+      <Modal
+        isOpen={!!selectedApplication}
+        onClose={() => setSelectedApplication(null)}
+        title={selectedApplication ? listingTitle(selectedApplication) : ''}
+        footer={
+          <Button size="sm" onClick={() => setSelectedApplication(null)}>
+            Close
+          </Button>
+        }
+      >
+        {selectedApplication && (
+          <div className="application-detail">
+            <div className="application-detail-row">
+              <span className="application-detail-label">Status</span>
+              <span className="application-detail-value">
+                <Badge status={selectedApplication.status}>{selectedApplication.status}</Badge>
+              </span>
+            </div>
+            <div className="application-detail-row">
+              <span className="application-detail-label">Type</span>
+              <span className="application-detail-value">
+                {selectedApplication.opportunityId ? 'OJT Posting' : 'Training Program'}
+              </span>
+            </div>
+            <div className="application-detail-row">
+              <span className="application-detail-label">Applied on</span>
+              <span className="application-detail-value">
+                {formatDate(selectedApplication.appliedAt || selectedApplication.createdAt) || '--'}
+              </span>
+            </div>
+            <div className="application-detail-row">
+              <span className="application-detail-label">Reviewed on</span>
+              <span className="application-detail-value">
+                {selectedApplication.reviewedAt
+                  ? formatDate(selectedApplication.reviewedAt)
+                  : 'Not yet reviewed'}
+              </span>
+            </div>
+            <div className="application-detail-row">
+              <span className="application-detail-label">Notes</span>
+              <span className="application-detail-value">
+                {selectedApplication.notes || selectedApplication.adminNote || '--'}
+              </span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

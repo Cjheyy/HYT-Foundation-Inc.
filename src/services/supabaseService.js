@@ -1202,6 +1202,105 @@ const attendanceUserSelect = `
   user:users(id, full_name, email, school, role, required_hours, rendered_hours)
 `;
 
+const ATTENDANCE_USER_ID_KEYS = ['userId', 'user_id'];
+
+/** Read the owning user id off a row regardless of its casing. */
+const rowUserId = (row) => {
+  if (!row) return null;
+  for (const key of ATTENDANCE_USER_ID_KEYS) {
+    const value = row[key];
+    if (value) return value;
+  }
+  return null;
+};
+
+/**
+ * Re-attach the `user` profile to rows that arrived without one.
+ * Used by the attendance queue AND the daily-report feed — anywhere a row
+ * carries an owner id but the joined profile may be absent.
+ *
+ * The embedded `user:users(...)` relation in `attendanceUserSelect` is the fast
+ * path, but it is not guaranteed: on a deployment whose
+ * `attendance_logs.user_id → users.id` foreign key is absent — or whose
+ * PostgREST schema cache has not picked the relation up — the relation select
+ * fails and every caller below falls back to `select('*')`.  That fallback
+ * returns rows with **no `user` key at all**, so `log.user?.fullName` evaluated
+ * to undefined and the admin attendance queue, the dashboard feed and the
+ * approval dialog all rendered the approver as "Unknown".
+ *
+ * Profile lookup failures are swallowed deliberately: a missing profile must
+ * never take down the attendance list.
+ */
+const attachUserProfiles = async (rows, client = requireSupabase()) => {
+  const list = Array.isArray(rows) ? rows : [];
+  const needing = list.filter((row) => !row?.user && rowUserId(row));
+  if (needing.length === 0) return list;
+
+  const ids = [...new Set(needing.map(rowUserId))];
+  let profiles = [];
+
+  try {
+    const { data, error } = await client
+      .from('users')
+      .select('id, full_name, first_name, last_name, email, school, role, required_hours, rendered_hours')
+      .in('id', ids);
+    if (error) throw error;
+    profiles = mapRows(data);
+  } catch (error) {
+    try {
+      const { data } = await client.from('users').select('*').in('id', ids);
+      profiles = mapRows(data);
+    } catch (fallbackError) {
+      return list;
+    }
+  }
+
+  const byId = new Map(profiles.filter(Boolean).map((profile) => [profile.id, profile]));
+  return list.map((row) => {
+    if (row?.user) return row;
+    const profile = byId.get(rowUserId(row));
+    return profile ? { ...row, user: profile } : row;
+  });
+};
+
+/**
+ * Single source of truth for "who is this?" on every attendance surface.
+ *
+ * Only returns a placeholder once every identifying field is genuinely absent —
+ * a full name, a composed first/last name, an e-mail or a truncated id all
+ * resolve first, so "Unknown" can no longer appear for a real person.
+ */
+export const resolveUserName = (user, fallbackRow = null) => {
+  const source = user || fallbackRow || {};
+
+  const fullName = source.fullName || source.full_name;
+  if (fullName && String(fullName).trim()) return String(fullName).trim();
+
+  const composed = [source.firstName || source.first_name, source.lastName || source.last_name]
+    .filter((part) => part && String(part).trim())
+    .join(' ')
+    .trim();
+  if (composed) return composed;
+
+  const email = source.email;
+  if (email && String(email).trim()) return String(email).trim().split('@')[0];
+
+  // Prefer the OWNER id.  When the fallback argument is an attendance row its
+  // `id` is the log's id, so reading `id` first would label the person after
+  // their own attendance record ("User log-1").  `user_id`/`userId` is the
+  // person; a bare `id` is only used when the source really is a user record.
+  const ownerId = rowUserId(source);
+  if (ownerId) return `User ${String(ownerId).slice(0, 8)}`;
+
+  const id = source.id;
+  if (id) return `User ${String(id).slice(0, 8)}`;
+
+  return 'Unknown user';
+};
+
+/** Convenience wrapper for the common `log.user` case. */
+export const resolveAttendanceUserName = (log) => resolveUserName(log?.user, log);
+
 const getAttendanceLogById = async (attendanceId, client = requireSupabase()) => {
   let result = await client
     .from('attendance_logs')
@@ -1212,9 +1311,18 @@ const getAttendanceLogById = async (attendanceId, client = requireSupabase()) =>
   // Some old deployments do not have all columns used in the relation select.
   if (result.error) {
     result = await client.from('attendance_logs').select('*').eq('id', attendanceId).maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) return null;
+    const [row] = await attachUserProfiles([toCamelCase(result.data)], client);
+    return row || null;
   }
-  if (result.error) throw result.error;
-  return result.data ? toCamelCase(result.data) : null;
+  // A successful relation select can still come back without the joined `user`
+  // (PostgREST could not resolve the FK, or RLS hides the joined row), which is
+  // exactly the case that surfaced as "Unknown" in the admin reviewer list.
+  // attachUserProfiles() is a no-op when the user is already present.
+  if (!result.data) return null;
+  const [row] = await attachUserProfiles([toCamelCase(result.data)], client);
+  return row || null;
 };
 
 export const getAttendanceLogs = async (userId = null) => {
@@ -1230,11 +1338,11 @@ export const getAttendanceLogs = async (userId = null) => {
   if (result.error) {
     result = await client.from('attendance_logs').select('*').order('date', { ascending: false });
     if (result.error) throw result.error;
-    return userId
-      ? mapRows(result.data).filter((row) => row.userId === userId)
-      : mapRows(result.data);
+    const rows = mapRows(result.data);
+    const scoped = userId ? rows.filter((row) => rowUserId(row) === userId) : rows;
+    return attachUserProfiles(scoped, client);
   }
-  return mapRows(result.data);
+  return attachUserProfiles(mapRows(result.data), client);
 };
 
 export const createAttendanceLog = async (attendanceData) => {
@@ -1512,9 +1620,13 @@ export const getPendingAttendance = async () => {
       .from('attendance_logs')
       .select('*')
       .order('created_at', { ascending: true });
+    if (result.error) throw result.error;
+    const rows = await attachUserProfiles(mapRows(result.data), client);
+    return rows.filter((log) => isPendingAttendanceStatus(log.status));
   }
   if (result.error) throw result.error;
-  return mapRows(result.data).filter((log) => isPendingAttendanceStatus(log.status));
+  const rows = await attachUserProfiles(mapRows(result.data), client);
+  return rows.filter((log) => isPendingAttendanceStatus(log.status));
 };
 
 const normalizeAdminArgs = async (adminUserId, adminNote) => {
@@ -1712,6 +1824,131 @@ export const rejectOtRequest = async (otRequestId, adminNote) => {
 };
 
 // ==========================================================================
+// ABSENCE REQUESTS
+//
+// A trainee/OJT tells the administrator in advance that they cannot attend,
+// and why.  This is deliberately NOT an approval workflow: the administrator
+// only *acknowledges* it with "Noted", so the request has exactly two states —
+// Submitted (waiting to be seen) and Noted (seen).  Nothing here credits or
+// removes hours.
+//
+// Requires the absence_requests table — see ABSENCE_REQUESTS_MIGRATION.sql.
+// Every reader degrades to an empty list when the table has not been created
+// yet, so the attendance page still loads on an older database.
+// ==========================================================================
+
+export const ABSENCE_STATUS_SUBMITTED = 'Submitted';
+export const ABSENCE_STATUS_NOTED = 'Noted';
+export const ABSENCE_ACKNOWLEDGEMENT = 'Noted';
+
+/** 42P01 = undefined_table; PGRST205 = table not found in the schema cache. */
+export const isMissingTableError = (error) => {
+  const code = String(error?.code || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+  if (code === '42p01' || code === 'pgrst205') return true;
+  return message.includes('could not find the table') ||
+    (message.includes('relation') && message.includes('does not exist'));
+};
+
+export const isAbsenceNoted = (request) =>
+  normalizeStatus(request?.status) === 'NOTED';
+
+export const isAbsencePending = (request) =>
+  !isAbsenceNoted(request);
+
+const ABSENCE_SELECT = `
+  id, user_id, absence_date, reason, status, admin_note, noted_by, noted_at, created_at, updated_at,
+  user:users(id, full_name, first_name, last_name, email, school, role)
+`;
+
+/**
+ * Absence requests, newest first.  `userId` scopes to one person; omit it for
+ * the administrator view.
+ */
+export const getAbsenceRequests = async (userId = null) => {
+  const client = requireSupabase();
+  const run = async (selectClause) => {
+    let query = client
+      .from('absence_requests')
+      .select(selectClause)
+      .order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    return query;
+  };
+
+  let result = await run(ABSENCE_SELECT);
+  if (result.error && isMissingColumnError(result.error)) {
+    result = await run('*');
+  }
+  if (result.error) {
+    if (isMissingTableError(result.error)) return [];
+    throw result.error;
+  }
+
+  const rows = mapRows(result.data);
+  return userId ? rows.filter((row) => rowUserId(row) === userId || !rowUserId(row)) : rows;
+};
+
+/** The administrator queue: everything not yet acknowledged. */
+export const getPendingAbsenceRequests = async () => {
+  const rows = await getAbsenceRequests();
+  return rows.filter(isAbsencePending);
+};
+
+export const createAbsenceRequest = async ({ userId, absenceDate, reason }) => {
+  const client = requireSupabase();
+  if (!userId) throw new Error('You must be signed in to file an absence request.');
+  const trimmedReason = String(reason || '').trim();
+  if (trimmedReason.length < 10) {
+    throw new Error('Please describe the reason (at least 10 characters).');
+  }
+
+  const { data, error } = await client
+    .from('absence_requests')
+    .insert([toSnakeCase({
+      userId,
+      absenceDate: absenceDate || todayISODate(),
+      reason: trimmedReason,
+      status: ABSENCE_STATUS_SUBMITTED
+    })])
+    .select()
+    .single();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new Error('Absence requests are not enabled on this database yet. Please ask an administrator to run ABSENCE_REQUESTS_MIGRATION.sql.');
+    }
+    throw error;
+  }
+  return toCamelCase(data);
+};
+
+/**
+ * Acknowledge a request.  There is no approve/reject — the administrator simply
+ * marks it as seen, optionally with a short note back to the trainee.
+ */
+export const acknowledgeAbsenceRequest = async (requestId, adminNote = '', adminUserId = null) => {
+  const client = requireSupabase();
+  if (!requestId) throw new Error('Missing absence request.');
+
+  const { data, error } = await client
+    .from('absence_requests')
+    .update(toSnakeCase({
+      status: ABSENCE_STATUS_NOTED,
+      adminNote: String(adminNote || '').trim(),
+      notedBy: adminUserId || (await getCurrentAuthUserId()),
+      notedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }))
+    .eq('id', requestId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return toCamelCase(data);
+};
+
+// ==========================================================================
 // DAILY REPORTS
 // ==========================================================================
 
@@ -1749,6 +1986,10 @@ export const getDailyReports = async (userId = null) => {
   } else {
     rows = (result.data || []).map(normalizeReportRow);
   }
+  // normalizeReportRow() always sets userId, so the same profile attach used by
+  // the attendance queue works here — the admin feed showed "User <id>" because
+  // the report rows arrived with no joined user.
+  rows = await attachUserProfiles(rows, client);
   if (!userId) return rows;
   return rows.filter((report) => report.userId === userId || report.studentId === userId);
 };

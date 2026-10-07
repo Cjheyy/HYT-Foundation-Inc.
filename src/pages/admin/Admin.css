@@ -308,9 +308,9 @@
 }
 
 .action-button.danger {
-  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+  background: linear-gradient(135deg, #B42318 0%, #991B1B 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(180, 35, 24, 0.3);
 }
 
 .action-button.danger:hover {
@@ -647,8 +647,8 @@
 }
 
 .tab.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #4F46E5;
+  border-bottom-color: #4F46E5;
 }
 
 .tab-badge {
@@ -661,99 +661,195 @@
   justify-content: center;
 }
 
-/* Applications Grid */
+/* ==========================================================================
+   Applications Grid — applicant card, "Clean Card" treatment.
+
+   The card is three stacked ZONES rather than one padded box:
+     header  — avatar + identity + status pill
+     details — label/value rows, hairline-separated
+     footer  — action band, edge-to-edge on a faint grey
+
+   Two deliberate departures from the previous treatment:
+
+   1. The card paints NO padding of its own; each zone owns its inset.  That is
+      what lets the action footer run the full card width instead of sitting
+      inside the body as a boxed-in button pair.
+
+   2. Only Approve is a filled button.  Reject is an outline.  Two saturated
+      fills side by side compete for the same eye, so the card had no single
+      primary action.
+
+   Selectors are written `.card.application-card` (0,2,0) so they beat the base
+   `.card` rule (0,1,0) regardless of stylesheet order, instead of relying on
+   `!important`.  Text COLOURS are deliberately left alone: the generated
+   `.card .detail-label` / `.card .detail-value` rules in index.css already pin
+   them to the --muted-text / --dark-text tokens at (0,2,0), and those tokens
+   are correct on this white surface.  Only type metrics are set here.
+   ========================================================================== */
 .applications-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
+  /* Cards size to their own content.  Without this, a decided application (no
+     footer) stretches to match a pending one and leaves a dead gap at its
+     bottom. */
+  align-items: start;
 }
 
-.application-card {
-  padding: 24px !important;
-  transition: all 0.2s;
+.card.application-card {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #E4E7EC;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
-.application-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+.card.application-card:hover {
+  transform: translateY(-2px);
+  border-color: #D9DEE7;
+  box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.07), 0 12px 24px -6px rgba(16, 24, 40, 0.1);
 }
 
+/* --- zone 1: header ------------------------------------------------------ */
 .application-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #E5E7EB;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 0;
+  padding: 18px 18px 16px;
+  border-bottom: none;
+}
+
+/* The status pill is sized by its own text and must not be squeezed by a long
+   applicant name. */
+.application-header .badge {
+  flex-shrink: 0;
 }
 
 .applicant-info {
   display: flex;
-  gap: 12px;
+  gap: 13px;
   align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The name/email wrapper.  min-width:0 is what lets the email's ellipsis
+   engage instead of pushing the status pill off the card.  Targeted by its own
+   class — NOT `.applicant-info > div`, which also matches the avatar sibling
+   and stretches the circle into an ellipse. */
+.applicant-identity {
+  min-width: 0;
   flex: 1;
 }
 
 .applicant-avatar {
-  width: 48px;
-  height: 48px;
+  /* 0 0 auto: the circle is a fixed 44px and must never take a share of the
+     row's free space. */
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #5B21B6 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .applicant-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1F2937;
-  margin: 0 0 4px 0;
-}
-
-.applicant-email {
-  font-size: 13px;
-  color: #6B7280;
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
   margin: 0;
 }
 
+.applicant-email {
+  font-size: 12.5px;
+  margin: 2px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- zone 2: details ----------------------------------------------------- */
 .application-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 0;
+  margin-bottom: 0;
+  padding: 0 18px 4px;
+}
+
+/* When there is no footer (already decided), the details zone supplies the
+   card's bottom inset instead. */
+.application-details:last-child {
+  padding-bottom: 18px;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
-  align-items: start;
-  gap: 12px;
-  font-size: 14px;
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  font-size: 13.5px;
+  /* Each row draws its own hairline, so the first one doubles as the header
+     separator.  Baseline alignment keeps the label level with the first line
+     when a long listing title wraps to two. */
+  border-top: 1px solid #EEF0F4;
 }
 
 .detail-label {
-  color: #6B7280;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 400;
   flex-shrink: 0;
 }
 
 .detail-value {
-  color: #1F2937;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   text-align: right;
   word-break: break-word;
 }
 
+/* --- zone 3: action footer ----------------------------------------------- */
 .application-actions {
   display: flex;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #E5E7EB;
+  gap: 9px;
+  padding: 14px 18px 16px;
+  border-top: 1px solid #EEF0F4;
+  background: #FCFCFD;
+}
+
+/* Equal halves, and a size that belongs to a card footer rather than a page
+   CTA.  (0,2,0) beats `.btn-sm` (0,1,0). */
+.application-actions .btn {
+  flex: 1;
+  padding: 9px 16px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+/* Reject is the SECONDARY action: outline, no fill, no shadow. */
+.application-actions .application-reject {
+  background: #FFFFFF;
+  border: 1px solid #F0CFCF;
+  color: #C62828;
+  box-shadow: none;
+}
+
+.application-actions .application-reject:hover {
+  background: #FDEEEE;
+  border-color: #E7B9B9;
+  color: #A81F1F;
+  box-shadow: none;
 }
 
 .approval-confirmation {
@@ -793,7 +889,9 @@
 
   .detail-row {
     flex-direction: column;
-    gap: 4px;
+    /* baseline is meaningless once the row stacks */
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .detail-value {
@@ -819,8 +917,8 @@
 
 .table-search-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 .filter-notice {
@@ -835,7 +933,7 @@
 
 .card-subtitle {
   margin: 5px 0 0;
-  color: #6B7280;
+  color: #4B5563;
   font-size: 13px;
   font-weight: 400;
 }
@@ -845,7 +943,8 @@
 }
 
 .muted-cell {
-  color: #6B7280;
+  /* #6B7280 is only 4.44:1 on the #EFF6FF requested-row tint. */
+  color: #4B5563;
   font-size: 12px;
 }
 
@@ -871,5 +970,130 @@
   .table-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+/* ==========================================================================
+   OJT monitoring records + OJT postings (item: fix all alignment/spacing).
+
+   Both sections were previously written with raw inline styles.  Two things
+   were wrong with that:
+
+   1. The stat chips painted var(--background) — a LIGHT surface — while their
+      text inherited the white card tokens, so "Required"/"Verified"/"Progress"
+      rendered #EAF1F7 on #F9FBFC (1.10:1) and the progress value #FFFFFF on
+      #F9FBFC (1.04:1).
+   2. The accents (--teal #279EB6, #10B981, --primary-orange #D57156) measure
+      2.6:1, 2.44:1 and 3.1:1 on that pale chip.
+
+   Declaring the chip's own tokens AND its own `color` fixes the inheritance
+   half; the accents are deepened to the passing siblings.
+   ========================================================================== */
+.ojt-record-list {
+  display: grid;
+  gap: 16px;
+}
+
+.ojt-record-card {
+  padding: 24px;
+}
+
+.ojt-record-head {
+  margin-bottom: 16px;
+}
+
+.ojt-record-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--dark-text);
+}
+
+.ojt-record-org {
+  color: var(--muted-text);
+  margin: 0;
+}
+
+.ojt-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ojt-stat {
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  /* Light chip: hand the subtree dark tokens AND a dark inherited colour. */
+  background: var(--background);
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+.ojt-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ojt-stat-value.is-required { color: #0F5566; }
+.ojt-stat-value.is-verified { color: #047857; }
+.ojt-stat-value.is-remaining { color: #A83F27; }
+.ojt-stat-value.is-progress { color: #1F2937; }
+
+.ojt-stat-label {
+  font-size: 12px;
+  color: #5B6472;
+}
+
+.ojt-record-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---- OJT postings ---- */
+.posting-list {
+  display: grid;
+  gap: 16px;
+}
+
+.posting-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.posting-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+
+.posting-card-org {
+  /* White card again: the deepened brand orange reads at 5.41:1 here, and the
+     token flips to white under the posting card's hover gradient. */
+  color: var(--accent-text, #B8441F);
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.posting-card-blurb {
+  margin-top: 8px;
+}
+
+.posting-empty {
+  text-align: center;
+  padding: 40px;
+}
+
+@media (max-width: 720px) {
+  .ojt-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

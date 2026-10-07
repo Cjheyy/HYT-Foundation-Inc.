@@ -8,7 +8,7 @@ import { Select } from '../../components/Select';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
 import { Icon } from '../../components/icons';
-import { PROGRAM_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
+import { PROGRAM_CATEGORIES, HYT_THRUSTS, getStatusColor } from '../../utils/helpers';
 import { isEventActive, getEventSlotState } from '../../services/supabaseService';
 import './Programs.css';
 
@@ -77,10 +77,19 @@ export function Programs() {
                     key={program.id}
                     clickable
                     onClick={() => navigate(`/programs/${program.id}`)}
-                    className="program-card"
+                    className="program-card reveal-card"
                   >
+                    {/* Same clip-path circle reveal as the Home rails. */}
+                    <span className="reveal-wipe" aria-hidden="true" />
                     <div className="program-header">
-                      <Badge status={program.status}>{program.status}</Badge>
+                      {/* The slots pill beside this one is green (red when full), so the
+                          status pill must never ALSO be green — two same-coloured pills
+                          side by side read as one malformed lozenge rather than two
+                          badges. Anything that resolves to green is shown in blue, which
+                          is the tone the reference card uses for its leading pill. */}
+                      <Badge color={getStatusColor(program.status) === 'green' ? 'blue' : undefined} status={program.status}>
+                        {program.status}
+                      </Badge>
                       <Badge color={slots.isFull ? 'red' : 'green'}>
                         {slots.isFull ? 'Full' : `${slots.available} slots remaining`}
                       </Badge>

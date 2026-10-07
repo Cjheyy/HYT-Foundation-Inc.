@@ -106,10 +106,12 @@ export function StudentOpportunities() {
             const alreadyApplied = myApplicationIds.includes(opp.id);
             const blockedByOther = Boolean(blockingOpportunityId) && blockingOpportunityId !== opp.id;
             return (
-              <Card key={opp.id}>
+              <Card key={opp.id} className="card--posting reveal-card">
+                {/* Same clip-path circle reveal as the Home rails. */}
+                <span className="reveal-wipe" aria-hidden="true" />
                 <div className="opportunity-card-badges">
                   <Badge color="blue">{opp.category}</Badge>
-                  <Badge color={slots.isFull ? 'red' : 'green'} className="px-2 py-0.5 text-xs rounded-full">
+                  <Badge color={slots.isFull ? 'red' : 'green'}>
                     {slots.isFull ? 'No Slots Available' : `${slots.available} of ${slots.total} slots remaining`}
                   </Badge>
                 </div>

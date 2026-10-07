@@ -178,7 +178,7 @@ export function AdminPrograms() {
           <Textarea label="Description" name="description" value={formData.description} onChange={handleChange} error={errors.description} rows={4} required />
           <Select label="Category" name="category" value={formData.category} onChange={handleChange} error={errors.category} options={PROGRAM_CATEGORIES} placeholder="Select a category" required />
           <div>
-            <span className="form-label">Schedule Range <span style={{ color: 'red' }}> *</span></span>
+            <span className="form-label">Schedule Range <span className="required-marker" aria-hidden="true"> *</span></span>
             <div className="schedule-range-grid">
               <Input type="date" name="scheduleStart" value={formData.scheduleStart} onChange={handleChange} error={errors.scheduleStart} aria-label="Schedule start date" required />
               <Input type="date" name="scheduleEnd" value={formData.scheduleEnd} onChange={handleChange} error={errors.scheduleEnd} min={formData.scheduleStart || undefined} aria-label="Schedule end date" required />

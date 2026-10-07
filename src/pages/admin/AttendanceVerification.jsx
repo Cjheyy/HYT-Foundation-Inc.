@@ -12,7 +12,8 @@ import {
   rejectAttendance,
   isPendingAttendanceStatus,
   getAttendanceStage,
-  normalizeStatus
+  normalizeStatus,
+  resolveAttendanceUserName
 } from '../../services/supabaseService';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { toast } from 'react-toastify';
@@ -257,7 +258,7 @@ export function AttendanceVerification() {
                     <tr key={log.id} className={isRequestedUser ? 'requested-row' : ''}>
                       <td>
                         <div className="student-info">
-                          <div className="student-name">{log.user?.fullName || 'Unknown'}</div>
+                          <div className="student-name">{resolveAttendanceUserName(log)}</div>
                           <div className="student-email">{log.user?.email || '--'}</div>
                         </div>
                       </td>
@@ -328,7 +329,7 @@ export function AttendanceVerification() {
               <tbody>
                 {processedLogs.slice(0, 15).map((log) => (
                   <tr key={log.id}>
-                    <td>{log.user?.fullName || 'Unknown'}</td>
+                    <td>{resolveAttendanceUserName(log)}</td>
                     <td>{formatDate(log.date)}</td>
                     <td className="duration-display">{formatDuration(log.durationSeconds)}</td>
                     <td>{Number(log.renderedHours || 0).toFixed(4)} hrs</td>
@@ -350,7 +351,7 @@ export function AttendanceVerification() {
         {selectedLog && (
           <div>
             <div className="modal-info attendance-review-summary">
-              <p><strong>Student:</strong> {selectedLog.user?.fullName || 'Unknown'}</p>
+              <p><strong>Student:</strong> {resolveAttendanceUserName(selectedLog)}</p>
               <p>
                 <strong>Stage:</strong>{' '}
                 {getStage(selectedLog) ? stageLabel(getStage(selectedLog)) : `Unrecognised status (${selectedLog.status})`}

@@ -217,6 +217,31 @@ export const HYT_BRANDING = {
   founderTitle: 'Founder & CEO'
 };
 
+/**
+ * `YYYY-MM-DD` in LOCAL time.
+ *
+ * `Date.prototype.toISOString()` is UTC, so a Date sitting at local midnight in
+ * GMT+8 serialises to 16:00 the *previous* day.  `formatScheduleRange` slices
+ * the first 10 characters off its input, so handing it a `toISOString()` value
+ * renders every date one day early — silently, and only in positive-offset
+ * timezones, which is the worst way for a date bug to behave.
+ *
+ * Pass the result of this instead.  Returns '' for junk so the caller's
+ * existing `--` fallback still applies.
+ */
+export function toLocalISODate(value) {
+  // `new Date(null)` is 1970-01-01, not an invalid date — null coerces to 0 and
+  // 0 is a perfectly good epoch timestamp.  So a missing date would have
+  // rendered as "Jan 1, 1970" rather than falling back to "--".  Reject the
+  // empty-ish values before handing them to the Date constructor.
+  if (value === null || value === undefined || value === '') return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 export function formatScheduleRange(startISO, endISO) {
   const formatPart = (iso) => {
     if (!iso) return '';

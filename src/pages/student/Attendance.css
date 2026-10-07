@@ -20,9 +20,12 @@
   color: #666;
 }
 
-/* Today's Attendance Card */
+/* Today's Attendance Card.
+   The inter-card `margin-bottom` that used to live here is gone: spacing is now
+   the `.attendance-col` grid `gap`, so the rhythm is declared once instead of
+   being divided between a margin and a gap. */
 .today-attendance-card {
-  margin-bottom: 24px;
+  min-width: 0;
 }
 
 .card-header {
@@ -63,18 +66,18 @@
 
 .status-label {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text);
   font-weight: 500;
 }
 
 .status-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
 }
 
 .status-value.highlight {
-  color: #279EB6;
+  color: var(--dark-text);
 }
 
 .no-attendance {
@@ -165,7 +168,7 @@
 
 /* Hours Progress Card */
 .hours-progress-card {
-  margin-bottom: 24px;
+  min-width: 0;
 }
 
 .progress-stats {
@@ -183,23 +186,36 @@
 
 .stat-label {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text);
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
 }
 
 .stat-value.success {
-  color: #10b981;
+  color: var(--dark-text);
 }
 
 .stat-value.warning {
-  color: #f59e0b;
+  color: var(--dark-text);
 }
 
+/* ============================================================================
+   This is a SECOND, unrelated widget that reuses the global `.progress-bar`
+   class name: a 32px filled bar with the percentage printed inside it.
+   ----------------------------------------------------------------------------
+   It has to stay scoped to its own container. CRA bundles every route into ONE
+   stylesheet, so a bare `.progress-bar` here leaked into `components/ProgressBar`
+   and into the dashboard's `.experience-progress` bar, handing them
+   `display: flex`, `min-width: 50px` and — the damaging one — `padding-right:
+   16px`. With `box-sizing: border-box` that padding comes out of the *content*
+   box, so `.progress-bar-fill`'s `width: 40%` was 40% of a box 16px narrower
+   than the track it is drawn in: a 40% bar measured 37.96%, and a 100% bar
+   stopped 16px short of the end. Measured, not guessed.
+   ========================================================================== */
 .progress-bar-container {
   width: 100%;
   height: 32px;
@@ -209,9 +225,11 @@
   position: relative;
 }
 
-.progress-bar {
+.progress-bar-container .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #279EB6, #1e7a8f);
+  /* Deepened so the white percentage clears 4.5:1 across the whole fill;
+     #279EB6 was 3.16:1 against white. */
+  background: linear-gradient(90deg, #16697A, #0F5566);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -220,15 +238,17 @@
   min-width: 50px;
 }
 
-.progress-text {
-  color: white;
+/* Two classes so this outranks the global `.card :is(span)` phrasing rule
+   (0,1,1), which otherwise re-pointed the percentage at --muted-text. */
+.progress-bar-container .progress-bar .progress-text {
+  color: #FFFFFF;
   font-weight: 700;
   font-size: 14px;
 }
 
 /* OT Request Card */
 .ot-request-card {
-  margin-bottom: 24px;
+  min-width: 0;
 }
 
 .ot-form {
@@ -398,6 +418,240 @@
   }
 }
 
+/* ============================================================================
+   DASHBOARD LAYOUT
+   ----------------------------------------------------------------------------
+   Presentation only — same six cards, same markup, same ids, same content.
+   Two columns at wide widths, one column below 1080px.
+
+   Every track is `minmax(0, 1fr)`, never a bare `1fr`. A bare `1fr` is
+   `minmax(auto, 1fr)` and `auto` refuses to shrink below min-content, so the
+   640px-wide DTR table would push the whole page into horizontal overflow on a
+   phone. `min-width: 0` is repeated on the items for the same reason: a grid
+   ITEM defaults to `min-width: auto` and overflows its track even when the
+   track itself may shrink.
+   ========================================================================== */
+.attendance-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.attendance-col {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* The column gap is the only spacing: the per-card `margin-bottom` that used to
+   sit in each card's own rule was removed so the rhythm has one author. */
+.attendance-col > * {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+@media (max-width: 1080px) {
+  .attendance-dash { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+
+/* ----------------------------------------------------------------------------
+   One recipe for every tinted tile in this layout — the key/value strip under
+   the timer and the OJT-progress stat block. `.kv` and `.summary-item` are
+   different card subtrees with identical needs, so they share a rule rather
+   than repeating it. Two classes (0,2,0) so it outranks `.attendance-col > *`
+   and the `.card :is(span)` phrasing rule, which is why the tile's own tokens
+   are re-declared: a tinted chip must not inherit a flipped token set.
+   -------------------------------------------------------------------------- */
+.attendance-col .kv,
+.attendance-summary-card .summary-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #E5E7EB);
+  border-radius: 10px;
+  background: #F9FAFB;
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+}
+
+/* The small caps label above each value, shared the same way. */
+.attendance-col .kv .kv-k,
+.attendance-summary-card .summary-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6B7280);
+}
+
+/* ----------------------------------------------------------------------------
+   Card header furniture — the numbered index chip.
+   -------------------------------------------------------------------------- */
+.attendance-col .card-idx {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6B7280);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------------------
+   Today's Attendance — timer left, status pill right, then the key/value strip.
+   -------------------------------------------------------------------------- */
+.today-live-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.today-live-timer {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+/* The tracker sits inside the card now, so its own top margin would open a gap
+   above the status row. */
+.today-live-timer > .live-time-tracker { margin-top: 0; }
+
+.today-live-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.attendance-col .today-live-status .status-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6B7280);
+}
+
+.today-kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.attendance-col .kv .kv-v {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark-text, #1F2937);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The primary action right-aligns under the strip. The locked and notice
+   blocks keep their own centring, untouched. */
+.today-cta {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   OJT Hours Progress — a labelled percentage line above the existing bar.
+   -------------------------------------------------------------------------- */
+.progress-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.attendance-col .progress-line .progress-line-label {
+  font-size: 12px;
+  color: var(--muted-text, #6B7280);
+}
+
+.attendance-col .progress-line .progress-line-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark-text, #1F2937);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------------------
+   OJT Progress — a 2x2 stat block rather than four loose columns.
+   -------------------------------------------------------------------------- */
+.attendance-summary-card .attendance-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.attendance-summary-card .summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark-text, #1F2937);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.attendance-summary-card .summary-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-text, #6B7280);
+}
+
+/* ----------------------------------------------------------------------------
+   Recent activity — the DTR rows re-expressed as a short log.
+   -------------------------------------------------------------------------- */
+.attendance-activity-card .activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendance-activity-card .activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 11px 0;
+  border-top: 1px solid var(--border, #E5E7EB);
+}
+
+.attendance-activity-card .activity-list > .activity-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.attendance-activity-card .activity-date {
+  font-size: 13.5px;
+  color: var(--muted-text, #6B7280);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.attendance-activity-card .activity-tag {
+  flex: none;
+  display: inline-flex;
+}
+
+@media (max-width: 768px) {
+  .attendance-dash,
+  .attendance-col { gap: 16px; }
+
+  .today-live-row { gap: 14px; }
+
+  .today-cta { justify-content: stretch; }
+  .today-cta > .btn { width: 100%; }
+
+  .attendance-activity-card .activity-row { gap: 6px; }
+}
+
 /* --------------------------------------------------------------------------
    Pending-request tracker.
    Replaces the bare "Pending approval" string that used to sit in the Time In
@@ -459,12 +713,12 @@
 }
 
 .attendance-stepper-step.done .attendance-stepper-marker {
-  background: #10B981;
+  background: #047857;
   color: #fff;
 }
 
 .attendance-stepper-step.current .attendance-stepper-marker {
-  background: linear-gradient(135deg, #D57156 0%, #F3DB6E 100%);
+  background: linear-gradient(135deg, #B8441F 0%, #A83F27 100%);
   color: #fff;
   box-shadow: 0 0 0 4px rgba(213, 113, 86, 0.15);
 }

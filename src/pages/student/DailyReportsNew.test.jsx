@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { DailyReportsNew } from './DailyReportsNew';
 import { getDailyReports } from '../../services/supabaseService';
 
@@ -13,6 +13,17 @@ jest.mock('../../services/supabaseService', () => ({
   getDailyReports: jest.fn(),
   createDailyReport: jest.fn()
 }));
+
+/**
+ * This suite verifies a CSS contract, not a user-facing behaviour: DailyReports.css
+ * is scoped under `.daily-reports-page`, and twelve class names previously matched
+ * no stylesheet at all.  The class string is the subject under test, so there is
+ * no ARIA role or text query that can stand in for it — a DOM lookup is the only
+ * way to assert it.  The exemption is confined to this one helper.
+ */
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+const hasClass = (container, selector) => container.querySelector(selector) !== null;
+/* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
 const REPORT = {
   id: 'r1',
@@ -32,13 +43,13 @@ describe('DailyReportsNew', () => {
     // DailyReports.css is scoped under .daily-reports-page so this page stops
     // inheriting .report-header / .report-content / .report-meta from Admin.css.
     const { container } = render(<DailyReportsNew />);
-    await waitFor(() => expect(screen.getByText('Report History')).toBeInTheDocument());
-    expect(container.querySelector('.daily-reports-page')).not.toBeNull();
+    await screen.findByText('Report History');
+    expect(hasClass(container, '.daily-reports-page')).toBe(true);
   });
 
   test('renders the class names the stylesheet defines', async () => {
     const { container } = render(<DailyReportsNew />);
-    await waitFor(() => expect(screen.getByText('Report History')).toBeInTheDocument());
+    await screen.findByText('Report History');
 
     // These twelve previously matched no CSS anywhere.
     [
@@ -58,7 +69,7 @@ describe('DailyReportsNew', () => {
       '.report-footer',
       '.report-meta'
     ].forEach((selector) => {
-      expect(container.querySelector(selector)).not.toBeNull();
+      expect(hasClass(container, selector)).toBe(true);
     });
   });
 
@@ -67,24 +78,24 @@ describe('DailyReportsNew', () => {
       { ...REPORT, status: 'Rejected', adminNote: 'Please add more detail.' }
     ]);
     const { container } = render(<DailyReportsNew />);
-    await waitFor(() => expect(screen.getByText('Report History')).toBeInTheDocument());
+    await screen.findByText('Report History');
 
-    expect(container.querySelector('.report-item.rejected')).not.toBeNull();
-    expect(container.querySelector('.admin-note.rejected')).not.toBeNull();
-    expect(container.querySelector('.admin-note.approved')).toBeNull();
+    expect(hasClass(container, '.report-item.rejected')).toBe(true);
+    expect(hasClass(container, '.admin-note.rejected')).toBe(true);
+    expect(hasClass(container, '.admin-note.approved')).toBe(false);
   });
 
   test('marks an approved admin note', async () => {
     const { container } = render(<DailyReportsNew />);
-    await waitFor(() => expect(screen.getByText('Report History')).toBeInTheDocument());
+    await screen.findByText('Report History');
 
-    expect(container.querySelector('.admin-note.approved')).not.toBeNull();
-    expect(container.querySelector('.report-item.rejected')).toBeNull();
+    expect(hasClass(container, '.admin-note.approved')).toBe(true);
+    expect(hasClass(container, '.report-item.rejected')).toBe(false);
   });
 
   test('shows the empty state when there are no reports', async () => {
     getDailyReports.mockResolvedValue([]);
     render(<DailyReportsNew />);
-    await waitFor(() => expect(screen.getByText('No Reports Yet')).toBeInTheDocument());
+    await screen.findByText('No Reports Yet');
   });
 });

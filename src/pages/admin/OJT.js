@@ -40,38 +40,38 @@ export function AdminOJT() {
     <div>
       <h1 className="page-title">OJT Monitoring</h1>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div className="ojt-record-list">
         {ojtRecords.map((record) => {
           const student = users.find(u => u.id === record.studentId);
           return (
-            <Card key={record.id}>
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>{student?.fullName}</h3>
-                <p style={{ color: 'var(--muted-text)' }}>{record.company}</p>
+            <Card key={record.id} className="ojt-record-card">
+              <div className="ojt-record-head">
+                <h3 className="ojt-record-title">{student?.fullName}</h3>
+                <p className="ojt-record-org">{record.company}</p>
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ textAlign: 'center', padding: '12px', background: 'var(--background)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--teal)' }}>{record.requiredHours}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted-text)' }}>Required</div>
+
+              <div className="ojt-stat-grid">
+                <div className="ojt-stat">
+                  <div className="ojt-stat-value is-required">{record.requiredHours}</div>
+                  <div className="ojt-stat-label">Required</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: '12px', background: 'var(--background)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#10B981' }}>{record.verifiedHours}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted-text)' }}>Verified</div>
+                <div className="ojt-stat">
+                  <div className="ojt-stat-value is-verified">{record.verifiedHours}</div>
+                  <div className="ojt-stat-label">Verified</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: '12px', background: 'var(--background)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary-orange)' }}>{record.remainingHours}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted-text)' }}>Remaining</div>
+                <div className="ojt-stat">
+                  <div className="ojt-stat-value is-remaining">{record.remainingHours}</div>
+                  <div className="ojt-stat-label">Remaining</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: '12px', background: 'var(--background)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--dark-text)' }}>{record.progress}%</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted-text)' }}>Progress</div>
+                <div className="ojt-stat">
+                  <div className="ojt-stat-value is-progress">{record.progress}%</div>
+                  <div className="ojt-stat-label">Progress</div>
                 </div>
               </div>
 
               <ProgressBar value={record.progress} max={100} showLabel={false} className="mb-4" />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="ojt-record-footer">
                 <Badge status={record.status}>{record.status}</Badge>
                 {record.status === 'Active' && record.verifiedHours >= record.requiredHours && (
                   <Button size="sm" onClick={() => handleComplete(record)}>

@@ -62,7 +62,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #667eea;
+  color: #4F46E5;
   font-size: 22px;
   pointer-events: none;
 }
@@ -80,8 +80,8 @@
 
 .admin-search-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 .admin-search-clear {
@@ -121,7 +121,7 @@
 
 .admin-search-result:hover,
 .admin-search-result:focus-visible {
-  border-color: #667eea;
+  border-color: #4F46E5;
   background: #EEF2FF;
   outline: none;
 }
@@ -133,7 +133,7 @@
   flex: 0 0 34px;
   height: 34px;
   border-radius: 50%;
-  background: #667eea;
+  background: #4F46E5;
   color: white;
   font-weight: 700;
 }
@@ -153,10 +153,13 @@
   white-space: nowrap;
 }
 
+/* These sit inside a card, so they take the card text token instead of the
+   original #667eea, which is 3.66:1 on white — under the 4.5:1 a 12px label
+   needs.  Going through the token also means they follow any surface change. */
 .admin-search-result-action,
 .text-link-button,
 .search-sync-label {
-  color: #667eea;
+  color: var(--dark-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -166,16 +169,20 @@
   background: transparent;
   cursor: pointer;
   padding: 0;
+  /* The heading beside this button is long, so the flex row squeezed the label
+     onto two lines ("View" / "all").  A two-word action must never break. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .text-link-button:hover,
 .text-link-button:focus-visible {
-  color: #764ba2;
+  color: var(--dark-text);
   text-decoration: underline;
 }
 
 .search-sync-label {
-  color: #10B981;
+  color: var(--dark-text);
 }
 
 .admin-search-empty,

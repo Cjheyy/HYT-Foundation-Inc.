@@ -43,6 +43,9 @@
 
 .story-quote {
   font-size: 60px;
+  /* The story card is WHITE again, so the brand orange is the right watermark:
+     #D57156 measures 3.32:1, clearing the 3:1 large-text bar a 60px glyph needs.
+     The brand yellow it briefly used is 1.38:1 on white — invisible. */
   color: var(--primary-orange);
   line-height: 1;
   margin-bottom: 16px;
@@ -64,16 +67,23 @@
 }
 
 .author-avatar {
+  flex: 0 0 auto;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--teal), var(--light-cyan));
+  /* The teal chip is back — it reads as a coloured avatar on the white story
+     card.  The stops are deepened, though: white 16px/700 initials on the old
+     --light-cyan end (#5BC0C8) measured 2.14:1, well under 4.5:1.  #16697A ->
+     #0F5566 carries them at 6.30:1 -> 8.36:1. */
+  background: linear-gradient(135deg, #16697A, #0F5566);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 16px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 18px -10px rgba(14, 23, 38, 0.55);
 }
 
 .author-name {

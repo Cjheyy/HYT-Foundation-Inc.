@@ -30,7 +30,11 @@
 
 .opportunity-org {
   font-size: 15px;
-  color: var(--primary-orange);
+  /* The card is white again, so the brand-orange accent works — but the raw
+     --primary-orange (#D57156) is only 3.32:1 on white. The deepened sibling
+     #B8441F measures 5.41:1. The token flips to white while the posting card's
+     hover gradient sweeps in, so this one declaration covers both states. */
+  color: var(--accent-text, #B8441F);
   font-weight: 500;
   margin-bottom: 12px;
 }

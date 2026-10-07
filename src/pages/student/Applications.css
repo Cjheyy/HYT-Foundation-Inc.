@@ -2,6 +2,61 @@
   min-height: 100vh;
 }
 
+.applications-intro {
+  max-width: 68ch;
+  /* Was `-8px`, a pull-up written when `.page-title` had no bottom margin of
+     its own. Now that the shared portal rhythm gives the title 6px, a negative
+     top margin here collapsed against it to -2px and overlapped the heading —
+     the one portal page still doing that. `0` leaves the standard 6px gap. */
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted-text);
+}
+
+.applications-group {
+  margin-bottom: 36px;
+}
+
+.applications-group:last-child {
+  margin-bottom: 0;
+}
+
+.applications-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.applications-group-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+.applications-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(22, 105, 122, 0.1);
+  border: 1px solid rgba(22, 105, 122, 0.22);
+  color: #0F5566;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.applications-group-empty {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
 .applications-list {
   display: grid;
   gap: 16px;

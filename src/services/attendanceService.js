@@ -1,3 +1,5 @@
+import { GEOFENCE_ENFORCEMENT_ENABLED } from '../utils/geofence';
+
 export function createAttendance(data) {
   return {
     id: `att-${Date.now()}`,
@@ -8,9 +10,11 @@ export function createAttendance(data) {
 }
 
 export function verifyLocation(userLat, userLon, workplaceLat, workplaceLon, radius) {
-  // FORCE-BYPASS (testing): always pass. Restore Haversine check before production.
-  return true;
-  
+  // FORCE-BYPASS (testing): always pass while enforcement is OFF.
+  // The Haversine check below is the production logic; it is not dead code, it
+  // simply does not run until GEOFENCE_ENFORCEMENT_ENABLED is set to true.
+  if (!GEOFENCE_ENFORCEMENT_ENABLED) return true;
+
   const R = 6371e3; // Earth's radius in meters
   const φ1 = (userLat * Math.PI) / 180;
   const φ2 = (workplaceLat * Math.PI) / 180;

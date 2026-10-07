@@ -31,7 +31,13 @@
   50% { opacity: 0.7; }
 }
 
-.page-title {
+/* Scoped to `.page-hero`: these are the public hero's white-on-photo title
+   styles. Left unscoped they also matched every portal page's `.page-title`
+   (CRA bundles all stylesheets together), which pulled the 48px white type,
+   the `fadeInUp` entrance animation and the subtitle's `max-width: 800px`
+   into the student and admin portals. All five public pages render their
+   header inside `.page-hero`, so nothing here is lost by scoping it. */
+.page-hero .page-title {
   font-size: 48px;
   font-weight: 800;
   color: white;
@@ -53,7 +59,7 @@
   }
 }
 
-.page-subtitle {
+.page-hero .page-subtitle {
   font-size: 20px;
   color: rgba(255, 255, 255, 0.95);
   max-width: 800px;
@@ -294,39 +300,157 @@
 
 /* ==========================================================================
    Partner organizations
+   Every class is prefixed `partner-`: CRA bundles all stylesheets into one
+   global scope, so an unprefixed `.card`/`.tile` would collide elsewhere.
+   Colour choices use the deepened brand siblings (#16697A, #B8441F, #0E1726,
+   #374151) so white and body text both clear their contrast minimums.
    ========================================================================== */
 .partners-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
-  max-width: 1000px;
+  /* Narrower tracks than the old initials layout: a logo plate needs width far
+     less than a wrapped two-line company name did. */
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
 .partner-chip {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 172px;
+  padding: 20px 16px;
+  text-align: center;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 18px;
+  /* Own stacking context, so the sheen layer can sit at z-index:-1 — above this
+     element's own background but below its content — without a z-index on each
+     child. */
+  isolation: isolate;
+  /* Hairline border tinted with the brand accent, via the
+     padding-box/border-box trick. */
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--accent-soft), var(--accent-mid)) border-box;
+  box-shadow: 0 4px 16px rgba(14, 23, 38, 0.06);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.35s ease,
-              border-color 0.35s ease;
+              background 0.35s ease;
+}
+
+/* The brand's own accent sweeps across the top edge on hover/focus. */
+.partner-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .partner-chip:hover {
-  transform: translateY(-4px);
-  border-color: rgba(39, 158, 182, 0.45);
-  box-shadow: 0 12px 28px rgba(39, 158, 182, 0.16);
+  transform: translateY(-5px);
+  box-shadow: 0 18px 36px var(--accent-soft);
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--accent), var(--accent-deep)) border-box;
+}
+
+.partner-chip:hover::before,
+.partner-chip:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Uses the deepened accent rather than the raw one: the measured gold and
+   yellow-green logos would not clear 3:1 as a focus ring against the white
+   card.  `accentDeep` is derived to clear 4.6:1 on white for every brand. */
+.partner-chip:focus-visible {
+  outline: 3px solid var(--accent-deep);
+  outline-offset: 3px;
+}
+
+/* Soft highlight that follows the pointer; `--mx`/`--my` are written straight
+   to the element by trackPointerGlow() in About.jsx, so moving the mouse never
+   triggers a React render.  Sits at z-index:-1 (see `isolation` above) so it
+   tints the tile without washing out the logo or the label. */
+.partner-chip-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* 16px = the 18px outer radius minus the 2px transparent border, because an
+     absolutely positioned child is sized against the padding box. */
+  border-radius: 16px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    220px circle at var(--mx, 50%) var(--my, 50%),
+    var(--accent-soft),
+    transparent 70%
+  );
+  transition: opacity 0.35s ease;
+}
+
+.partner-chip:hover .partner-chip-glow,
+.partner-chip:focus-visible .partner-chip-glow {
+  opacity: 1;
+}
+
+/* No plate and no border.  Every logo is pre-composited onto the same 640x400
+   canvas (see drafts/process-logos.py), so a plain `width: 100%` renders all
+   twelve at exactly the same size — and because each mark keeps its own white
+   background, that white blends into the white tile, which is what removes the
+   "box" the plate used to draw. */
+.partner-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* "There is more here" affordance.  The tile opens on hover, so a cue that
+   reads as *disclosure* rather than *button* is what tells the visitor a dialog
+   is behind it.  Pinned to the corner so it never crowds the centred logo. */
+.partner-chip-hint {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Deepened accent keeps the glyph legible on every brand. */
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease,
+              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.partner-chip:hover .partner-chip-hint,
+.partner-chip:focus-visible .partner-chip-hint {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .partner-monogram {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,15 +458,312 @@
   font-weight: 800;
   letter-spacing: 0.03em;
   color: #fff;
-  background: linear-gradient(135deg, #279EB6 0%, #1E7F94 100%);
-  box-shadow: 0 6px 16px rgba(39, 158, 182, 0.28);
+  /* White on this gradient is safe at every stop (worst case 5.41:1). */
+  background: linear-gradient(135deg, #16697A 0%, #B8441F 100%);
+  box-shadow: 0 8px 18px rgba(22, 105, 122, 0.28);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+
+.partner-chip:hover .partner-monogram,
+.partner-chip:focus-visible .partner-monogram {
+  transform: scale(1.06) rotate(-4deg);
+  box-shadow: 0 10px 24px rgba(184, 68, 31, 0.32);
+}
+
+.partner-monogram-lg {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  font-size: 19px;
 }
 
 .partner-name {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--dark-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0E1726;
   line-height: 1.35;
+  max-width: 100%;
+  /* Long names ("Level Up International Manpower Services Corp.") must wrap
+     inside the narrow track without stretching it. */
+  overflow-wrap: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   Partner dialog shell
+   <Modal> appends the `partner-modal` class (see PartnerModal.jsx), so this one
+   dialog can be branded without a `:has()` selector reaching into shared
+   markup — the other <Modal> callers render exactly as before.
+   -------------------------------------------------------------------------- */
+.partner-modal .modal-header {
+  /* The brand's deepened accent, derived from its own logo.  `accentDeep` is
+     scaled toward black until white text on it clears 4.6:1, so the light
+     logos (gold #F1BB27, yellow-green #B0CE4B) are safe here too — their raw
+     accents would fail badly behind the white title. */
+  background: linear-gradient(135deg, var(--accent-deep) 0%, #0E1726 100%);
+  border-bottom: none;
+  /* Accent rule along the top edge of the dialog.  A border rather than an
+     absolutely positioned bar, because `.modal` scrolls and an absolute child
+     would scroll out of view with the content. */
+  border-top: 4px solid var(--accent);
+  /* Must match the .modal radius in index.css. */
+  border-radius: 16px 16px 0 0;
+  padding: 22px 26px;
+  position: relative;
+  /* Clips the sheen sweep below. */
+  overflow: hidden;
+}
+
+/* One light sweep across the header as the dialog settles in.  No fill-mode on
+   purpose: once it has run the pseudo-element returns to its base transform
+   (-120%), i.e. off-canvas, so nothing is left behind. */
+.partner-modal .modal-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  animation: partner-header-sheen 1.05s cubic-bezier(0.4, 0, 0.2, 1) 0.22s;
+}
+
+@keyframes partner-header-sheen {
+  to { transform: translateX(120%); }
+}
+
+/* `.modal` sets a dark default colour, which would vanish against the band.
+   White clears 4.63:1 against the darkest permitted accentDeep. */
+.partner-modal .modal-title {
+  color: #fff;
+}
+
+.partner-modal .modal-close {
+  color: rgba(255, 255, 255, 0.92);
+  border-radius: 9px;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+/* Scaled, not rotated — a rotated × reads as a +. */
+.partner-modal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+/* The shared shell drops the radius below 768px, so the header band has to
+   follow or its top corners overhang the screen edge. */
+@media (max-width: 768px) {
+  .partner-modal .modal-header {
+    border-radius: 0;
+  }
+}
+
+/* Partner detail modal body (rendered inside the shared <Modal>). */
+.partner-detail {
+  color: #374151;
+}
+
+/* Content rises in behind the header rather than appearing all at once.
+   `backwards` is required here, not decorative: with a delay, the element would
+   otherwise sit fully visible during the wait, then blink to opacity 0 when the
+   animation starts.  `backwards` applies the `from` state during the delay and
+   still lets the element fall back to its natural style afterwards. */
+.partner-detail > * {
+  animation: partner-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.partner-detail > *:nth-child(1) { animation-delay: 0.12s; }
+.partner-detail > *:nth-child(2) { animation-delay: 0.2s; }
+.partner-detail > *:nth-child(3) { animation-delay: 0.28s; }
+
+@keyframes partner-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Identity block — no panel and no plate.  The mark is composited on a white
+   canvas that disappears against the dialog, so the only thing behind it is a
+   soft accent halo. */
+.partner-detail-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* Painted before the children and deliberately larger than the logo, so it
+   reads as a glow *around* the mark instead of being hidden beneath the
+   artwork's own white background. */
+.partner-detail-head::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: -34px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 68%);
+  animation: partner-halo 0.7s ease-out 0.1s backwards;
+}
+
+@keyframes partner-halo {
+  from { opacity: 0; transform: scale(0.75); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.partner-detail-head > * {
+  position: relative;
+}
+
+/* Sized here rather than by a wrapper, so the mark carries no box of its own. */
+.partner-detail-head .partner-logo {
+  flex-shrink: 0;
+  width: 170px;
+  animation: partner-mark-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s backwards;
+}
+
+.partner-detail-head .partner-monogram {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  animation: partner-mark-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s backwards;
+}
+
+@keyframes partner-mark-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.partner-detail-meta {
+  min-width: 0;
+}
+
+.partner-detail-tagline {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  /* accentDeep, not the raw accent: this sits on a near-white panel and the
+     raw gold / yellow-green would not clear 4.5:1. */
+  color: var(--accent-deep);
+  line-height: 1.4;
+}
+
+/* Deliberately neutral: the tagline above already carries the brand colour,
+   and two accented lines stacked would fight each other. */
+.partner-detail-industry {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4B5563;
+}
+
+.partner-detail-about {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.partner-detail-columns {
+  display: grid;
+  /* auto-fit, not a hard 2 columns: a partner with services but no products
+     renders one panel, and it should fill the width rather than sit in a
+     half-empty row. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* Products and Services become two side-by-side panels so the two lists are
+   visually separated instead of reading as one long column of bullets.  The
+   accent arrives as a wash from the top edge rather than a coloured border, so
+   the panel keeps a light, open feel. */
+.partner-detail-section {
+  min-width: 0;
+  padding: 16px 18px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--accent-soft);
+  background:
+    linear-gradient(180deg, var(--accent-soft) 0%, rgba(255, 255, 255, 0) 42%),
+    #FBFCFE;
+  animation: partner-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s backwards;
+}
+
+.partner-detail-heading {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0E1726;
+}
+
+/* Short accent rule under each panel heading — a second, quieter echo of the
+   brand colour that ties the panels to the header band. */
+.partner-detail-heading::after {
+  content: '';
+  display: block;
+  width: 26px;
+  height: 2px;
+  margin-top: 7px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+}
+
+.partner-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.partner-detail-item {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.partner-detail-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  /* A soft accent ring rather than a hard dot, so a long list does not read as
+     a column of solid specks. */
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 560px) {
+  .partner-detail-columns {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  /* Stack the identity block: a 170px mark plus the tagline does not fit beside
+     each other in a phone-width dialog. */
+  .partner-detail-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .partner-detail-head .partner-logo {
+    width: 100%;
+  }
 }
 
 /* Anchor targets must clear the fixed header. */
@@ -355,9 +776,25 @@
   .thrust-item,
   .thrust-glow,
   .thrust-number,
-  .partner-chip {
+  .partner-chip,
+  .partner-chip-glow,
+  .partner-chip-hint,
+  .partner-logo,
+  .partner-monogram,
+  .partner-detail > *,
+  .partner-detail-head::before,
+  .partner-detail-section,
+  .partner-modal .modal-header::after,
+  .partner-modal .modal-close {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* The hint is opacity-0 until hover; without the transition it would pop in
+     abruptly, so pin it visible for reduced-motion visitors instead. */
+  .partner-chip-hint {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -515,11 +952,11 @@
     padding: 70px 20px 60px;
   }
 
-  .page-title {
+  .page-hero .page-title {
     font-size: 36px;
   }
 
-  .page-subtitle {
+  .page-hero .page-subtitle {
     font-size: 18px;
   }
 
@@ -572,11 +1009,11 @@
 }
 
 @media (max-width: 480px) {
-  .page-title {
+  .page-hero .page-title {
     font-size: 28px;
   }
 
-  .page-subtitle {
+  .page-hero .page-subtitle {
     font-size: 16px;
   }
 

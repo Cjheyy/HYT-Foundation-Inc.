@@ -17,6 +17,11 @@
   --dark-text: #1F2937;
   --muted-text: #6B7280;
   --border: #E5E7EB;
+  /* Brand accent for secondary labels (organisation names, thrust chips).  The
+     vivid --primary-orange is only 3.32:1 on white; this deepened sibling is
+     5.41:1.  It exists as its own token because the posting cards flip it to
+     white on hover, alongside --dark-text/--muted-text. */
+  --accent-text: #B8441F;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.16);
@@ -105,32 +110,39 @@ input, textarea, select {
   height: 300px;
 }
 
+/* The brand orange was #D57156 -> #E8763B, which carries white text at only
+   3.32:1 -> 2.96:1 — a failure on every button in the product.  The deepened
+   stops below are the same hue family and clear 5.41:1 -> 6.17:1, so the
+   primary action is legible on white cards AND on the brand gradient. */
 .btn-primary {
-  background: linear-gradient(135deg, #D57156 0%, #E8763B 100%);
+  background: linear-gradient(135deg, #B8441F 0%, #A83F27 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(213, 113, 86, 0.3);
+  box-shadow: 0 4px 12px rgba(184, 68, 31, 0.32);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(213, 113, 86, 0.4);
+  box-shadow: 0 8px 20px rgba(184, 68, 31, 0.42);
 }
 
+/* #279EB6 -> #5BC0C8 gave white text 3.16:1 -> 1.72:1.  Deepened to the same
+   teal family: 6.30:1 -> 8.36:1. */
 .btn-secondary {
-  background: linear-gradient(135deg, #279EB6 0%, #5BC0C8 100%);
+  background: linear-gradient(135deg, #16697A 0%, #0F5566 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(39, 158, 182, 0.3);
+  box-shadow: 0 4px 12px rgba(22, 105, 122, 0.32);
 }
 
 .btn-secondary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(39, 158, 182, 0.4);
+  box-shadow: 0 8px 20px rgba(22, 105, 122, 0.42);
 }
 
 .btn-outline {
   background: white;
-  border: 2px solid var(--primary-orange);
-  color: var(--primary-orange);
+  border: 2px solid #B8441F;
+  /* Was var(--primary-orange) #D57156 — 3.32:1 on its own white fill. */
+  color: #B8441F;
 }
 
 .btn-outline:hover {
@@ -149,7 +161,7 @@ input, textarea, select {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  background: linear-gradient(135deg, #047857 0%, #065F46 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -160,7 +172,7 @@ input, textarea, select {
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+  background: linear-gradient(135deg, #B42318 0%, #991B1B 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
@@ -192,8 +204,24 @@ input, textarea, select {
   transform: scale(0.98);
 }
 
-/* Cards */
+/* ==========================================================================
+   Cards — light surface (reverted).
+
+   Cards are WHITE again.  The brand ramp (teal → orange) is no longer the
+   default card surface; it is now a HOVER affordance reserved for the five
+   browsable POSTING surfaces — OJT postings and trainee programs/events
+   (`.program-card`, `.opportunity-card`, `.reveal-card`, `.card--posting`).
+
+   The token remap is what makes the hover safe: because every descendant
+   reads var(--dark-text)/var(--muted-text), flipping the tokens on `:hover`
+   recolours the whole subtree at once instead of needing per-page overrides.
+   ========================================================================== */
 .card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  --border: #E5E7EB;
+  --accent-text: #B8441F;
+
   background: white;
   border-radius: 16px;
   padding: 24px;
@@ -217,6 +245,128 @@ input, textarea, select {
   border-color: rgba(213, 113, 86, 0.3);
 }
 
+/* --------------------------------------------------------------------------
+   Posting cards — a LIGHT brand wash sweeps in on HOVER, using the same
+   clip-path circle reveal as the Home "featured" rails.
+
+   Scoped to the FIVE browsable posting surfaces the request named:
+     .program-card      public  /programs          (event / program posting)
+     .opportunity-card  public  /opportunities     (OJT posting)
+     .reveal-card       Home    featured rails     (both of the above)
+     .card--posting     student /student/opportunities
+   Nothing else in the system takes the wash — every other card, including the
+   admin postings MANAGEMENT list (`.posting-card`), stays plain white.
+
+   WHY THE WASH IS LIGHT, NOT THE SATURATED BRAND RAMP:
+   a card carries a three-level text hierarchy (--dark-text / --muted-text /
+   --accent-text).  On a saturated ramp every one of them has to be forced to
+   white, which flattens the hierarchy and still only reaches 3.16:1.  A light
+   wash keeps the card's own dark text, so nothing has to flip at all — and the
+   two tokens that are a shade too pale on a tint (--muted-text, --accent-text)
+   are nudged one step deeper for the duration of the hover.
+   -------------------------------------------------------------------------- */
+.reveal-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.reveal-wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* A soft teal -> peach wash, ~80% white.  Worst stop (#F8E5DF) still carries
+     #1F2937 at 12.1:1, #4B5563 at 6.2:1, #8A2F13 at 6.9:1 and #0F5566 at 6.9:1. */
+  background: linear-gradient(150deg, #D8EEF2 0%, #F8E5DF 100%);
+  clip-path: circle(0% at 100% 0%);
+  transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.reveal-card:hover .reveal-wipe,
+.reveal-card:focus-within .reveal-wipe {
+  /* 140%, not 100% — a circle of exactly 100% does not reach the far corner. */
+  clip-path: circle(140% at 100% 0%);
+}
+
+/* Lift the real content above the wipe. */
+.reveal-card > *:not(.reveal-wipe) {
+  position: relative;
+  z-index: 1;
+}
+
+/* The wash is light, so the card keeps its dark text — only the two palest
+   tokens step one shade deeper while the tint is behind them. */
+.card.reveal-card:hover {
+  --muted-text: #4B5563;
+  --accent-text: #8A2F13;
+}
+
+/* A card that hosts FORM CONTROLS or a DATA TABLE must never take the hover
+   ramp.  This is a correctness carve-out, not a style preference: an <input> is
+   a white box with dark text, so on the gradient its own border vanishes and its
+   label becomes white-on-white; a <select> popup is OS-rendered and cannot be
+   themed at all; and table zebra striping has no meaning on a gradient.
+   Token remap pinned so descendants keep the dark text in both states.
+
+   The `:has()` selector makes this AUTOMATIC — any card that contains a control
+   is pinned without every call site having to remember a class, which is the
+   only way this stays correct as new pages are added. The explicit
+   `.card--surface` class remains for cases `:has()` cannot see (a custom-styled
+   control that is not a native element). */
+.card:has(input, select, textarea, table),
+.card--surface {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  --border: #E5E7EB;
+  --accent-text: #B8441F;
+
+  background: #FFFFFF;
+  color: #1F2937;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  box-shadow: var(--shadow);
+}
+
+/* `:hover` is repeated here on purpose.  The posting-card ramp rule is (0,3,0);
+   the resting carve-out above is only (0,2,0) and would LOSE to it, so a
+   posting card that happened to contain a form control would still take the
+   ramp and turn its inputs white-on-white.  Re-asserting the white surface at
+   the same (0,3,0) means this later rule wins the tie, which makes the
+   carve-out an actual guarantee rather than a comment. */
+.card:has(input, select, textarea, table):hover,
+.card--surface:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  --border: #E5E7EB;
+  --accent-text: #B8441F;
+
+  background: #FFFFFF;
+  color: #1F2937;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  filter: none;
+}
+
+/* Cards that paint their OWN light surface pin the dark text tokens.  Redundant
+   now that `.card` is white by default, but kept as a belt-and-braces guard: if
+   a `.card.X` modifier ever ends up on a posting card, these keep its subtree
+   dark instead of inheriting the hover ramp's white.
+   The `.card.X` selector (0,2,0) outranks `.card` (0,1,0) and `.X` (0,1,0), so
+   it wins regardless of stylesheet order; the posting-card hover rule is
+   (0,3,0) and therefore still wins where it should. */
+.card.feature-card,
+.card.info-card,
+.card.team-card,
+.card.stat-card,
+.card.gallery-card,
+.card.auth-card,
+.card.confirmation-modal-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  --border: #E5E7EB;
+  --accent-text: #B8441F;
+  color: #1F2937;
+}
+
 /* Form Elements */
 .form-group {
   margin-bottom: 20px;
@@ -228,6 +378,23 @@ input, textarea, select {
   font-size: 14px;
   font-weight: 500;
   color: var(--dark-text);
+}
+
+/* Required-field marker.
+   Was an inline `style={{ color: 'red' }}` repeated across Input, Select,
+   Textarea and two admin forms — #FF0000 measures 4.00:1 on white, just under
+   the 4.5:1 floor for a 14px label.  A single class also means the marker can
+   follow the surface it sits on instead of being pinned to one red. */
+.required-marker,
+.required {
+  /* The token remap is what actually makes this stick: the on-gradient text
+     rule (`.card :is(span)`, specificity 0,1,1) sets `color` on this span and
+     would otherwise win over a single-class `color` here.  Re-pointing the
+     tokens the rule consumes gives the marker its own colour on every surface. */
+  --dark-text: #B42318;
+  --muted-text: #B42318;
+  color: #B42318;
+  font-weight: 700;
 }
 
 .form-input,
@@ -275,6 +442,17 @@ input, textarea, select {
   display: inline-block;
 }
 
+/* Two badges must never fuse into one pill.
+   The Programs card rendered "Published" and "5 slots remaining" as a single
+   blob because they were adjacent inline-blocks in a container with no gap.
+   Fixing that one container is not enough — the same shape appears on the
+   opportunities, announcements and admin tables — so the separation is
+   guaranteed at the badge itself.  Where the parent already sets a flex `gap`
+   the two simply add up, which still reads as deliberate spacing. */
+.badge + .badge {
+  margin-left: 8px;
+}
+
 .badge-blue {
   background: #DBEAFE;
   color: #1E40AF;
@@ -310,6 +488,18 @@ input, textarea, select {
   color: #9A3412;
 }
 
+/* "Ongoing" on the OJT/Experience card.  The other seven badge colours carry no
+   teal, and this one has to sit next to a teal progress ring, so the ring and
+   the pill agree on what colour "in progress" is.  --teal #279EB6 is a display
+   colour (white on it is 3.16:1), so the text is the deepened sibling:
+   #0F5566 on #DDF0F4 measures 7.10:1.  Opt in explicitly with
+   `<Badge status="Ongoing" color="teal">` — getStatusColor() still maps
+   "Ongoing" to blue everywhere else, so no existing screen changes. */
+.badge-teal {
+  background: #DDF0F4;
+  color: #0F5566;
+}
+
 /* Progress Bar */
 .progress-bar {
   width: 100%;
@@ -341,22 +531,60 @@ input, textarea, select {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(14, 23, 38, 0.55);
+  /* Blurs the page behind the dialog so it reads as a layer above the content
+     rather than a flat scrim.  The .modal itself stays opaque white, so
+     nothing behind it can affect the dialog's own text contrast. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  animation: hyt-modal-overlay-in 0.22s ease-out;
 }
 
 .modal {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+  /* --shadow-lg stays as the base layer; the second, wider shadow is what
+     lifts the dialog off the blurred backdrop. */
+  box-shadow: var(--shadow-lg), 0 28px 64px -16px rgba(14, 23, 38, 0.34);
+  /* No fill-mode on purpose: the keyframes end on the element's natural state,
+     so once the animation finishes the transform is gone.  A persistent
+     `transform` would turn .modal into the containing block for any
+     position:fixed descendant. */
+  animation: hyt-modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes hyt-modal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hyt-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* index.css had no reduced-motion guard; the entrance animations added here are
+   the first motion in this sheet, so they get one. */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal {
+    animation: none !important;
+  }
 }
 
 .modal-header {
@@ -688,6 +916,53 @@ input, textarea, select {
 }
 
 /* ==========================================================================
+   Portal page header + block rhythm
+   --------------------------------------------------------------------------
+   `.page-title` / `.page-subtitle` are shared by every portal page, but the
+   spacing between them and the blocks beneath was declared three separate
+   times — About.css (48px, white, centred, animated), Attendance.css (32px)
+   and Admin.css (28px, `margin: 0`). CRA bundles every stylesheet into one
+   file, so all three applied to every page at once and the last one in the
+   bundle won. That was Admin.css, whose `margin: 0` left the header flush
+   against whatever followed it: a page's notice card, filter bar or grid ended
+   up touching — and in one case overlapping — the text above it.
+
+   The rhythm is therefore declared once, here, and scoped to the portal shell
+   (`.content-area`, rendered by StudentLayout / TraineeLayout / AdminLayout).
+   Public pages are never inside `.content-area`, so the About/Contact/Impact
+   hero keeps its own typography.
+
+   `> * >` keeps the rhythm on page-level blocks only: a `.card` nested deeper
+   is never re-spaced, and grid/flex children keep their own `gap`. Because
+   adjacent vertical margins collapse, this rule is a pure fallback — where a
+   block already declares a top margin, or its sibling a bottom margin, the
+   larger value still wins and nothing moves.
+   ========================================================================== */
+
+/* Header internals. Depth-agnostic on purpose: some pages put the header
+   straight under the page root, others wrap it in `.page-header`. */
+.content-area .page-title {
+  margin: 0 0 6px;
+}
+
+.content-area .page-subtitle {
+  margin: 0;
+}
+
+/* Every page-level block after the first gets the same gap, so two blocks can
+   never touch — with or without a subtitle between them. */
+.content-area > * > * + *,
+.content-area .page-container > * + * {
+  margin-top: 24px;
+}
+
+/* ...except the subtitle, which belongs to the title above it. */
+.content-area > * > .page-title + .page-subtitle,
+.content-area .page-container > .page-title + .page-subtitle {
+  margin-top: 0;
+}
+
+/* ==========================================================================
    Responsive baseline (global)
    ========================================================================== */
 
@@ -776,3 +1051,1366 @@ video {
     padding: 10px;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Card-descendant text re-pointed at the card's own tokens.
+ *
+ * Every page stylesheet in this project was written while .card was a WHITE
+ * surface, so card text was set with hardcoded dark hex (#1a1a1a, #374151,
+ * #666, ...).  Those literals are correct on the plain white card and wrong on
+ * any other surface the card can take.
+ *
+ * Rather than rewrite 40 stylesheets, these two rules re-point card-descendant
+ * TEXT at the tokens the card itself declares.  Being token-driven, they follow
+ * every surface automatically: the white default, the LIGHT hover wash on the
+ * five posting cards, and the dark carve-outs (.card--surface,
+ * .card:has(input, ...)).
+ *
+ * Specificity is the mechanism.  :is(h1..h6, strong, ...) contributes (0,0,1),
+ * so .card :is(...) is (0,1,1) and outranks a single-class local rule such as
+ * .card-title { color: #1a1a1a } (0,1,0) - exactly the accidental case.  A
+ * DELIBERATE accent is written with two classes (.stat-value.success,
+ * .journey-stage.active .stage-name) and still wins at (0,2,0).  Backgrounds,
+ * borders and layout are untouched.
+ * -------------------------------------------------------------------------- */
+.card :is(h1, h2, h3, h4, h5, h6, strong, b, label, legend, dt, th) {
+  color: var(--dark-text);
+}
+
+.card :is(p, span, li, dd, td, small, em, i, time, figcaption, blockquote, cite, address) {
+  color: var(--muted-text);
+}
+
+/* ==== GENERATED: light surfaces re-point the card text tokens ====
+ *
+ * Produced by drafts/gen-light-surface-tokens.js.  Every rule below paints a
+ * light background, so it hands its subtree dark text tokens.
+ *
+ * The base `.card` is WHITE, and the posting-card hover is a LIGHT wash that
+ * keeps dark text, so in every current state these rules simply restate the
+ * card's own tokens and are no-ops.  They are kept as a belt-and-braces guard:
+ * if a future surface ever does flip the card tokens (e.g. a saturated ramp
+ * returns), a pale chip inside that card must not inherit the flip, and
+ * declaring the tokens on the chip itself is what stops that.
+ *
+ * Safe to over-apply: a custom property is inert unless consumed, and the only
+ * consumers are `.card` and its descendants.  A remap outside a card is a no-op.
+ */
+
+/* components/AdminDashboardMetrics.css */
+.metrics-error {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+
+/* components/AttentionCenter.css */
+.attention-bell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-panel {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attention-item-icon {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.attention-item.tone-warning .attention-item-icon {
+  --dark-text: #C2410C;
+  --muted-text: #C2410C;
+  color: #C2410C;
+}
+.attention-item.tone-danger .attention-item-icon {
+  --dark-text: #B91C1C;
+  --muted-text: #B91C1C;
+  color: #B91C1C;
+}
+.attention-item.tone-info .attention-item-icon {
+  --dark-text: #0E7490;
+  --muted-text: #0E7490;
+  color: #0E7490;
+}
+
+/* components/ConfirmationModal.css */
+.confirmation-modal-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/DreamAcademy.css */
+.da {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-fact:nth-child(2)::before {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.da-about {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-spec-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.da-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/GalleryCard.css */
+.gallery-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-card-image-container {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/GalleryModal.css */
+.gallery-modal-container {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-modal-info::-webkit-scrollbar-track, .gallery-modal-container::-webkit-scrollbar-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/LiveTimeTracker.css */
+.live-time-tracker {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.live-time-tracker.is-paused {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.tracker-status {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.is-live .tracker-status {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.is-paused .tracker-status {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.is-capped .tracker-status {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.tracker-note {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.is-paused .tracker-note {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.is-capped .tracker-note {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/MarqueeRibbon.css */
+.ribbon-track span i {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+
+/* components/OnboardingModal.css */
+.requirement-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.onboarding-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/PublicHeader.css */
+@media (max-width: 768px) {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/RegisterWizard.css */
+.rw-dialog {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rw-step-dot {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rw-role {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-guidance-head {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.rw-foot {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* components/TermsModal.css */
+.terms-intro {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.terms-content::-webkit-scrollbar-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* components/VideoModal.css */
+.video-modal-container {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.video-modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.video-error-button {
+  --dark-text: #1a1a1a;
+  --muted-text: #1a1a1a;
+  color: #1a1a1a;
+}
+.video-error-button:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* index.css */
+body {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.btn-outline {
+  --dark-text: #B8441F;
+  --muted-text: #B8441F;
+  color: #B8441F;
+}
+.form-input, .form-select, .form-textarea {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.badge-blue {
+  --dark-text: #1E40AF;
+  --muted-text: #1E40AF;
+  color: #1E40AF;
+}
+.badge-green {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+.badge-yellow {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.badge-red {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.badge-gray {
+  --dark-text: #4B5563;
+  --muted-text: #4B5563;
+  color: #4B5563;
+}
+.badge-purple {
+  --dark-text: #5B21B6;
+  --muted-text: #5B21B6;
+  color: #5B21B6;
+}
+.badge-orange {
+  --dark-text: #9A3412;
+  --muted-text: #9A3412;
+  color: #9A3412;
+}
+.badge-teal {
+  --dark-text: #0F5566;
+  --muted-text: #0F5566;
+  color: #0F5566;
+}
+.progress-bar {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.modal {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.modal-close:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.table {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table th {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.portal-header-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.schedule-preview {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.certificate-preview-frame {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.table-responsive {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table thead {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table tbody tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* layouts/PortalLayout.css */
+.portal-layout {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-header {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-user {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.sidebar-footer {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.logout-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.logout-btn:hover {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/admin/Admin.css */
+.admin-page {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-page-header {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-stat-box {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-filters {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.action-button.secondary {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-table {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.hours-badge {
+  --dark-text: #1E40AF;
+  --muted-text: #1E40AF;
+  color: #1E40AF;
+}
+.hours-badge.highlight {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.modal-info {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.reason-box, .accomplishments-box {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.tab:hover {
+  --dark-text: #374151;
+  --muted-text: #374151;
+  color: #374151;
+}
+.approval-confirmation {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.filter-notice {
+  --dark-text: #1D4ED8;
+  --muted-text: #1D4ED8;
+  color: #1D4ED8;
+}
+.requested-row {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-review-summary {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.ojt-stat {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+
+/* pages/admin/AttendanceReview.css */
+.pending-summary-card {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.data-table tbody tr:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.approval-details {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.rejection-details {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/admin/Dashboard.css */
+.admin-search-input {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.admin-search-result {
+  --dark-text: #1F2937;
+  --muted-text: #1F2937;
+  color: #1F2937;
+}
+.admin-search-result:hover, .admin-search-result:focus-visible {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.admin-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.admin-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/admin/Students.css */
+.progress-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/public/About.css */
+.section.bg-white {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.info-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrust-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrust-item:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.partner-chip {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.partner-chip:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.about-stat-box {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.team-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/Auth.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-shell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-brand-logo-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-panel {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.alert-success {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+.alert-warning {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.account-type-icon {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.success-message {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.password-requirements {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.step-number {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.step-line {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.otp-info {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.strength-track {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.pending-approval-note {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/public/Home.css */
+.section.bg-white {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.feature-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.bento-cell {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.thrusts-seam {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.seam-cta-link {
+  --dark-text: #0E1726;
+  --muted-text: #0E1726;
+  color: #0E1726;
+}
+.stats-section {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.gallery-image {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.gallery-placeholder {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.accomplishments-swiper .view-details-btn {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/HomeMotion.css */
+.hero-aurora .blob-1 {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.hero-aurora .blob-2 {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.hero-aurora .blob-3 {
+  --dark-text: #1F2937;
+  --muted-text: #374151;
+  color: #1F2937;
+}
+.seam-cta-link:hover {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+/* pages/public/Impact.css */
+/* The avatar is a DEEP teal chip, so it needs white tokens — the generator
+   originally emitted #0F5566 here because the chip used to be a pale
+   teal/cyan gradient.  #0F5566 initials on the chip's own #0F5566 end measured
+   1.00:1. */
+.author-avatar {
+  --dark-text: #FFFFFF;
+  --muted-text: #FFFFFF;
+  color: #FFFFFF;
+}
+
+/* pages/public/Login.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #4B5563;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.auth-divider span {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/public/Register.css */
+.auth-page {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.auth-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.alert-error {
+  --dark-text: #991B1B;
+  --muted-text: #991B1B;
+  color: #991B1B;
+}
+.id-format-info {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.account-type-card {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/student/Announcements.css */
+.announcements-page .announcements-search-input {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.announcements-page .announcements-tab {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.announcements-page .announcement-mark-read {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+
+/* pages/student/Applications.css */
+.application-accepted-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.application-declined-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Attendance.css */
+.pending-notice {
+  --dark-text: #92400e;
+  --muted-text: #92400e;
+  color: #92400e;
+}
+.active-notice {
+  --dark-text: #1e40af;
+  --muted-text: #1e40af;
+  color: #1e40af;
+}
+.approved-notice {
+  --dark-text: #065f46;
+  --muted-text: #065f46;
+  color: #065f46;
+}
+.rejected-notice {
+  --dark-text: #991b1b;
+  --muted-text: #991b1b;
+  color: #991b1b;
+}
+.attendance-locked-message {
+  --dark-text: #92400e;
+  --muted-text: #92400e;
+  color: #92400e;
+}
+.final-message {
+  --dark-text: #065f46;
+  --muted-text: #065f46;
+  color: #065f46;
+}
+.progress-bar-container {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.ot-form {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table thead {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.data-table tr.rejected-row {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-stepper {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.attendance-stepper-step:not(:last-child)::after {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.attendance-stepper-marker {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/DailyReports.css */
+.daily-reports-page .report-item {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.daily-reports-page .report-item.rejected {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.daily-reports-page .admin-note.approved {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+.daily-reports-page .admin-note.rejected {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Dashboard.css */
+.requirement-alert {
+  --dark-text: #92400E;
+  --muted-text: #92400E;
+  color: #92400E;
+}
+.requirement-success {
+  --dark-text: #065F46;
+  --muted-text: #065F46;
+  color: #065F46;
+}
+
+/* pages/student/OJT.css */
+.ojt-hour-stat {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.ojt-completion-notice {
+  --dark-text: #1F2937;
+  --muted-text: #5B6472;
+  color: #1F2937;
+}
+
+/* pages/student/Requirements.css */
+.requirement-dropzone {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-file-chip {
+  --dark-text: #1F2937;
+  --muted-text: #6B7280;
+  color: #1F2937;
+}
+.requirement-file-chip-icon {
+  --dark-text: #C2410C;
+  --muted-text: #C2410C;
+  color: #C2410C;
+}
+
+/* ==== GENERATED: dark hardcoded text re-pointed to the card tokens ==== */
+
+/* components/AdminDashboardMetrics.css */
+.card .metrics-error { color: var(--muted-text); }
+.card .metrics-loading p { color: var(--muted-text); }
+
+/* components/AttentionCenter.css */
+.card .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-warning .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-danger .attention-item-icon { color: var(--muted-text); }
+.card .attention-item.tone-info .attention-item-icon { color: var(--muted-text); }
+
+/* components/ConfirmationModal.css */
+.card .confirmation-title { color: var(--dark-text); }
+.card .confirmation-message { color: var(--muted-text); }
+
+/* components/ContactForm.css */
+.card .contact-form-title { color: var(--dark-text); }
+.card .contact-form-subtitle { color: var(--muted-text); }
+.card .contact-alternative p { color: var(--muted-text); }
+.card .email-link { color: var(--muted-text); }
+
+/* components/DreamAcademy.css */
+.card .da-kicker { color: var(--dark-text); }
+.card .da-eyebrow { color: var(--muted-text); }
+.card .da-h3 { color: var(--dark-text); }
+.card .da-body { color: var(--dark-text); }
+.card .da-spec-num { color: var(--muted-text); }
+.card .da-spec-title { color: var(--dark-text); }
+.card .da-duty { color: var(--dark-text); }
+
+/* components/GalleryCard.css */
+.card .gallery-card-title { color: var(--dark-text); }
+.card .gallery-card-description { color: var(--muted-text); }
+
+/* components/GalleryModal.css */
+.card .gallery-modal-close { color: var(--dark-text); }
+.card .gallery-modal-description { color: var(--muted-text); }
+.card .gallery-modal-details h3 { color: var(--dark-text); }
+.card .gallery-modal-details p { color: var(--dark-text); }
+.card .gallery-modal-details li { color: var(--dark-text); }
+.card .gallery-modal-images h3 { color: var(--dark-text); }
+
+/* components/LiveTimeTracker.css */
+.card .tracker-status { color: var(--muted-text); }
+.card .is-live .tracker-status { color: var(--muted-text); }
+.card .is-paused .tracker-status { color: var(--muted-text); }
+.card .is-capped .tracker-status { color: var(--muted-text); }
+.card .tracker-note { color: var(--muted-text); }
+.card .is-paused .tracker-note { color: var(--muted-text); }
+.card .is-capped .tracker-note { color: var(--muted-text); }
+
+/* components/OnboardingModal.css */
+.card .onboarding-description { color: var(--dark-text); }
+.card .requirement-title { color: var(--dark-text); }
+.card .requirement-description { color: var(--muted-text); }
+.card .onboarding-notice { color: var(--muted-text); }
+
+/* components/RegisterWizard.css */
+.card .rw-commitment strong { color: var(--muted-text); }
+.card .rw-notice { color: var(--muted-text); }
+.card .rw-success-note { color: var(--muted-text); }
+
+/* components/SignInWall.css */
+.card .signin-wall-title { color: var(--dark-text); }
+.card .signin-wall-message { color: var(--muted-text); }
+.card .benefits-title { color: var(--dark-text); }
+.card .benefits-list li { color: var(--muted-text); }
+
+/* components/VideoModal.css */
+.card .video-modal-close { color: var(--dark-text); }
+.card .video-modal-title { color: var(--dark-text); }
+.card .video-modal-description { color: var(--muted-text); }
+.card .video-error-button { color: var(--dark-text); }
+
+/* index.css */
+/* `.card .btn-outline` deliberately NOT re-pointed at the card tokens: an
+   outline button is a white lozenge with its own brand-orange label, so
+   `color: var(--muted-text)` would have turned it near-white — invisible on its
+   own white fill — the moment a posting card's hover gradient flipped the
+   tokens.  The base `.btn-outline` rule is correct in both states. */
+/* Badges carry LITERAL colours, not var(--dark-text).  A badge is a light pill
+   with its own tone, so it must keep that tone in both card states; routing it
+   through the card token would turn every badge label white the moment a
+   posting card's hover gradient flipped the tokens.  These literals match the
+   `.badge-*` base rules and are what lets the badge-protection rule be dropped. */
+.card .badge-blue { color: #1E40AF; }
+.card .badge-green { color: #065F46; }
+.card .badge-yellow { color: #92400E; }
+.card .badge-red { color: #991B1B; }
+.card .badge-gray { color: #4B5563; }
+.card .badge-purple { color: #5B21B6; }
+.card .badge-orange { color: #9A3412; }
+/* Without this line `.badge-teal` loses to `.card :is(p, span, li, ...)` at
+   (0,1,1) — the badge is a <span>, so the generic rule re-coloured it
+   var(--muted-text) #6B7280 on #DDF0F4 and measured 4.11:1.  This is (0,2,0)
+   and wins, exactly like its seven siblings above.  Measured after the fix:
+   7.10:1. */
+.card .badge-teal { color: #0F5566; }
+.card .data-table td { color: var(--dark-text); }
+.card .attention-bell { color: var(--dark-text); }
+.card .attention-panel { color: var(--dark-text); }
+.card .confirmation-modal-card { color: var(--dark-text); }
+.card .da { color: var(--dark-text); }
+.card .da-fact:nth-child(2)::before { color: var(--dark-text); }
+.card .da-about { color: var(--dark-text); }
+.card .da-spec-card { color: var(--dark-text); }
+.card .da-card { color: var(--dark-text); }
+.card .gallery-card { color: var(--dark-text); }
+.card .gallery-card-image-container { color: var(--dark-text); }
+.card .gallery-modal-container { color: var(--dark-text); }
+.card .gallery-modal-info::-webkit-scrollbar-track, .gallery-modal-container::-webkit-scrollbar-track { color: var(--dark-text); }
+.card .live-time-tracker { color: var(--dark-text); }
+.card .live-time-tracker.is-paused { color: var(--dark-text); }
+.card .is-live .tracker-status { color: var(--dark-text); }
+.card .is-capped .tracker-status { color: var(--dark-text); }
+.card .is-capped .tracker-note { color: var(--dark-text); }
+.card .ribbon-track span i { color: var(--dark-text); }
+.card .requirement-item { color: var(--dark-text); }
+.card .onboarding-notice { color: var(--dark-text); }
+.card .rw-dialog { color: var(--dark-text); }
+.card .rw-step-dot { color: var(--dark-text); }
+.card .rw-role { color: var(--dark-text); }
+.card .rw-guidance-head { color: var(--dark-text); }
+.card .rw-foot { color: var(--dark-text); }
+.card .terms-intro { color: var(--dark-text); }
+.card .terms-content::-webkit-scrollbar-track { color: var(--dark-text); }
+.card .video-modal-container { color: var(--dark-text); }
+.card body { color: var(--dark-text); }
+.card .form-input, .form-select, .form-textarea { color: var(--dark-text); }
+.card .progress-bar { color: var(--dark-text); }
+.card .modal { color: var(--dark-text); }
+.card .table { color: var(--dark-text); }
+.card .table th { color: var(--dark-text); }
+.card .portal-header-btn { color: var(--dark-text); }
+.card .schedule-preview { color: var(--dark-text); }
+.card .certificate-preview-frame { color: var(--dark-text); }
+.card .table-responsive { color: var(--dark-text); }
+.card .data-table thead { color: var(--dark-text); }
+.card .portal-layout { color: var(--dark-text); }
+.card .sidebar { color: var(--dark-text); }
+.card .sidebar-header { color: var(--dark-text); }
+.card .sidebar-user { color: var(--dark-text); }
+.card .sidebar-footer { color: var(--dark-text); }
+.card .logout-btn { color: var(--dark-text); }
+.card .admin-page { color: var(--dark-text); }
+.card .admin-page-header { color: var(--dark-text); }
+.card .admin-stat-box { color: var(--dark-text); }
+.card .admin-filters { color: var(--dark-text); }
+.card .action-button.secondary { color: var(--dark-text); }
+.card .admin-table { color: var(--dark-text); }
+.card .hours-badge { color: var(--dark-text); }
+.card .hours-badge.highlight { color: var(--muted-text); }
+.card .modal-info { color: var(--dark-text); }
+.card .reason-box, .accomplishments-box { color: var(--dark-text); }
+.card .approval-confirmation { color: var(--dark-text); }
+.card .filter-notice { color: var(--muted-text); }
+.card .requested-row { color: var(--dark-text); }
+.card .attendance-review-summary { color: var(--dark-text); }
+.card .ojt-stat { color: var(--dark-text); }
+.card .pending-summary-card { color: var(--dark-text); }
+.card .approval-details { color: var(--dark-text); }
+.card .rejection-details { color: var(--dark-text); }
+.card .admin-search-input { color: var(--dark-text); }
+.card .admin-search-result { color: var(--dark-text); }
+.card .admin-item { color: var(--dark-text); }
+.card .progress-track { color: var(--dark-text); }
+.card .section.bg-white { color: var(--dark-text); }
+.card .info-card { color: var(--dark-text); }
+.card .thrust-item { color: var(--dark-text); }
+.card .partner-chip { color: var(--dark-text); }
+.card .about-stat-box { color: var(--dark-text); }
+.card .team-card { color: var(--dark-text); }
+.card .auth-page { color: var(--dark-text); }
+.card .auth-shell { color: var(--dark-text); }
+.card .auth-brand-logo-card { color: var(--dark-text); }
+.card .auth-panel { color: var(--dark-text); }
+.card .auth-card { color: var(--dark-text); }
+.card .alert-error { color: var(--dark-text); }
+.card .alert-success { color: var(--muted-text); }
+.card .alert-warning { color: var(--muted-text); }
+.card .account-type-card { color: var(--dark-text); }
+.card .account-type-icon { color: var(--dark-text); }
+.card .success-message { color: var(--dark-text); }
+.card .password-requirements { color: var(--dark-text); }
+.card .step-number { color: var(--dark-text); }
+.card .step-line { color: var(--dark-text); }
+.card .otp-info { color: var(--dark-text); }
+.card .strength-track { color: var(--dark-text); }
+.card .pending-approval-note { color: var(--dark-text); }
+.card .feature-card { color: var(--dark-text); }
+.card .bento-cell { color: var(--dark-text); }
+.card .thrusts-seam { color: var(--dark-text); }
+.card .seam-cta-link { color: var(--dark-text); }
+.card .stats-section { color: var(--dark-text); }
+.card .gallery-item { color: var(--dark-text); }
+.card .gallery-image { color: var(--dark-text); }
+.card .gallery-placeholder { color: var(--dark-text); }
+.card .accomplishments-swiper .view-details-btn { color: var(--dark-text); }
+.card .hero-aurora .blob-1 { color: var(--dark-text); }
+.card .hero-aurora .blob-2 { color: var(--dark-text); }
+.card .hero-aurora .blob-3 { color: var(--dark-text); }
+.card .author-avatar { color: var(--dark-text); }
+.card .auth-divider span { color: var(--dark-text); }
+.card .id-format-info { color: var(--dark-text); }
+.card .announcements-page .announcements-search-input { color: var(--dark-text); }
+.card .announcements-page .announcements-tab { color: var(--dark-text); }
+.card .announcements-page .announcement-mark-read { color: var(--dark-text); }
+.card .application-accepted-notice { color: var(--dark-text); }
+.card .application-declined-notice { color: var(--dark-text); }
+.card .pending-notice { color: var(--muted-text); }
+.card .active-notice { color: var(--dark-text); }
+.card .approved-notice { color: var(--muted-text); }
+.card .rejected-notice { color: var(--dark-text); }
+.card .attendance-locked-message { color: var(--muted-text); }
+.card .final-message { color: var(--muted-text); }
+.card .progress-bar-container { color: var(--dark-text); }
+.card .ot-form { color: var(--dark-text); }
+.card .data-table tr.rejected-row { color: var(--dark-text); }
+.card .attendance-stepper { color: var(--dark-text); }
+.card .attendance-stepper-step:not(:last-child)::after { color: var(--dark-text); }
+.card .attendance-stepper-marker { color: var(--dark-text); }
+.card .daily-reports-page .report-item { color: var(--dark-text); }
+.card .daily-reports-page .report-item.rejected { color: var(--dark-text); }
+.card .daily-reports-page .admin-note.approved { color: var(--dark-text); }
+.card .daily-reports-page .admin-note.rejected { color: var(--dark-text); }
+.card .requirement-alert { color: var(--muted-text); }
+.card .requirement-success { color: var(--muted-text); }
+.card .ojt-hour-stat { color: var(--dark-text); }
+.card .ojt-completion-notice { color: var(--dark-text); }
+.card .requirement-dropzone { color: var(--dark-text); }
+.card .requirement-file-chip { color: var(--dark-text); }
+.card .requirement-file-chip-icon { color: var(--muted-text); }
+
+/* pages/admin/Admin.css */
+.card .page-title { color: var(--dark-text); }
+.card .student-name { color: var(--dark-text); }
+.card .student-email { color: var(--muted-text); }
+.card .report-meta { color: var(--muted-text); }
+.card .content-label { color: var(--dark-text); }
+.card .content-text { color: var(--muted-text); }
+.card .admin-note-cell { color: var(--muted-text); }
+.card .modal-info p { color: var(--dark-text); }
+.card .empty-state h3 { color: var(--dark-text); }
+.card .empty-state p { color: var(--muted-text); }
+.card .tab { color: var(--muted-text); }
+.card .tab.active { color: var(--muted-text); }
+.card .applicant-name { color: var(--dark-text); }
+.card .applicant-email { color: var(--muted-text); }
+.card .detail-label { color: var(--muted-text); }
+.card .detail-value { color: var(--dark-text); }
+.card .confirmation-text { color: var(--muted-text); }
+.card .card-subtitle { color: var(--muted-text); }
+.card .muted-cell { color: var(--muted-text); }
+.card .duration-display { color: var(--dark-text); }
+.card .ojt-stat-value.is-required { color: var(--dark-text); }
+.card .ojt-stat-value.is-verified { color: var(--muted-text); }
+.card .ojt-stat-value.is-remaining { color: var(--muted-text); }
+.card .ojt-stat-value.is-progress { color: var(--dark-text); }
+.card .ojt-stat-label { color: var(--muted-text); }
+
+/* pages/admin/AttendanceReview.css */
+.card .pending-count { color: var(--muted-text); }
+.card .pending-label { color: var(--dark-text); }
+.card .pending-description { color: var(--muted-text); }
+.card .hours-display { color: var(--muted-text); }
+.card .progress-before-after { color: var(--muted-text); }
+.card .progress-increase { color: var(--muted-text); }
+.card .empty-state-title { color: var(--dark-text); }
+.card .empty-state-description { color: var(--muted-text); }
+.card .approval-impact-list { color: var(--muted-text); }
+.card .rejection-warning { color: var(--dark-text); }
+
+/* pages/admin/Dashboard.css */
+.card .admin-search-icon { color: var(--muted-text); }
+.card .admin-search-clear { color: var(--muted-text); }
+.card .admin-search-result-copy small { color: var(--muted-text); }
+
+/* pages/admin/Students.css */
+.card .progress-cell { color: var(--muted-text); }
+
+/* pages/public/About.css */
+.card .partner-name { color: var(--dark-text); }
+.card .partner-detail { color: var(--dark-text); }
+.card .partner-detail-tagline { color: var(--muted-text); }
+.card .partner-detail-industry { color: var(--muted-text); }
+.card .partner-detail-about { color: var(--dark-text); }
+.card .partner-detail-heading { color: var(--dark-text); }
+.card .partner-detail-item { color: var(--dark-text); }
+
+/* pages/public/Auth.css */
+.card .auth-title { color: var(--dark-text); }
+.card .auth-subtitle { color: var(--muted-text); }
+.card .auth-footer { color: var(--muted-text); }
+.card .form-label { color: var(--dark-text); }
+.card .account-type-icon { color: var(--muted-text); }
+.card .account-type-label { color: var(--dark-text); }
+.card .account-type-note { color: var(--muted-text); }
+.card .account-type-card:has(input[type="radio"]:checked) .account-type-label { color: var(--muted-text); }
+.card .success-message h3 { color: var(--muted-text); }
+.card .success-message p { color: var(--muted-text); }
+.card .success-message strong { color: var(--dark-text); }
+.card .requirements-title { color: var(--dark-text); }
+.card .password-requirements li { color: var(--muted-text); }
+.card .step-number { color: var(--muted-text); }
+.card .step-label { color: var(--muted-text); }
+.card .otp-info p { color: var(--muted-text); }
+.card .otp-info strong { color: var(--dark-text); }
+.card .pending-approval-modal h3 { color: var(--dark-text); }
+.card .pending-approval-modal p { color: var(--muted-text); }
+
+/* pages/public/Home.css */
+.card .seam-kicker { color: var(--muted-text); }
+
+/* pages/public/Register.css */
+.card .form-error { color: var(--muted-text); }
+
+/* pages/student/Applications.css */
+.card .application-accepted-notice strong { color: var(--muted-text); }
+.card .application-accepted-notice p { color: var(--muted-text); }
+.card .application-declined-notice strong { color: var(--dark-text); }
+.card .application-declined-notice p { color: var(--dark-text); }
+
+/* pages/student/Attendance.css */
+.card .page-subtitle { color: var(--muted-text); }
+.card .card-title { color: var(--dark-text); }
+.card .card-date { color: var(--muted-text); }
+.card .section-subtitle { color: var(--dark-text); }
+.card .data-table th { color: var(--muted-text); }
+.card .loading-spinner { color: var(--muted-text); }
+.card .attendance-stepper-marker { color: var(--muted-text); }
+
+/* pages/student/DailyReports.css */
+.card .daily-reports-page .admin-note.approved .note-label, .daily-reports-page .admin-note.approved .note-text { color: var(--muted-text); }
+.card .daily-reports-page .admin-note.rejected .note-label, .daily-reports-page .admin-note.rejected .note-text { color: var(--dark-text); }
+
+/* pages/student/OJT.css */
+.card .ojt-hour-value { color: var(--dark-text); }
+.card .ojt-hour-value.verified { color: var(--muted-text); }
+.card .ojt-hour-value.pending { color: var(--muted-text); }
+.card .ojt-hour-value.remaining { color: var(--muted-text); }
+.card .ojt-completion-title { color: var(--muted-text); }
+.card .ojt-completion-text { color: var(--muted-text); }
+
+/* pages/student/Requirements.css */
+.card .requirement-admin-remarks { color: var(--muted-text); }
+.card .requirement-file-link.danger { color: var(--muted-text); }
+.card .requirement-form-error { color: var(--muted-text); }

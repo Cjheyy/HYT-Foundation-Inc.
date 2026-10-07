@@ -1,4 +1,50 @@
-import { getFirstName, formatRelativeTime } from './helpers';
+import { getFirstName, formatRelativeTime, toLocalISODate, formatScheduleRange } from './helpers';
+
+describe('toLocalISODate', () => {
+  test('formats a Date using LOCAL calendar parts', () => {
+    expect(toLocalISODate(new Date(2026, 8, 29))).toBe('2026-09-29');
+  });
+
+  test('zero-pads month and day', () => {
+    expect(toLocalISODate(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+
+  test('does not slip a day in a positive UTC offset', () => {
+    // Regression: `new Date(2026, 8, 29).toISOString().slice(0, 10)` is
+    // "2026-09-28" anywhere east of UTC, because local midnight is 16:00Z the
+    // day before. formatScheduleRange slices its input, so the whole
+    // OJT/Experience date range rendered one day early.
+    const localMidnight = new Date(2026, 8, 29, 0, 0, 0);
+    expect(toLocalISODate(localMidnight)).toBe('2026-09-29');
+    expect(localMidnight.toISOString().slice(0, 10)).not.toBe('2026-09-29');
+  });
+
+  test('accepts an ISO string', () => {
+    expect(toLocalISODate('2026-12-25')).toBe('2026-12-25');
+  });
+
+  test('returns empty string for junk so the caller keeps its "--" fallback', () => {
+    [undefined, null, '', 'not-a-date', NaN].forEach((value) => {
+      expect(toLocalISODate(value)).toBe('');
+    });
+  });
+});
+
+describe('toLocalISODate feeding formatScheduleRange', () => {
+  test('produces the short range the experience card shows', () => {
+    const start = new Date(2026, 8, 29);
+    const end = new Date(2026, 11, 25);
+    expect(formatScheduleRange(toLocalISODate(start), toLocalISODate(end))).toBe('Sep 29 - Dec 25, 2026');
+  });
+
+  test('falls back to a single date when there is no end date', () => {
+    expect(formatScheduleRange(toLocalISODate(new Date(2026, 8, 29)), '')).toBe('Sep 29');
+  });
+
+  test('returns empty string when neither date is usable', () => {
+    expect(formatScheduleRange(toLocalISODate(undefined), toLocalISODate('nope'))).toBe('');
+  });
+});
 
 describe('getFirstName', () => {
   test('prefers the first word of fullName, matching the portal layouts', () => {

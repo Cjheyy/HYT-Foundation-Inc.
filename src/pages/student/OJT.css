@@ -28,6 +28,13 @@
   gap: 12px;
 }
 
+/* Secondary explanation beside "Working Days Remaining" — the label uses
+   --dark-text, so this must be a readable step down rather than a faint grey. */
+.ojt-detail-hint {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
 .ojt-hours-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -45,19 +52,19 @@
 .ojt-hour-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--teal);
+  color: #0F5566;
 }
 
 .ojt-hour-value.verified {
-  color: #10B981;
+  color: #047857;
 }
 
 .ojt-hour-value.pending {
-  color: #F59E0B;
+  color: #92400E;
 }
 
 .ojt-hour-value.remaining {
-  color: var(--primary-orange);
+  color: #A83F27;
 }
 
 .ojt-hour-label {
@@ -80,3 +87,543 @@
 .ojt-completion-text {
   color: #065F46;
 }
+
+/* ============================================================================
+   ACTIVE PLACEMENT — the "approved posting, no ojt_record yet" branch.
+   ----------------------------------------------------------------------------
+   Was two cards of `label: value` lines on `display:grid; gap:12px`: nothing
+   had an edge, so six equally-weighted lines had to be read in order, and the
+   Position Title carried the same weight as the Approved Date.
+
+   Now: one card. Hairline fact grid on the left (the 1px gap is the border
+   colour, so the cells are separated by a rule rather than by whitespace), a
+   placement rail, the three derived hour figures, and a ring on the right that
+   can show either measure.
+
+   Local custom properties are prefixed `--ojt-` on purpose: index.css remaps
+   `--muted-text` / `--dark-text` per card in its generated block, and a bare
+   `.card` override here would be a same-specificity coin toss against it.
+   ========================================================================== */
+
+.ojt-placement-card {
+  /* #6B7280 (--muted-text) is 4.79:1 on white but 4.48:1 on the tinted panel
+     and 4.21:1 on the page background — both fail 4.5. #5B6472 is the deeper
+     sibling index.css already generates for light surfaces (5.58:1 here). */
+  --ojt-muted: #5B6472;
+  --ojt-teal-deep: #0F5566;   /* white on this = 8.05:1 */
+  --ojt-orange-deep: #A83F27; /* white on this = 6.14:1 */
+  --ojt-panel: #F4F9FA;
+  --ojt-panel-line: #DCEAEE;
+  --ojt-e-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ojt-e-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ojt-placement-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* Same weight as `.ojt-details-section h3`; only the trailing margin is
+   dropped, because the badge sits beside it rather than under it. */
+.ojt-placement-head h3 {
+  margin-bottom: 0;
+}
+
+/* A status dot inside the existing Badge, so the pill is not colour-only. */
+.ojt-placement-head .badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 6px;
+  flex: none;
+}
+
+.ojt-placement-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
+  gap: 24px;
+  /* stretch, so the panel always ends level with the facts column. */
+  align-items: stretch;
+}
+
+.ojt-placement-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.ojt-placement-main .ojt-rail {
+  margin-top: 0;
+}
+
+/* ---------- fact grid ---------- */
+.ojt-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ojt-fact {
+  background: #fff;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.ojt-fact dt,
+.ojt-fact dd,
+.ojt-hours dt,
+.ojt-hours dd {
+  margin: 0;
+}
+
+.ojt-fact dt {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ojt-muted);
+  margin-bottom: 3px;
+}
+
+.ojt-fact dd {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark-text);
+  overflow-wrap: anywhere;
+}
+
+.ojt-fact--hero {
+  grid-column: span 2;
+}
+
+.ojt-fact--hero dd {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- placement rail ---------- */
+.ojt-rail {
+  margin-top: 18px;
+  /* Room for the "Today" flag, which sits above the track. */
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+
+.ojt-rail-track {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: #E9EDF1;
+}
+
+.ojt-rail-elapsed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  width: var(--ojt-rail-pct);
+  background: linear-gradient(90deg, var(--light-cyan), var(--teal));
+  animation: ojtRailFill 0.9s var(--ojt-e-out) both;
+}
+
+.ojt-rail-today {
+  position: absolute;
+  top: -4px;
+  left: var(--ojt-rail-pct);
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--ojt-orange-deep);
+  transform: translateX(-1px);
+}
+
+/* The flag tracks the marker. `clamp` keeps it inside the track at the ends —
+   without it a 0% marker would hang half a label off the left edge. */
+.ojt-rail-flag {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: clamp(22px, var(--ojt-rail-pct), calc(100% - 22px));
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ojt-orange-deep);
+  white-space: nowrap;
+}
+
+@keyframes ojtRailFill {
+  from { width: 0; }
+  to { width: var(--ojt-rail-pct); }
+}
+
+.ojt-rail-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ojt-rail-node {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ojt-rail-node b {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ojt-muted);
+}
+
+.ojt-rail-node span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ojt-rail-node--end {
+  align-items: flex-end;
+  text-align: right;
+}
+
+/* ---------- derived hour figures ---------- */
+.ojt-hours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ojt-hours > div {
+  background: #fff;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.ojt-hours dt {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ojt-muted);
+  margin-bottom: 3px;
+}
+
+.ojt-hours dd {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ojt-teal-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.ojt-hours-hint {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ojt-muted);
+  margin-top: 2px;
+}
+
+/* ---------- progress panel ---------- */
+.ojt-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--ojt-panel);
+  border: 1px solid var(--ojt-panel-line);
+}
+
+.ojt-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ojt-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ojt-teal-deep);
+}
+
+.ojt-eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 2px;
+  background: var(--teal);
+  flex: none;
+}
+
+.ojt-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #E3EEF1;
+  border: 1px solid #D3E4E9;
+}
+
+.ojt-seg button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #3E5A66;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s var(--ojt-e-soft), color 0.18s var(--ojt-e-soft);
+}
+
+.ojt-seg button[aria-pressed='true'] {
+  background: var(--ojt-teal-deep);
+  color: #fff;
+}
+
+/* index.css sets `button { outline: none }`, so the ring has to be re-declared. */
+.ojt-seg button:focus-visible {
+  outline: 2px solid var(--ojt-teal-deep);
+  outline-offset: 2px;
+}
+
+.ojt-ring-wrap {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: auto;
+}
+
+.ojt-ring {
+  display: block;
+  width: 132px;
+  height: 132px;
+}
+
+.ojt-ring circle {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.ojt-ring-track {
+  stroke: #DDE7EB;
+}
+
+.ojt-ring-fill {
+  stroke: var(--teal);
+  stroke-dasharray: var(--ojt-ring-circumference);
+  stroke-dashoffset: var(--ojt-ring-offset);
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  animation: ojtRingSweep 0.9s var(--ojt-e-out) both;
+}
+
+/* Both keyframes read the SAME custom property the static declaration uses, so
+   there is one source of truth for the value and the sweep cannot disagree
+   with the resting state. */
+@keyframes ojtRingSweep {
+  from { stroke-dashoffset: var(--ojt-ring-circumference); }
+  to { stroke-dashoffset: var(--ojt-ring-offset); }
+}
+
+.ojt-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ojt-ring-center b {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ojt-teal-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.ojt-ring-center span {
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ojt-muted);
+}
+
+.ojt-panel-line {
+  margin: 14px 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--ojt-muted);
+}
+
+.ojt-panel-line b {
+  color: var(--dark-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bar is the shared ProgressBar component; only its paint is local. */
+.ojt-bar-inner .progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #DDE7EB;
+}
+
+.ojt-bar-inner .progress-bar-fill {
+  background: linear-gradient(90deg, var(--light-cyan), var(--teal));
+  /* transform-only reveal: the width stays owned by the component's inline
+     style, so a value change still transitions and nothing is duplicated. */
+  transform-origin: left center;
+  transition: width 0.9s var(--ojt-e-out);
+  animation: ojtBarGrow 0.9s var(--ojt-e-out) both;
+}
+
+@keyframes ojtBarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.ojt-ticks {
+  position: relative;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.ojt-ticks span {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--ojt-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ojt-ticks span::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 1px;
+  height: 5px;
+  background: #C6D3D9;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 960px) {
+  .ojt-placement-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ojt-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ojt-fact--hero {
+    grid-column: span 2;
+  }
+
+  .ojt-ring-wrap {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .ojt-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Re-state the :first-child-free span rules at the same specificity, or the
+     960px block silently wins and the hero cell keeps its 2-column span. */
+  .ojt-fact--hero {
+    grid-column: span 1;
+  }
+
+  .ojt-rail-labels {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ojt-rail-node--end {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* ---------- specificity re-assertion (do not delete) ----------
+   index.css generates a per-card rule:
+
+     .card :is(p,span,li,dd,td,small,em,i,time,figcaption,blockquote,cite,address)
+       { color: var(--muted-text) }
+
+   `:is()` takes the specificity of its most specific argument — all type
+   selectors — so that rule is (0,1,1). Any of the single-class colour rules
+   above is (0,1,0) and therefore LOSES to it silently, and the text falls back
+   to #6B7280. `.ojt-rail-flag` was the visible casualty: the deep orange
+   #A83F27 became grey, which measured 4.11:1 against the rail track.
+
+   Re-assert those four colours one level up (0,2,0) so they win outright.
+   The two-class forms below are deliberate — collapsing them back to a single
+   class reintroduces the bug. */
+.ojt-placement-card .ojt-rail-flag {
+  color: var(--ojt-orange-deep);
+}
+
+.ojt-placement-card .ojt-eyebrow {
+  color: var(--ojt-teal-deep);
+}
+
+.ojt-placement-card .ojt-hours-hint,
+.ojt-placement-card .ojt-panel-line {
+  color: var(--ojt-muted);
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ojt-rail-elapsed,
+  .ojt-ring-fill,
+  .ojt-bar-inner .progress-bar-fill {
+    animation: none;
+  }
+
+  .ojt-bar-inner .progress-bar-fill {
+    transition: none;
+  }
+}
+

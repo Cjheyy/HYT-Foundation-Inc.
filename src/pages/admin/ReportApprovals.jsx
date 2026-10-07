@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../config/supabase';
-import { isPendingReportStatus } from '../../services/supabaseService';
+import { isPendingReportStatus, resolveUserName } from '../../services/supabaseService';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -148,7 +148,7 @@ export function ReportApprovals() {
               <Card key={report.id} className="report-card">
                 <div className="report-header">
                   <div className="student-info">
-                    <div className="student-name">{report.user?.fullName || 'Unknown'}</div>
+                    <div className="student-name">{resolveUserName(report.user, report)}</div>
                     <div className="student-email">{report.user?.email}</div>
                   </div>
                   <Badge status={report.status}>{report.status}</Badge>
@@ -216,7 +216,7 @@ export function ReportApprovals() {
                   .slice(0, 10)
                   .map((report) => (
                     <tr key={report.id}>
-                      <td>{report.user?.fullName || 'Unknown'}</td>
+                      <td>{resolveUserName(report.user, report)}</td>
                       <td>{formatDate(report.reportDate)}</td>
                       <td><Badge status={report.status}>{report.status}</Badge></td>
                       <td className="admin-note-cell">{report.adminNote || '--'}</td>
@@ -259,7 +259,7 @@ export function ReportApprovals() {
 
             <div className="form-group" style={{ marginTop: '20px' }}>
               <label className="form-label">
-                Admin Note {modalAction === 'reject' && <span style={{color: 'red'}}>*</span>}
+                Admin Note {modalAction === 'reject' && <span className="required-marker" aria-hidden="true">*</span>}
               </label>
               <textarea
                 className={`form-textarea ${noteError ? 'error' : ''}`}
