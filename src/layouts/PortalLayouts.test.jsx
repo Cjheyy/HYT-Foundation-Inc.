@@ -62,7 +62,7 @@ describe('StudentLayout sidebar', () => {
       '/student/applications': 'My Applications',
       '/student/announcements': 'Announcements',
       '/student/opportunities': 'OJT Postings',
-      '/student/programs': 'Programs & Events'
+      '/student/events': 'Events Postings'
     };
     Object.entries(expected).forEach(([path, label]) => {
       const { unmount } = renderAt(StudentLayout, path);
@@ -86,7 +86,7 @@ describe('StudentLayout sidebar', () => {
     const hrefs = navHrefs();
     [
       '/student/dashboard',
-      '/student/programs',
+      '/student/events',
       '/student/opportunities',
       '/student/applications',
       '/student/requirements',

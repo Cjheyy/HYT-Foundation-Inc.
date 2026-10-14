@@ -7,6 +7,7 @@ import { Textarea } from '../../components/Textarea';
 import { Select } from '../../components/Select';
 import { Badge } from '../../components/Badge';
 import { Modal } from '../../components/Modal';
+import { createAnnouncement } from '../../services/supabaseService';
 import { showToast } from '../../utils/notifications';
 import { formatDate } from '../../utils/helpers';
 
@@ -14,6 +15,7 @@ export function AdminAnnouncements() {
   const { state, dispatch } = useApp();
   const { announcements } = state;
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -21,20 +23,34 @@ export function AdminAnnouncements() {
     priority: 'Medium'
   });
 
-  const handleSubmit = (e) => {
+  /**
+   * Writes the notice to Supabase and only then mirrors it into state.  The
+   * previous version dispatched alone, so a published announcement was never
+   * stored and disappeared on reload.
+   */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newAnnouncement = {
-      id: `ann-${Date.now()}`,
-      ...formData,
-      status: 'Published',
-      publishedAt: new Date().toISOString(),
-      createdBy: state.currentUser?.id,
-      createdAt: new Date().toISOString()
-    };
-    dispatch({ type: 'ADD_ANNOUNCEMENT', payload: newAnnouncement });
-    showToast('Announcement published successfully!', 'success');
-    setShowForm(false);
-    setFormData({ title: '', content: '', category: 'General', priority: 'Medium' });
+    if (saving) return;
+    try {
+      setSaving(true);
+      const saved = await createAnnouncement({
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        priority: formData.priority,
+        status: 'Published',
+        createdBy: state.currentUser?.id
+      });
+      dispatch({ type: 'ADD_ANNOUNCEMENT', payload: saved });
+      showToast('Announcement published successfully!', 'success');
+      setShowForm(false);
+      setFormData({ title: '', content: '', category: 'General', priority: 'Medium' });
+    } catch (error) {
+      console.error('Create announcement error:', error);
+      showToast(error.message || 'Failed to publish the announcement.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -88,8 +104,8 @@ export function AdminAnnouncements() {
               options={['Low', 'Medium', 'High']}
             />
             <div style={{ display: 'flex', gap: '12px' }}>
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit">Publish Announcement</Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Publishing...' : 'Publish Announcement'}</Button>
             </div>
           </div>
         </form>

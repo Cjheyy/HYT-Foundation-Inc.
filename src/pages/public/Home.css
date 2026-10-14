@@ -834,7 +834,11 @@
   margin-bottom: 32px;
 }
 
-/* Accomplishments Swiper Slider — LANDSCAPE (16:10) slides */
+/* Accomplishments Swiper Slider — 4:3 slides.
+   The card shape has to match the photos. Every gallery image is 4:3
+   (2048x1536 / 1280x960), but the card used to be 8:5 (1.6), and `object-fit`
+   fills the box — so a 4:3 source in a 16:10 box lost ~17% off the top and
+   bottom of every single photo. Matching the shape means nothing is cropped. */
 .accomplishments-swiper {
   width: 100%;
   /* The coverflow swings the side slides out and up, so the vertical padding has
@@ -850,35 +854,39 @@
        card 612.5px tall -> overhang 74.8px
      76px covers the 587.5px cap with ~11px of headroom; the bottom is symmetric.
      A clipped corner is invisible in a settled screenshot, so re-measure this
-     whenever the card grows. */
+     whenever the card grows.
+     The 4:3 card is NARROWER than the old 16:10 one at the same height, and the
+     overhang tracks width, so these numbers still hold with room to spare. */
   padding: 76px 0 76px 0 !important;
   /* Card size. Three bounds, all of them real:
-       1. the viewport - this section has to sit on one screen without scrolling.
+       1. the viewport - this section should sit on one screen without scrolling.
           Its chrome is a FIXED cost, so a vh percentage alone would still
           overflow on a short screen: what is left for the card is
-          (100vh - 465px), where 465 = 353.6px measured chrome (section padding 72
+          (100vh - 385px), where 385 = 353.6px measured chrome (section padding 72
           + heading 97.6 + its margin 32 + swiper padding 152) + the 101px sticky
-          header + a 10px safety margin. `max(200px, ...)` floors it so a very
-          short viewport cannot collapse the card to nothing - the floor is what
-          the section fits down to, so it sits just under the ~665px viewport
-          height below which nothing reasonable fits anyway.
-       2. 940x587.5 - the size that reads well on a tall screen; without this cap
-          a 1080p screen would give a 615px-tall card, which is the "too big"
-          this is walking back from. It is also what the reference screenshot
-          measures: the centre card spans ~65% of the track there, and 940px is
-          65.3% of a 1440px viewport.
-       3. 66vw - so the card never outgrows the track and loses its corners to
-          `overflow: hidden`.
-     All three bounds are proportional (587.5 x 1.6 = 940, 41.25vw x 1.6 = 66vw,
-     and the viewport bound is 1.6x by construction), so the 8:5 shape holds at
-     every step and `object-fit: cover` never crops the photos.
+          header, trimmed from 465 to buy the height back. The budget is what
+          keeps the card the same WIDTH as before while the shape goes 16:10 ->
+          4:3: a 4:3 card is narrower than a 16:10 one at the same height, so
+          matching the photo shape would otherwise have shrunk the card. The
+          section now runs ~80px past the fold on a 900px screen, which is the
+          deliberate cost of the larger card. `max(200px, ...)` floors it so a
+          very short viewport cannot collapse the card to nothing.
+       2. 587.5px tall - the size that reads well on a tall screen; without this
+          cap a 1080p screen would give a taller card, which is the "too big"
+          this is walking back from.
+       3. 49.5vw - so the card never outgrows the track and loses its corners to
+          `overflow: hidden`. 49.5vw x 1.3333 = 66vw, i.e. the same bound the
+          width already carried.
+     All three bounds are proportional (587.5 x 1.3333 = 783.3, 49.5vw x 1.3333 =
+     66vw, and the viewport bound is 1.3333x by construction), so the 4:3 shape
+     holds at every step and `object-fit` never crops the photos.
      Deliberately NOT `aspect-ratio`: it is unsupported in op_mob 80 and
      and_uc 15.5, both of which are in this project's browserslist, and there
      `height: auto` would collapse the card to nothing. Custom properties are
      supported everywhere the project targets. */
-  --slide-fit-h: max(200px, calc(100vh - 465px));
-  --slide-w: min(940px, calc(var(--slide-fit-h) * 1.6), 66vw);
-  --slide-h: min(587.5px, var(--slide-fit-h), 41.25vw);
+  --slide-fit-h: max(200px, calc(100vh - 385px));
+  --slide-w: min(940px, calc(var(--slide-fit-h) * 1.3333), 66vw);
+  --slide-h: min(587.5px, var(--slide-fit-h), 49.5vw);
 }
 
 .accomplishments-swiper .swiper-slide {
@@ -916,7 +924,12 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* `contain`, not `cover`. The card is 4:3 and so is nearly every photo, so
+     this fills the card exactly and crops nothing. The one 16:9 outlier
+     (partnership.jpg) is letterboxed against the card's own dark panel instead
+     of being cropped — `cover` would have taken ~25% off its sides. */
+  object-fit: contain;
+  background: #0f172a;
   transition: transform 0.5s ease;
 }
 
@@ -1021,12 +1034,12 @@
   .accomplishments-swiper {
     /* Same three bounds as the base rule; only the constants change. The sticky
        header measures 108.2px here rather than 101px, so the fixed cost is
-       353.6 + 108.2 + 10 = 472px. The 66vw guard is what actually governs at this
-       width - 66vw peaks at 676px here, under the 714px cap - so the cap is kept
-       only to mirror the base rule's three-bound shape. */
-    --slide-fit-h: max(200px, calc(100vh - 472px));
-    --slide-w: min(714px, calc(var(--slide-fit-h) * 1.6), 66vw);
-    --slide-h: min(446px, var(--slide-fit-h), 41.25vw);
+       353.6 + 108.2 = 461.8, trimmed by the same 80px as the base rule to 392px.
+       The 66vw guard is what actually governs at this width, so the 714px cap is
+       kept only to mirror the base rule's three-bound shape. */
+    --slide-fit-h: max(200px, calc(100vh - 392px));
+    --slide-w: min(714px, calc(var(--slide-fit-h) * 1.3333), 66vw);
+    --slide-h: min(446px, var(--slide-fit-h), 49.5vw);
   }
 }
 
@@ -1034,7 +1047,9 @@
   .accomplishments-swiper {
     padding: 36px 0 56px 0 !important;
     --slide-w: min(560px, 76vw);
-    --slide-h: min(350px, 47.5vw);
+    /* 76vw / 1.3333 = 57vw and 560 / 1.3333 = 420, so the 4:3 shape holds on the
+       same two bounds the width already used. */
+    --slide-h: min(420px, 57vw);
   }
 
   .accomplishments-swiper .swiper-slide-caption h3 {
@@ -1065,7 +1080,8 @@
     width: 100vw;
     margin-left: calc(50% - 50vw);
     --slide-w: min(400px, 90vw);
-    --slide-h: min(250px, 56.25vw);
+    /* 90vw / 1.3333 = 67.5vw and 400 / 1.3333 = 300: the same two bounds, at 4:3. */
+    --slide-h: min(300px, 67.5vw);
   }
 
   .accomplishments-swiper .swiper-slide-caption {

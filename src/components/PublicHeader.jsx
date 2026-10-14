@@ -33,7 +33,12 @@ export function PublicHeader() {
           <nav className={`nav-menu ${mobileMenuOpen ? 'open' : ''}`}>
             <Link to="/" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Home</Link>
             <Link to="/about" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>About</Link>
-            <Link to="/programs" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Trainee Programs & Events</Link>
+            {/* Programs and Events are two separate listings, so they get two
+                separate entries — the combined "Programs & Events" link is
+                gone.  The order matches the sidebar of both portals, where
+                Programmes come before Events. */}
+            <Link to="/programs" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Programs</Link>
+            <Link to="/events" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Events</Link>
             <Link to="/opportunities" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>OJT Postings</Link>
             <Link to="/impact" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Our Impact</Link>
             <Link to="/contact" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Contact</Link>

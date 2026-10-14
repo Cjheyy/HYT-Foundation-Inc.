@@ -39,7 +39,7 @@ export function Programs() {
     <div className="programs-page">
       <section className="page-hero">
         <div className="container">
-          <h1 className="page-title">Trainee Programs & Events</h1>
+          <h1 className="page-title">Trainee Programs</h1>
           <p className="page-subtitle">
             Discover development programs designed to enhance your skills and capabilities
           </p>
@@ -117,7 +117,9 @@ export function Programs() {
                         <span key={idx} className="thrust-tag">{thrust}</span>
                       ))}
                     </div>
-                    <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
+                    {/* Pinned by the shared flex-column card rule, so the row
+                        of cards shows one button baseline. */}
+                    <Button size="sm" style={{ width: '100%' }}>
                       View Details
                     </Button>
                   </Card>

@@ -19,7 +19,7 @@ const displayStatus = (status) => {
 
 export function StudentApplications() {
   const { state } = useApp();
-  const { currentUser, applications, opportunities, programs } = state;
+  const { currentUser, applications, opportunities, programs, events } = state;
   const navigate = useNavigate();
 
   const myApplications = useMemo(
@@ -37,8 +37,10 @@ export function StudentApplications() {
   const getListingTitle = (app) => {
     const oppId = app.opportunityId || app.opportunity_id;
     const progId = app.programId || app.program_id;
+    const evId = app.eventId || app.event_id;
     if (oppId) return (opportunities || []).find((o) => o.id === oppId)?.title || 'OJT Posting';
     if (progId) return (programs || []).find((p) => p.id === progId)?.title || 'Program';
+    if (evId) return (events || []).find((e) => e.id === evId)?.title || 'Event';
     return 'Application';
   };
 
@@ -99,10 +101,7 @@ export function StudentApplications() {
   return (
     <div className="applications-page">
       <h1 className="page-title">My Applications</h1>
-      <p className="applications-intro">
-        Every application you have submitted. Once an administrator approves one it becomes an
-        experience — Ongoing while it runs, Already Done when it finishes.
-      </p>
+      <p className="applications-intro">All your applications, grouped by status.</p>
 
       {myApplications.length > 0 ? (
         <>

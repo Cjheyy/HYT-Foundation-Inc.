@@ -18,7 +18,7 @@ export const ACCOUNT_TYPES = {
       'School Endorsement Letter required',
       'Daily attendance logs (Clock-in/Clock-out)',
       'Daily logbook/report submissions',
-      'Strict 8:55 AM - 6:05 PM attendance window',
+      'Strict 9:00-9:10 AM clock-in and 6:00-6:10 PM clock-out windows',
       'Subject to school and HYT Foundation guidelines',
       'Certificate of Completion upon fulfillment'
     ],

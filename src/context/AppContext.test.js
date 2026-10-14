@@ -42,6 +42,49 @@ describe('appReducer', () => {
     expect(next.settings).toEqual({});
   });
 
+  test('LOAD_PUBLIC_DATA refreshes the public collections and leaves user rows alone', () => {
+    // The regression this guards: `loadPublicData` runs on every realtime
+    // posting/announcement broadcast and used to dispatch LOAD_DATA, which
+    // replaces EVERY collection.  Its payload never carries the user's own rows,
+    // so publishing an event emptied the applications, attendance and
+    // requirements of everyone with the portal open.
+    const next = appReducer(signedInState, {
+      type: 'LOAD_PUBLIC_DATA',
+      payload: {
+        programs: [{ id: 'p2' }],
+        events: [{ id: 'e1' }],
+        opportunities: [{ id: 'o1' }],
+        announcements: [{ id: 'ann1' }],
+        settings: { theme: 'hyt' }
+      }
+    });
+
+    expect(next.programs).toEqual([{ id: 'p2' }]);
+    expect(next.events).toEqual([{ id: 'e1' }]);
+    expect(next.opportunities).toEqual([{ id: 'o1' }]);
+    expect(next.announcements).toEqual([{ id: 'ann1' }]);
+
+    expect(next.applications).toEqual(signedInState.applications);
+    expect(next.attendance).toEqual([{ id: 'a1' }]);
+    expect(next.notifications).toEqual([{ id: 'n1' }]);
+    expect(next.otRequests).toEqual([{ id: 'ot1' }]);
+    expect(next.users).toEqual(signedInState.users);
+    expect(next.currentUser).toEqual(signedInState.currentUser);
+  });
+
+  test('LOAD_PUBLIC_DATA keeps the rows on screen when one fetch fails', () => {
+    // `loadPublicData` sends `undefined` for a rejected fetch, so a single
+    // transient failure during a realtime refresh must not blank a list.
+    const next = appReducer(signedInState, {
+      type: 'LOAD_PUBLIC_DATA',
+      payload: { programs: undefined, announcements: undefined, events: [] }
+    });
+
+    expect(next.programs).toEqual([{ id: 'p1' }]);
+    expect(next.announcements).toEqual(signedInState.announcements);
+    expect(next.events).toEqual([]);
+  });
+
   test('UPDATE_USER patches both the directory row and the current profile', () => {
     const next = appReducer(signedInState, {
       type: 'UPDATE_USER',

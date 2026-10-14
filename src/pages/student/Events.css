@@ -1,0 +1,115 @@
+/**
+ * Events listing — shared by the OJT/Intern and Trainee portals.
+ *
+ * Mirrors student/Opportunities.css so the two listing pages read as one
+ * family.  The class names are distinct (`event-*` rather than
+ * `opportunity-*`) so the two stylesheets cannot overwrite each other.
+ */
+
+.student-events-page {
+  min-height: 100vh;
+}
+
+.events-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.event-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.event-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.event-card-description {
+  color: var(--muted-text);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.event-card-meta {
+  font-size: 13px;
+  color: var(--muted-text);
+  margin-bottom: 16px;
+}
+
+.event-card-meta > div {
+  margin-bottom: 4px;
+}
+
+.event-apply-button {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Detail dialog
+   -------------------------------------------------------------------------- */
+
+.event-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-detail-row {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.event-detail-label {
+  flex: 0 0 110px;
+  color: var(--muted-text);
+}
+
+.event-detail-value {
+  flex: 1 1 auto;
+}
+
+.event-detail-description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted-text);
+  line-height: 1.6;
+}
+
+.event-detail-blocked {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-text, #B8441F);
+}
+
+.event-detail-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .events-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+}

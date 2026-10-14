@@ -79,7 +79,7 @@ export function StudentOpportunities() {
 
       {isTrainee && (
         <Card>
-          <p className="no-data">OJT Postings are available to OJT / Internship applicants only. Please explore Trainee Programs & Events.</p>
+          <p className="no-data">OJT Postings are available to OJT / Internship applicants only. Please explore Events instead.</p>
         </Card>
       )}
 

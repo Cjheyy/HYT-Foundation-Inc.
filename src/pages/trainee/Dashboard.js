@@ -7,9 +7,12 @@ import { Badge } from '../../components/Badge';
 import { Modal } from '../../components/Modal';
 import { Icon } from '../../components/icons';
 import { getApplicationsByStudent } from '../../services/applicationService';
+import { getEventSlotState, isEventActive } from '../../services/supabaseService';
+import { formatEventWindow } from '../student/Events';
 import { formatDate, getFirstName } from '../../utils/helpers';
 import {
   getApplicationListingTitle,
+  getApplicationListingTypeLabel,
   isApplicationActive,
   isApplicationApproved
 } from '../../utils/experience';
@@ -17,7 +20,7 @@ import '../student/Dashboard.css';
 
 export function TraineeDashboard() {
   const { state } = useApp();
-  const { currentUser, applications, announcements, requirements, opportunities, programs } = state;
+  const { currentUser, applications, announcements, requirements, opportunities, programs, events } = state;
   const navigate = useNavigate();
 
   const myApplications = getApplicationsByStudent(applications, currentUser?.id);
@@ -32,12 +35,25 @@ export function TraineeDashboard() {
   const [selectedApplication, setSelectedApplication] = useState(null);
 
   const listingTitle = (app) =>
-    getApplicationListingTitle(app, { opportunities, programs });
+    getApplicationListingTitle(app, { opportunities, programs, events });
 
   const acceptedCount = myApplications.filter(isApplicationApproved).length;
   const myRequirements = requirements.filter(req => req.studentId === currentUser?.id);
   const pendingRequirements = myRequirements.filter(req => 
     ['Required', 'Rejected'].includes(req.status)
+  );
+
+  /**
+   * The published events this portal can still join.  RLS already restricts a
+   * non-admin session to PUBLISHED rows, but the status test is repeated here
+   * so the dashboard, the Events page and the landing page cannot disagree
+   * about what "available" means.
+   */
+  const availableEvents = useMemo(
+    () => (events || []).filter(
+      (item) => String(item.status).toLowerCase() === 'published' && isEventActive(item)
+    ),
+    [events]
   );
 
   const journeyStages = [
@@ -107,6 +123,65 @@ export function TraineeDashboard() {
               </Button>
             </div>
           )}
+        </Card>
+
+        {/* Events — the published events this portal can still join. Reuses the
+            Active Training card's list markup so no new design is added. */}
+        <Card className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Events</h3>
+            {availableEvents.length > 0 && (
+              <span className="active-app-count">{availableEvents.length}</span>
+            )}
+          </div>
+          <div className="card-content">
+            {availableEvents.length > 0 ? (
+              <>
+                <ul className="active-app-list">
+                  {availableEvents.map((event) => {
+                    const slots = getEventSlotState(event);
+                    return (
+                      <li key={event.id}>
+                        <button
+                          type="button"
+                          className="active-app-row"
+                          onClick={() => navigate('/trainee/events')}
+                          aria-label={`More info about ${event.title}`}
+                        >
+                          <span className="active-app-main">
+                            <span className="active-app-title">{event.title}</span>
+                            <span className="active-app-date">{formatEventWindow(event)}</span>
+                          </span>
+                          <Badge color={slots.isFull ? 'red' : 'green'}>
+                            {slots.isFull ? 'Full' : `${slots.available} slots`}
+                          </Badge>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/trainee/events')}
+                  style={{ marginTop: '12px', width: '100%' }}
+                >
+                  Browse Events
+                </Button>
+              </>
+            ) : (
+              <div className="empty-card-content">
+                <p className="empty-text">No events posted yet</p>
+                <p className="empty-hint">
+                  Only published events appear here — a draft stays hidden until an
+                  administrator publishes it
+                </p>
+                <Button size="sm" onClick={() => navigate('/trainee/events')}>
+                  Browse Events
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Requirements */}
@@ -300,7 +375,7 @@ export function TraineeDashboard() {
             <div className="application-detail-row">
               <span className="application-detail-label">Type</span>
               <span className="application-detail-value">
-                {selectedApplication.opportunityId ? 'OJT Posting' : 'Training Program'}
+                {getApplicationListingTypeLabel(selectedApplication)}
               </span>
             </div>
             <div className="application-detail-row">

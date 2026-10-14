@@ -1,5 +1,10 @@
 import { supabase, toCamelCase, toSnakeCase } from '../config/supabase';
 import { GEOFENCE_ENFORCEMENT_ENABLED } from '../utils/geofence';
+import {
+  mergeSlotEntry,
+  readSlotEntries,
+  summariseForAccomplishments
+} from '../utils/dailyReportSlots';
 
 /* --------------------------------------------------------------------------
  * Shared status and date helpers
@@ -130,6 +135,72 @@ export const isEventActive = (event, referenceDate = todayISODate()) => {
   return String(deadline).slice(0, 10) >= String(referenceDate).slice(0, 10);
 };
 
+// ==========================================================================
+// THE THREE LISTING KINDS
+// ==========================================================================
+//
+// `programs` (Dream Academy training), `events` (one-off events) and
+// `opportunities` (OJT postings) are three separate tables, but they share one
+// shape: a title, a deadline, a slot count and a status.  `kind` is the single
+// discriminator the application path keys off, so the table name and the
+// foreign-key column on `applications` are derived from it in ONE place rather
+// than in a chain of ternaries.
+//
+// Adding a fourth kind means adding one line to each map — and nothing else.
+
+export const LISTING_TABLE_BY_KIND = {
+  program: 'programs',
+  event: 'events',
+  opportunity: 'opportunities'
+};
+
+export const LISTING_ID_COLUMN_BY_KIND = {
+  program: 'program_id',
+  event: 'event_id',
+  opportunity: 'opportunity_id'
+};
+
+export const LISTING_KINDS = Object.keys(LISTING_TABLE_BY_KIND);
+
+/** A Trainee may hold at most this many live event applications at once. */
+export const MAX_ACTIVE_EVENT_APPLICATIONS = 3;
+
+/** Parse a timestamp defensively; returns null when there is no usable value. */
+const toTimestamp = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+};
+
+/**
+ * A listing's occupied window as epoch millis.
+ *
+ * An event with only a start is treated as a single instant.  A listing with NO
+ * structured time at all returns null — and two nulls never clash, so legacy
+ * rows and programs without timestamps can never block an application.
+ */
+export const eventWindow = (row) => {
+  const start = toTimestamp(row?.startsAt ?? row?.starts_at);
+  if (start === null) return null;
+  const end = toTimestamp(row?.endsAt ?? row?.ends_at);
+  return { start, end: end === null ? start : end };
+};
+
+/**
+ * Whether two listings' windows collide.
+ *
+ * The comparison is INCLUSIVE: an event that ends at 10:00 and another that
+ * starts at 10:00 count as a clash.  That is the conservative reading of
+ * "no overlap" — a back-to-back pair usually still needs travel time, and a
+ * whole-day event (00:00-23:59) must block anything else on that date.
+ */
+export const eventWindowsOverlap = (a, b) => {
+  const left = eventWindow(a);
+  const right = eventWindow(b);
+  if (!left || !right) return false;
+  return left.start <= right.end && right.start <= left.end;
+};
+
 const requireSupabase = () => {
   if (!supabase) {
     throw new Error('Supabase is not configured. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
@@ -223,6 +294,15 @@ const normalizeEventForWrite = (event = {}, kind = 'program') => {
   if (kind === 'program') {
     raw.objectives = event.objectives;
     raw.requirements = event.requirements;
+  } else if (kind === 'event') {
+    // An EVENT keeps the program-shaped columns (so isEventActive /
+    // getEventSlotState / readEventSlots work unchanged) and adds the two
+    // structured timestamps the overlap rule needs.  `schedule` stays the
+    // human-readable string the admin form previews.
+    raw.objectives = event.objectives;
+    raw.requirements = event.requirements;
+    raw.startsAt = event.startsAt ?? event.starts_at;
+    raw.endsAt = event.endsAt ?? event.ends_at;
   } else {
     raw.organization = event.organization;
     raw.duration = event.duration;
@@ -441,6 +521,92 @@ export const deleteProgram = async (programId) => {
   return true;
 };
 
+// ==========================================================================
+// EVENTS — the third listing kind, separate from Programs and Opportunities
+// ==========================================================================
+
+export const getEvents = async ({ includeInactive = true } = {}) => {
+  const client = requireSupabase();
+  // `select('*')` keeps this working on a deployment whose `events` table is
+  // older than the client; slot fields are normalised in JS by
+  // getEventSlotState.
+  const { data, error } = await client
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  const events = mapRows(data);
+  return includeInactive ? events : events.filter((item) => isEventActive(item));
+};
+
+export const getActiveEvents = async () => {
+  const events = await getEvents({ includeInactive: true });
+  return events.filter((item) => isEventActive(item));
+};
+
+export const createEvent = async (eventData) => {
+  const client = requireSupabase();
+  const payload = normalizeEventForWrite(eventData, 'event');
+  const { data, error } = await client
+    .from('events')
+    .insert([payload])
+    .select()
+    .single();
+  if (error) throw error;
+  return toCamelCase(data);
+};
+
+export const updateEvent = async (eventId, updates) => {
+  const client = requireSupabase();
+  const payload = normalizeEventForWrite(updates, 'event');
+  const { data, error } = await client
+    .from('events')
+    .update(payload)
+    .eq('id', eventId)
+    .select()
+    .single();
+  if (error) throw error;
+  return toCamelCase(data);
+};
+
+export const deleteEvent = async (eventId) => {
+  const client = requireSupabase();
+  const { error } = await client.from('events').delete().eq('id', eventId);
+  if (error) throw error;
+  return true;
+};
+
+/** Read-only preview of the #3 rules, so the UI can disable Apply up front. */
+export const getEventApplicationState = async (userId, targetRow) => {
+  const client = requireSupabase();
+  const state = { heldCount: 0, limit: MAX_ACTIVE_EVENT_APPLICATIONS, atLimit: false, clash: null };
+  if (!userId) return state;
+
+  const { data, error } = await client
+    .from('applications')
+    .select('id, status, event_id')
+    .eq('user_id', userId)
+    .not('event_id', 'is', null);
+  if (error && error.code !== 'PGRST116') throw error;
+
+  const held = (data || []).filter((row) => !applicationReleasesSlot(row.status));
+  state.heldCount = held.length;
+  state.atLimit = held.length >= MAX_ACTIVE_EVENT_APPLICATIONS;
+
+  const heldIds = held.map((row) => row.event_id).filter(Boolean);
+  if (!heldIds.length || !targetRow) return state;
+
+  const { data: heldEvents, error: heldError } = await client
+    .from('events')
+    .select('id, title, starts_at, ends_at')
+    .in('id', heldIds);
+  if (heldError && heldError.code !== 'PGRST116') throw heldError;
+
+  state.clash = (heldEvents || []).find((row) => eventWindowsOverlap(targetRow, row)) || null;
+  return state;
+};
+
 export const getOpportunities = async ({ includeInactive = true } = {}) => {
   const client = requireSupabase();
   const { data, error } = await client
@@ -548,12 +714,25 @@ export const deleteOpportunity = async (opportunityId) => {
 export const cleanupExpiredEvents = async () => {
   const client = requireSupabase();
   const today = todayISODate();
-  const result = { programs: 0, opportunities: 0 };
+  const result = { programs: 0, opportunities: 0, events: 0 };
+
+  // `events` is swept here, ALWAYS, before the RPC short-circuit below: the SQL
+  // `expire_hyt_events` function may predate the events table, and a missed
+  // sweep would leave a stale event Published — and therefore applyable —
+  // forever.  A missing table simply returns an error object, never a throw.
+  const eventsSweep = await client
+    .from('events')
+    .update({ status: 'Closed' })
+    .eq('status', 'Published')
+    .lt('application_deadline', today)
+    .select('id');
+  if (!eventsSweep.error) result.events = eventsSweep.data?.length || 0;
 
   const { data: rpcResult, error: rpcError } = await client.rpc('expire_hyt_events');
   if (!rpcError && rpcResult) {
     result.programs = Number(rpcResult.programs || rpcResult.program_count || 0);
     result.opportunities = Number(rpcResult.opportunities || rpcResult.opportunity_count || 0);
+    result.events = Number(rpcResult.events || rpcResult.event_count || result.events);
     return result;
   }
 
@@ -680,7 +859,7 @@ export const applicationReleasesSlot = (status) =>
  */
 export const adjustEventSlots = async (table, id, delta) => {
   const client = requireSupabase();
-  if (!['programs', 'opportunities'].includes(table)) throw new Error('Unknown event table.');
+  if (!Object.values(LISTING_TABLE_BY_KIND).includes(table)) throw new Error('Unknown event table.');
   if (!delta) return null;
 
   let current = null;
@@ -730,18 +909,72 @@ export const getEventSlotStateById = async (table, id) => {
   }
 };
 
-const buildProgramApplicationPayload = (userId, eventId, kind) => (
-  kind === 'program'
-    ? { userId, programId: eventId, opportunityId: null, type: 'program', status: 'Applied' }
-    : { userId, programId: null, opportunityId: eventId, type: 'opportunity', status: 'Applied' }
-);
+/**
+ * The `applications` row an application to `eventId` of `kind` should create.
+ *
+ * `applications.check_application_target` requires EXACTLY ONE of program_id /
+ * opportunity_id / event_id to be set, so every branch nulls the other two.
+ */
+const buildProgramApplicationPayload = (userId, eventId, kind) => {
+  if (kind === 'event') {
+    return { userId, programId: null, opportunityId: null, eventId, type: 'event', status: 'Applied' };
+  }
+  return kind === 'program'
+    ? { userId, programId: eventId, opportunityId: null, eventId: null, type: 'program', status: 'Applied' }
+    : { userId, programId: null, opportunityId: eventId, eventId: null, type: 'opportunity', status: 'Applied' };
+};
+
+/**
+ * Guard #3 — the EVENT rules.
+ *
+ * A youth may hold at most MAX_ACTIVE_EVENT_APPLICATIONS live event
+ * applications, and none of them may collide in time with the event being
+ * applied for.  Released (rejected/withdrawn/cancelled) applications free both
+ * the count and the window, which is what lets a student apply again once one
+ * of their applications ends.
+ *
+ * `targetRow` is the event being applied for — the caller has already read it,
+ * so this never issues a second query for it.
+ */
+const assertEventApplicationAllowed = async (client, userId, eventId, targetRow) => {
+  const { data: activeRows, error: activeError } = await client
+    .from('applications')
+    .select('id, status, event_id')
+    .eq('user_id', userId)
+    .not('event_id', 'is', null);
+  if (activeError && activeError.code !== 'PGRST116') throw activeError;
+
+  const held = (activeRows || []).filter((row) => !applicationReleasesSlot(row.status));
+  if (held.length >= MAX_ACTIVE_EVENT_APPLICATIONS) {
+    throw new Error(
+      `You can apply to at most ${MAX_ACTIVE_EVENT_APPLICATIONS} events at a time. `
+      + 'Finish or withdraw one before applying to another.'
+    );
+  }
+
+  const heldIds = held.map((row) => row.event_id).filter(Boolean);
+  if (!heldIds.length) return;
+
+  const { data: heldEvents, error: heldError } = await client
+    .from('events')
+    .select('id, title, starts_at, ends_at')
+    .in('id', heldIds);
+  if (heldError && heldError.code !== 'PGRST116') throw heldError;
+
+  const clash = (heldEvents || []).find((row) => eventWindowsOverlap(targetRow, row));
+  if (clash) {
+    throw new Error(
+      `This event overlaps "${clash.title || 'another event'}" that you have already applied to.`
+    );
+  }
+};
 
 export const applyToEvent = async (kind, eventId, userId) => {
   const client = requireSupabase();
   if (!userId) throw new Error('You must be signed in to apply.');
   if (!eventId) throw new Error('Missing listing reference.');
-  const table = kind === 'program' ? 'programs' : 'opportunities';
-  const idColumn = kind === 'program' ? 'program_id' : 'opportunity_id';
+  const table = LISTING_TABLE_BY_KIND[kind] || LISTING_TABLE_BY_KIND.opportunity;
+  const idColumn = LISTING_ID_COLUMN_BY_KIND[kind] || LISTING_ID_COLUMN_BY_KIND.opportunity;
 
   const { data: existing, error: existingError } = await client
     .from('applications')
@@ -771,6 +1004,25 @@ export const applyToEvent = async (kind, eventId, userId) => {
     }
   }
 
+  // A Trainee may hold only ONE training programme at a time — the mirror of
+  // the OJT rule below.  Rejected or withdrawn applications release the hold so
+  // the trainee can apply again.  Only `program_id` rows count, so an OJT
+  // posting or an event never blocks a programme application.
+  if (kind === 'program') {
+    const { data: activeRows, error: activeError } = await client
+      .from('applications')
+      .select('id, status')
+      .eq('user_id', userId)
+      .not('program_id', 'is', null);
+    if (activeError && activeError.code !== 'PGRST116') throw activeError;
+    const blocking = (activeRows || []).filter((row) => !applicationReleasesSlot(row.status));
+    if (blocking.length > 0) {
+      throw new Error(
+        'You already have a program application. Only one training program application is allowed per trainee.'
+      );
+    }
+  }
+
   const slotRow = await readEventSlots(table, eventId);
   const slotState = getEventSlotState(slotRow || {});
   // Only enforce Full when the listing carries explicit slot data.
@@ -780,6 +1032,12 @@ export const applyToEvent = async (kind, eventId, userId) => {
   );
   if (hasSlotData && slotState.isFull) {
     throw new Error('This listing is full. No slots available.');
+  }
+
+  // Guard #3 — the event count and overlap rules.  `slotRow` is the event being
+  // applied for, already read above, so its window costs no extra query.
+  if (kind === 'event') {
+    await assertEventApplicationAllowed(client, userId, eventId, slotRow || {});
   }
 
   const payload = toSnakeCase(buildProgramApplicationPayload(userId, eventId, kind));
@@ -816,6 +1074,9 @@ export const applyToEvent = async (kind, eventId, userId) => {
 
 export const applyToProgram = (programId, userId) => applyToEvent('program', programId, userId);
 export const applyToOpportunity = (opportunityId, userId) => applyToEvent('opportunity', opportunityId, userId);
+/** Apply to an EVENT listing (the `events` table), not to be confused with the
+ *  generic `applyToEvent` above. */
+export const applyToEventPosting = (eventId, userId) => applyToEvent('event', eventId, userId);
 
 /**
  * Admin review action: move an application to a new status while keeping the
@@ -843,8 +1104,12 @@ export const setApplicationStatus = async (applicationId, statuses) => {
   if (readError) throw readError;
   if (!application) throw new Error('Application not found.');
 
-  const table = application.program_id ? 'programs' : 'opportunities';
-  const eventId = application.program_id || application.opportunity_id;
+  // The listing this application points at — exactly one of the three keys is
+  // set (check_application_target), so the first non-null wins.
+  const table = application.program_id ? 'programs'
+    : application.event_id ? 'events'
+      : 'opportunities';
+  const eventId = application.program_id || application.event_id || application.opportunity_id;
   const wasHolding = applicationHoldsSlot(application.status);
 
   // Accepting must never oversubscribe the listing.
@@ -1168,6 +1433,40 @@ export const getAnnouncements = async () => {
     .order('published_at', { ascending: false });
   if (error) throw error;
   return mapRows(data);
+};
+
+/**
+ * Publish an announcement.
+ *
+ * The admin Announcements screen used to dispatch straight into React state, so
+ * a "published" notice existed only in the tab that created it and vanished on
+ * the next reload.  This is the real write; the events screen reuses it so
+ * posting an event also raises a notice.
+ */
+export const createAnnouncement = async (payload = {}) => {
+  const client = requireSupabase();
+  const row = {
+    title: String(payload.title || '').trim(),
+    content: String(payload.content || '').trim(),
+    category: payload.category || 'General',
+    priority: payload.priority || 'Medium',
+    status: payload.status || 'Published',
+    published_at: payload.publishedAt || new Date().toISOString(),
+    created_by: payload.createdBy || null
+  };
+  if (!row.title || !row.content) {
+    throw new Error('An announcement needs both a title and some content.');
+  }
+
+  let result = await client.from('announcements').insert([row]).select().single();
+  // 23503 = foreign-key violation.  `created_by` points at public.users, and a
+  // profile that was never rebuilt would otherwise take the whole notice down
+  // with it; the announcement itself is still worth publishing.
+  if (result.error && result.error.code === '23503') {
+    result = await client.from('announcements').insert([{ ...row, created_by: null }]).select().single();
+  }
+  if (result.error) throw result.error;
+  return toCamelCase(result.data);
 };
 
 export const getNotifications = async (userId) => {
@@ -1999,65 +2298,157 @@ export const getPendingDailyReports = async () => {
   return reports.filter((report) => isPendingReportStatus(report.status));
 };
 
+/**
+ * The columns that actually exist on `daily_reports` in this deployment.
+ *
+ * Verified against the live project: the table is
+ *   id · user_id · report_date · accomplishments · slot_entries · status · created_at
+ *
+ * The legacy names the code used to fall back on — `student_id`, `ojt_id`,
+ * `date`, `tasks_completed`, `notes`, `attachments` — do NOT exist there. Sending
+ * them made PostgREST answer PGRST204 ("Could not find the 'student_id' column
+ * ... in the schema cache") on the first attempt and the same for 'date' on the
+ * fallback, so every filing failed with a 400 no matter which path ran.
+ *
+ * The fix is to project the payload onto this list before inserting, instead of
+ * growing the fallback chain.
+ */
+const DAILY_REPORT_COLUMNS = [
+  'user_id', 'report_date', 'accomplishments', 'slot_entries', 'status', 'created_at'
+];
+
+/** Keep only the columns the table really has, and drop undefined values. */
+const projectDailyReport = (payload) =>
+  DAILY_REPORT_COLUMNS.reduce((result, column) => {
+    if (payload[column] !== undefined) result[column] = payload[column];
+    return result;
+  }, {});
+
 export const createDailyReport = async (reportData) => {
   const client = requireSupabase();
-  const payload = {
-    ...toSnakeCase(reportData),
+  const payload = projectDailyReport({
+    // `user_id` is the only owner column this deployment has. `reportDate` is the
+    // storage name for the day; `date` was the legacy spelling.
+    user_id: reportData.userId || reportData.studentId || reportData.user_id || null,
+    report_date: reportData.reportDate || reportData.date || reportData.report_date || null,
+    accomplishments: reportData.accomplishments || reportData.tasksCompleted || reportData.notes || '',
+    slot_entries: reportData.slotEntries ?? reportData.slot_entries ?? null,
     status: 'PENDING',
     created_at: reportData.createdAt || new Date().toISOString()
-  };
-  let result = await client
+  });
+
+  const result = await client
     .from('daily_reports')
     .insert([payload])
     .select()
     .single();
 
-  if (result.error && (isMissingColumnError(result.error) || result.error.code === '23514')) {
-    // First try the current column set with the title-case status accepted by
-    // older deployments.  Only then fall back to the legacy column names.
-    if (result.error.code === '23514') {
-      const titleCaseResult = await client
-        .from('daily_reports')
-        .insert([{ ...payload, status: 'Pending' }])
-        .select()
-        .single();
-      if (!titleCaseResult.error) {
-        result = titleCaseResult;
-      }
-    }
-    if (result.error && isMissingColumnError(result.error)) {
-      const legacyPayload = {
-        student_id: reportData.userId || reportData.studentId,
-        ojt_id: reportData.ojtId || reportData.ojt_id,
-        date: reportData.reportDate || reportData.date,
-        tasks_completed: reportData.accomplishments || '',
-        status: 'Submitted',
-        created_at: reportData.createdAt || new Date().toISOString()
-      };
-      result = await client.from('daily_reports').insert([legacyPayload]).select().single();
-    }
-  }
   if (result.error) throw result.error;
   return normalizeReportRow(result.data);
 };
 
+/**
+ * Is the `slot_entries` column present yet?
+ *
+ * A read-only capability probe.  The three-slot report needs one added column,
+ * and the migration that adds it is run by hand in the SQL editor — so the page
+ * has to be able to say "run the migration" instead of failing on submit with a
+ * Postgres error code.  `select('slot_entries')` answers with 42703 when the
+ * column is absent, which is exactly the question being asked.
+ */
+export const reportSlotsReady = async () => {
+  try {
+    const client = requireSupabase();
+    const probe = await client.from('daily_reports').select('slot_entries').limit(1);
+    if (!probe.error) return true;
+    // Only a missing column means "not migrated".  A transient network or RLS
+    // complaint must not block the form, or a blip would look like a schema
+    // problem and the trainee would be told to run SQL they already ran.
+    return !isMissingColumnError(probe.error);
+  } catch (error) {
+    return true;
+  }
+};
+
+/**
+ * File ONE slot of one day's report.
+ *
+ * A day is one row.  The three slots live together in `slot_entries` (jsonb),
+ * so filing the 15:00 slot merges into the row the 11:00 filing created rather
+ * than inserting a second report — which is what lets the administrator read
+ * the whole day as a single consolidated report.
+ *
+ * `accomplishments` is kept in step with the latest filed slot.  Every older
+ * reader still reads that column (the CSV export, the DTR merge, the legacy
+ * admin screen), so leaving it behind would make a filed day look empty
+ * everywhere except the new screen.
+ *
+ * Nothing here is sent anywhere.  The 17:00 filing is what makes the day
+ * visible to the administrator, and that is a read-time rule, not a job.
+ */
+export const submitReportSlot = async ({ userId, studentId, reportDate, slot, entry }) => {
+  const owner = userId || studentId;
+  if (!owner) throw new Error('Missing user for the daily report.');
+  if (!reportDate) throw new Error('Missing report date.');
+  if (!slot) throw new Error('Missing report slot.');
+
+  const client = requireSupabase();
+
+  // Fail loudly and early rather than filing into a day that cannot hold its
+  // slots — without this column the whole three-slot model has nowhere to write.
+  const probe = await client.from('daily_reports').select('slot_entries').limit(1);
+  if (probe.error && isMissingColumnError(probe.error)) {
+    throw new Error(
+      'The `slot_entries` column is missing from the database. Run ADD_REPORT_SLOTS.sql in the Supabase SQL Editor.'
+    );
+  }
+
+  // Find the day's row through the same read path the page already uses, so
+  // the lookup works whatever the service normalised the day into.
+  const mine = await getDailyReports(owner);
+  const existing = mine.find((report) => (report.reportDate || report.date) === reportDate) || null;
+
+  const entries = mergeSlotEntry(readSlotEntries(existing || {}), slot, entry);
+  const accomplishments = summariseForAccomplishments({ slotEntries: entries });
+
+  if (!existing) {
+    return createDailyReport({
+      userId: owner,
+      studentId: owner,
+      reportDate,
+      accomplishments,
+      slotEntries: entries
+    });
+  }
+
+  const { data, error } = await client
+    .from('daily_reports')
+    .update({ slot_entries: entries, accomplishments })
+    .eq('id', existing.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return normalizeReportRow(data);
+};
+
 export const updateDailyReport = async (reportId, updates) => {
   const client = requireSupabase();
-  let result = await client
+  // Same projection as createDailyReport: `status` is the only review field this
+  // deployment stores. The legacy fallback used to write `feedback` /
+  // `reviewed_at`, neither of which exists here, so it turned one 400 into two.
+  const payload = projectDailyReport({
+    status: updates.status,
+    accomplishments: updates.accomplishments,
+    slot_entries: updates.slotEntries ?? updates.slot_entries
+  });
+
+  const result = await client
     .from('daily_reports')
-    .update(toSnakeCase(updates))
+    .update(payload)
     .eq('id', reportId)
     .select()
     .single();
 
-  if (result.error && (isMissingColumnError(result.error) || result.error.code === '23514')) {
-    const legacyUpdates = {
-      status: normalizeStatus(updates.status) === 'APPROVED' ? 'Reviewed' : 'Reviewed',
-      feedback: updates.adminNote || updates.feedback || null,
-      reviewed_at: updates.reviewedAt || new Date().toISOString()
-    };
-    result = await client.from('daily_reports').update(legacyUpdates).eq('id', reportId).select().single();
-  }
   if (result.error) throw result.error;
   return normalizeReportRow(result.data);
 };

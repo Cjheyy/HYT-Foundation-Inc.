@@ -16,6 +16,7 @@ import {
 import {
   getUsers,
   getPrograms,
+  getEvents,
   getOpportunities,
   getApplications,
   getOjtRecords,
@@ -36,6 +37,7 @@ const initialState = {
   currentUser: null,
   users: [],
   programs: [],
+  events: [],
   opportunities: [],
   applications: [],
   requirements: [],
@@ -93,6 +95,20 @@ export function appReducer(state, action) {
       };
     case 'DELETE_PROGRAM':
       return { ...state, programs: state.programs.filter((program) => program.id !== action.payload) };
+
+    case 'SET_EVENTS':
+      return { ...state, events: action.payload };
+    case 'ADD_EVENT':
+      return { ...state, events: [action.payload, ...state.events] };
+    case 'UPDATE_EVENT':
+      return {
+        ...state,
+        events: state.events.map((item) =>
+          item.id === action.payload.id ? { ...item, ...action.payload } : item
+        )
+      };
+    case 'DELETE_EVENT':
+      return { ...state, events: state.events.filter((item) => item.id !== action.payload) };
 
     case 'SET_OPPORTUNITIES':
       return { ...state, opportunities: action.payload };
@@ -238,6 +254,29 @@ export function appReducer(state, action) {
         dataLoading: false,
         ...action.payload
       };
+    case 'LOAD_PUBLIC_DATA':
+      // The five world-readable collections, and ONLY those.
+      //
+      // `loadPublicData` used to dispatch LOAD_DATA, whose payload never carries
+      // the user's own rows — so every realtime posting/announcement broadcast
+      // reset `applications`, `attendance`, `requirements`, `certificates`,
+      // `dailyReports`, `ojtRecords` and `otRequests` to `[]`, and a signed-in
+      // user watched their dashboard empty itself until the next full load.
+      // Merging is safe here precisely because none of these five keys is
+      // user-scoped; LOAD_DATA keeps its replace-everything semantics.
+      //
+      // An absent key means "the fetch failed" — keep what is already on screen
+      // rather than blanking a list over one transient error.
+      return {
+        ...state,
+        programs: action.payload.programs ?? state.programs,
+        events: action.payload.events ?? state.events,
+        opportunities: action.payload.opportunities ?? state.opportunities,
+        announcements: action.payload.announcements ?? state.announcements,
+        settings: action.payload.settings ?? state.settings,
+        loading: false,
+        dataLoading: false
+      };
     default:
       return state;
   }
@@ -299,20 +338,26 @@ export function AppProvider({ children }) {
     // A background refresh (realtime event) must not flip the loading flag:
     // that would flash a skeleton over data the user is already reading.
     if (!silent) dispatch({ type: 'SET_DATA_LOADING', payload: true });
-    const [programs, opportunities, announcements, settings] = await Promise.allSettled([
+    const [programs, events, opportunities, announcements, settings] = await Promise.allSettled([
       getPrograms({ includeInactive: false }),
+      getEvents({ includeInactive: false }),
       getOpportunities({ includeInactive: false }),
       getAnnouncements(),
       getSettings()
     ]);
     if (typeof isStale === 'function' && isStale()) return;
+    // `undefined` (not `[]`) for a rejected fetch: LOAD_PUBLIC_DATA keeps the
+    // rows already on screen for an absent key, so one transient failure during
+    // a realtime refresh cannot empty a list the user is reading.
+    const loaded = (result) => (result.status === 'fulfilled' ? result.value : undefined);
     dispatch({
-      type: 'LOAD_DATA',
+      type: 'LOAD_PUBLIC_DATA',
       payload: {
-        programs: valueFromResult(programs, []),
-        opportunities: valueFromResult(opportunities, []),
-        announcements: valueFromResult(announcements, []),
-        settings: valueFromResult(settings, {})
+        programs: loaded(programs),
+        events: loaded(events),
+        opportunities: loaded(opportunities),
+        announcements: loaded(announcements),
+        settings: loaded(settings)
       }
     });
   }, []);
@@ -336,7 +381,9 @@ export function AppProvider({ children }) {
         getRequirements(),
         getCertificates(),
         getAnnouncements(),
-        getSettings()
+        getSettings(),
+        // Appended (not inserted) so the positional indexes above stay valid.
+        getEvents({ includeInactive: true })
       ]);
       if (stale()) return;
       dispatch({
@@ -352,7 +399,8 @@ export function AppProvider({ children }) {
           requirements: valueFromResult(results[7], []),
           certificates: valueFromResult(results[8], []),
           announcements: valueFromResult(results[9], []),
-          settings: valueFromResult(results[10], {})
+          settings: valueFromResult(results[10], {}),
+          events: valueFromResult(results[11], [])
         }
       });
       return;
@@ -370,7 +418,9 @@ export function AppProvider({ children }) {
       getAnnouncements(),
       getNotifications(user.id),
       getSettings(),
-      getOtRequests(user.id)
+      getOtRequests(user.id),
+      // Appended (not inserted) so the positional indexes above stay valid.
+      getEvents({ includeInactive: false })
     ]);
     if (stale()) return;
     const ojtRecords = valueFromResult(results[3], []).filter((record) => record.studentId === user.id);
@@ -396,7 +446,8 @@ export function AppProvider({ children }) {
         announcements: valueFromResult(results[8], []),
         notifications: valueFromResult(results[9], []),
         settings: valueFromResult(results[10], {}),
-        otRequests: valueFromResult(results[11], [])
+        otRequests: valueFromResult(results[11], []),
+        events: valueFromResult(results[12], [])
       }
     });
   }, []);
@@ -717,12 +768,17 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentUser?.id]);
 
-  // Postings must appear ON TIME, with no manual refresh.  Publishing a program
-  // or an opportunity writes to `programs` / `opportunities`, and every listing
-  // surface (public Programs/Opportunities, student OJT/Opportunities, trainee
-  // dashboard) reads `state.programs` / `state.opportunities`.  Re-running the
+  // Postings must appear ON TIME, with no manual refresh.  Publishing a program,
+  // an event or an opportunity writes to `programs` / `events` /
+  // `opportunities`, and every listing surface (public Programs/Opportunities,
+  // student OJT/Events, trainee Programs/Events, dashboard) reads
+  // `state.programs` / `state.events` / `state.opportunities`.  Re-running the
   // public load on that broadcast keeps all of them in step the moment an admin
   // publishes — silently, so nothing flashes a skeleton.
+  //
+  // `announcements` rides the same broadcast because posting an event now
+  // auto-publishes one: the Announcements page and the header bell's unread
+  // count both have to move without a refresh.
   useEffect(() => {
     if (!supabase) return undefined;
     let mounted = true;
@@ -739,7 +795,9 @@ export function AppProvider({ children }) {
     const channel = supabase
       .channel('public_postings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, scheduleReload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, scheduleReload)
       .subscribe();
 
     return () => {

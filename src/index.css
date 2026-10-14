@@ -239,6 +239,76 @@ input, textarea, select {
   cursor: pointer;
 }
 
+/* --------------------------------------------------------------------------
+   Listing cards — one CTA row, pinned to the bottom.
+
+   A grid stretches every card in a row to the same HEIGHT, but nothing lines
+   their CONTENT up: a card with a two-line title and a card with a one-line
+   title both end wherever their text ends, so their buttons sat at different
+   heights and the row read as broken.
+
+   Making the card a flex column fixes it — the body takes the slack
+   (`flex: 1`) and the button is pushed to the foot (`margin-top: auto`), so
+   every button in a row shares one baseline no matter how long the text is.
+
+   Applied to every browsable posting surface at once:
+     .program-card      public  /programs + /events
+     .opportunity-card  public  /opportunities
+     .card--posting     student /student/events + /student/opportunities
+   `.card--posting` had NO rule anywhere before this, so those two student
+   listings never got the treatment.
+   -------------------------------------------------------------------------- */
+.program-card,
+.opportunity-card,
+.card--posting {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* The body absorbs the leftover space so the CTA stays at the foot. The
+   `-card-description` variant is the student pages' spelling of the same idea. */
+.program-card > .program-description,
+.opportunity-card > .opportunity-description,
+.card--posting > .event-card-description,
+.card--posting > .opportunity-card-description {
+  flex: 1 1 auto;
+}
+
+/* The CTA is the last child, and it is not always a button — a card whose
+   action is unavailable ends in a Badge instead (e.g. "Already Applied"). Auto
+   margin keeps whichever one it is flush with the card's bottom edge, and the
+   :not() guards the reveal wipe, which the DOM also places last. */
+.program-card > *:last-child:not(.reveal-wipe),
+.opportunity-card > *:last-child:not(.reveal-wipe),
+.card--posting > *:last-child:not(.reveal-wipe) {
+  margin-top: auto;
+}
+
+/* A Badge acting as the CTA must occupy the same box as a Button would.
+   Auto margin alone only lines the BOTTOM edges up: a badge is much shorter
+   than a button, so its TOP edge sat high and the row still looked ragged.
+
+   Matching the small button's box exactly (`.btn-sm`: 14px text, 8px vertical
+   padding, so 8 + 21 + 8 ≈ 37px) is what actually closes the gap. The line box
+   is set explicitly rather than left to `normal`, because the badge's own
+   inline `line-height: 16px` would otherwise leave a 3px residue.
+
+   The Badge component writes its padding and line-height as INLINE styles,
+   which outrank a plain class rule — hence !important. This is the one place
+   that is legitimate: inline values are the badge's identity as a small status
+   lozenge, and here it is being used as a full-width action instead. */
+.card--posting > .badge:last-child,
+.program-card > .badge:last-child,
+.opportunity-card > .badge:last-child {
+  align-self: stretch;
+  justify-content: center;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  font-size: 14px !important;
+  line-height: 21px !important;
+}
+
 .card-clickable:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);

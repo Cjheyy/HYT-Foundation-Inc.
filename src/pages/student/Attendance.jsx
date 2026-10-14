@@ -53,15 +53,31 @@ export const hasApprovedOjtPosting = (applications = [], userId = null) => (appl
   return ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(normalizeStatus(app.status));
 });
 
+// Two SEPARATE clock windows, defined once.
+//   In : 09:00 -> 09:10   (9 AM, with a 10-minute grace)
+//   Out: 18:00 -> 18:10   (6 PM, with a 10-minute grace)
+// These are not one continuous span — a clock-in at 3 PM is refused.
+// The database enforces the same two windows in request_clock_in and
+// request_clock_out, so this is the friendly half of the rule and not the
+// authority: changing it here alone will not open a window.
+const CLOCK_IN_OPENS_MINUTES = 9 * 60;          // 09:00
+const CLOCK_IN_CLOSES_MINUTES = 9 * 60 + 10;    // 09:10
+const CLOCK_OUT_OPENS_MINUTES = 18 * 60;        // 18:00
+const CLOCK_OUT_CLOSES_MINUTES = 18 * 60 + 10;  // 18:10
+
 const getWindowState = () => {
   const now = new Date();
   const minutes = now.getHours() * 60 + now.getMinutes();
   return {
     minutes,
-    isOpen: minutes >= 8 * 60 + 55 && minutes <= 18 * 60 + 5,
-    message: minutes < 8 * 60 + 55
-      ? 'Attendance window opens at 8:55 AM'
-      : 'Attendance window closed at 6:05 PM'
+    isClockInOpen: minutes >= CLOCK_IN_OPENS_MINUTES && minutes <= CLOCK_IN_CLOSES_MINUTES,
+    isClockOutOpen: minutes >= CLOCK_OUT_OPENS_MINUTES && minutes <= CLOCK_OUT_CLOSES_MINUTES,
+    clockInMessage: minutes < CLOCK_IN_OPENS_MINUTES
+      ? 'The clock-in window opens at 9:00 AM.'
+      : 'The clock-in window closed at 9:10 AM. You cannot clock in for today.',
+    clockOutMessage: minutes < CLOCK_OUT_OPENS_MINUTES
+      ? 'The clock-out window opens at 6:00 PM.'
+      : 'The clock-out window closed at 6:10 PM. Today will be recorded as void.'
   };
 };
 
@@ -262,8 +278,8 @@ export function AttendanceNew() {
       toast.warning('Please apply for an OJT Posting and wait for Admin acceptance before clocking in.');
       return;
     }
-    if (!windowState.isOpen) {
-      toast.error(windowState.message);
+    if (!windowState.isClockInOpen) {
+      toast.error(windowState.clockInMessage);
       return;
     }
     setShowClockInConfirm(true);
@@ -312,6 +328,10 @@ export function AttendanceNew() {
 
   const handleClockOut = () => {
     if (!activeClock) return;
+    if (!windowState.isClockOutOpen) {
+      toast.error(windowState.clockOutMessage);
+      return;
+    }
     setShowClockOutConfirm(true);
   };
 
@@ -478,10 +498,16 @@ export function AttendanceNew() {
           </div>
         )}
 
-        {!windowState.isOpen && (
+        {(!windowState.isClockInOpen || !windowState.isClockOutOpen) && (
           <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
-            <strong>{windowState.message}</strong>
-            <p style={{ margin: '8px 0 0', fontSize: '14px' }}>Attendance requests are accepted between 8:55 AM and 6:05 PM.</p>
+            <strong>Attendance windows</strong>
+            <p style={{ margin: '8px 0 0', fontSize: '14px' }}>
+              Clock in between 9:00 AM and 9:10 AM, and clock out between 6:00 PM and 6:10 PM.
+              A day with no clock-out is recorded as void.
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: '14px' }}>
+              {activeClock ? windowState.clockOutMessage : windowState.clockInMessage}
+            </p>
           </div>
         )}
 
@@ -599,9 +625,9 @@ export function AttendanceNew() {
                   <span>{terms.attendanceLockedCopy}</span>
                 </div>
               ) : !todayAttendance ? (
-                <span className="today-cta"><Button onClick={handleClockIn} disabled={actionLoading || !windowState.isOpen} size="lg">Clock In</Button></span>
+                <span className="today-cta"><Button onClick={handleClockIn} disabled={actionLoading || !windowState.isClockInOpen} size="lg">Clock In</Button></span>
               ) : activeClock ? (
-                <span className="today-cta"><Button onClick={handleClockOut} disabled={actionLoading} variant="success" size="lg">Clock Out</Button></span>
+                <span className="today-cta"><Button onClick={handleClockOut} disabled={actionLoading || !windowState.isClockOutOpen} variant="success" size="lg">Clock Out</Button></span>
               ) : pendingClockIn || pendingClockOut ? (
                 <div className="attendance-locked-message">
                   <strong>Timer waiting for Admin approval</strong>
@@ -621,10 +647,19 @@ export function AttendanceNew() {
               <h2 className="card-title">{terms.hoursTitle}</h2>
               <span className="card-idx">02</span>
             </div>
+            {/* A Trainee is measured by the hours they have banked, not by a
+                contractual target — so the Required / Remaining breakdown is
+                hidden for that portal and only the approved milestone (plus
+                the bar below) is shown.  The OJT/Intern portal still needs all
+                three, so this stays role-aware rather than deleting them. */}
             <div className="progress-stats">
-              <div className="stat-item"><span className="stat-label">Required Hours:</span><span className="stat-value">{progress.required.toFixed(2)} hrs</span></div>
+              {!terms.isTrainee && (
+                <div className="stat-item"><span className="stat-label">Required Hours:</span><span className="stat-value">{progress.required.toFixed(2)} hrs</span></div>
+              )}
               <div className="stat-item"><span className="stat-label">Approved Hours:</span><span className="stat-value success">{progress.rendered.toFixed(4)} hrs</span></div>
-              <div className="stat-item"><span className="stat-label">Remaining Hours:</span><span className="stat-value warning">{progress.remaining.toFixed(4)} hrs</span></div>
+              {!terms.isTrainee && (
+                <div className="stat-item"><span className="stat-label">Remaining Hours:</span><span className="stat-value warning">{progress.remaining.toFixed(4)} hrs</span></div>
+              )}
             </div>
             <div className="progress-line">
               <span className="progress-line-label">Progress</span>

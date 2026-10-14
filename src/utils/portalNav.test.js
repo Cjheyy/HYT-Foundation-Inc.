@@ -11,7 +11,7 @@ describe('resolveActiveNavPath', () => {
     const paths = [
       '/student',
       '/student/dashboard',
-      '/student/programs',
+      '/student/events',
       '/student/opportunities',
       '/student/applications',
       '/student/requirements',
@@ -72,14 +72,51 @@ describe('nav models', () => {
   });
 });
 
+describe('the two portals show different catalogues', () => {
+  test('an OJT/Intern gets OJT Postings and Events, never the programmes', () => {
+    const paths = STUDENT_NAV.map((item) => item.path);
+    expect(paths).toContain('/student/opportunities');
+    expect(paths).toContain('/student/events');
+    // Programmes belong to the Trainee portal — the OJT sidebar must not link
+    // there, or the role split is only half done.
+    expect(paths).not.toContain('/student/programs');
+  });
+
+  test('a Trainee gets Programs and Events, never the OJT postings', () => {
+    const paths = TRAINEE_NAV.map((item) => item.path);
+    expect(paths).toContain('/trainee/programs');
+    expect(paths).toContain('/trainee/events');
+    expect(paths).not.toContain('/trainee/opportunities');
+  });
+
+  test('the shared "Programs & Events" label is gone from both portals', () => {
+    // Programs and Events are separate listings now, so one entry can no longer
+    // stand for both.
+    [...STUDENT_NAV, ...TRAINEE_NAV].forEach((item) => {
+      expect(item.label).not.toBe('Programs & Events');
+    });
+  });
+
+  test('the Trainee programme entry is labelled "Programs Available"', () => {
+    const entry = TRAINEE_NAV.find((item) => item.path === '/trainee/programs');
+    expect(entry?.label).toBe('Programs Available');
+  });
+
+  test('every Events entry carries an icon the sidebar can render', () => {
+    [...STUDENT_NAV, ...TRAINEE_NAV]
+      .filter((item) => item.path.endsWith('/events'))
+      .forEach((item) => expect(item.icon).toBeTruthy());
+  });
+});
+
 describe('groupNavItems', () => {
   test('groups student nav into Main / My Work / Results', () => {
     const groups = groupNavItems(STUDENT_NAV);
     expect(groups.map((group) => group.name)).toEqual(['Main', 'My Work', 'Results']);
     expect(groups[0].items.map((item) => item.label)).toEqual([
       'Dashboard',
-      'Programs & Events',
-      'OJT Postings'
+      'OJT Postings',
+      'Events Postings'
     ]);
   });
 

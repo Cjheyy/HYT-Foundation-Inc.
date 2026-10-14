@@ -91,26 +91,44 @@ export const isApplicationActive = (application) =>
 /**
  * Human title for an application's listing.
  *
- * Application rows carry only the foreign key (`opportunityId` / `programId`) —
- * there is no title column and no `opportunityTitle` field, so reading one
- * straight off the row always fell back to the generic label.  Resolve it from
- * the loaded listings instead.
+ * Application rows carry only the foreign key (`opportunityId` / `programId` /
+ * `eventId`) — there is no title column and no `opportunityTitle` field, so
+ * reading one straight off the row always fell back to the generic label.
+ * Resolve it from the loaded listings instead.
  */
-export function getApplicationListingTitle(application, { opportunities = [], programs = [] } = {}) {
+export function getApplicationListingTitle(application, { opportunities = [], programs = [], events = [] } = {}) {
   const opportunityId = application?.opportunityId || application?.opportunity_id || null;
   const programId = application?.programId || application?.program_id || null;
-  const id = opportunityId || programId;
-  const source = opportunityId ? opportunities : programs;
+  const eventId = application?.eventId || application?.event_id || null;
+  const id = opportunityId || programId || eventId;
+  const source = opportunityId ? opportunities : programId ? programs : events;
   const match = (Array.isArray(source) ? source : []).find((item) => item && item.id === id);
 
   if (match?.title) return match.title;
   if (opportunityId) return 'OJT Posting';
   if (programId) return 'Program';
+  if (eventId) return 'Event';
   return 'Application';
 }
 
-/** Advance a date by N working days (Mon-Fri), leaving weekends out. */
-export function addWorkingDays(from, days) {
+/**
+ * Short noun for an application's listing kind.
+ *
+ * Used by the dashboards' "more info" dialog, which previously read
+ * `opportunityId ? 'OJT Posting' : 'Training Program'` — so an EVENT
+ * application was mislabelled a training programme.
+ */
+export function getApplicationListingTypeLabel(application) {
+  const opportunityId = application?.opportunityId || application?.opportunity_id || null;
+  const programId = application?.programId || application?.program_id || null;
+  const eventId = application?.eventId || application?.event_id || null;
+  if (opportunityId) return 'OJT Posting';
+  if (programId) return 'Training Program';
+  if (eventId) return 'Event';
+  return 'Application';
+}
+
+/** Advance a date by N working days (Mon-Fri), leaving weekends out. */export function addWorkingDays(from, days) {
   const start = toValidDate(from);
   const count = Math.ceil(Number(days));
   if (!start || !Number.isFinite(count) || count <= 0) return null;
@@ -195,11 +213,13 @@ export function deriveExperienceEntries({
   applications = [],
   programs = [],
   opportunities = [],
+  events = [],
   currentUser = null
 } = {}) {
   const ownerId = currentUser?.id || null;
   const programList = Array.isArray(programs) ? programs : [];
   const opportunityList = Array.isArray(opportunities) ? opportunities : [];
+  const eventList = Array.isArray(events) ? events : [];
 
   return (Array.isArray(applications) ? applications : [])
     .filter((application) => {
@@ -211,11 +231,14 @@ export function deriveExperienceEntries({
     .map((application) => {
       const opportunityId = application.opportunityId || application.opportunity_id || null;
       const programId = application.programId || application.program_id || null;
+      const eventId = application.eventId || application.event_id || null;
       const listing = opportunityId
         ? opportunityList.find((item) => item.id === opportunityId) || null
         : programId
           ? programList.find((item) => item.id === programId) || null
-          : null;
+          : eventId
+            ? eventList.find((item) => item.id === eventId) || null
+            : null;
 
       const isComplete = isApplicationCompleted(application);
 
@@ -223,10 +246,10 @@ export function deriveExperienceEntries({
         id: application.id,
         application,
         listing,
-        type: opportunityId ? 'opportunity' : 'program',
+        type: opportunityId ? 'opportunity' : programId ? 'program' : eventId ? 'event' : 'program',
         title:
           listing?.title ||
-          (opportunityId ? 'OJT Posting' : programId ? 'Program' : 'Experience'),
+          (opportunityId ? 'OJT Posting' : programId ? 'Program' : eventId ? 'Event' : 'Experience'),
         organization:
           listing?.organization ||
           listing?.company ||

@@ -51,7 +51,7 @@ describe('buildAttentionItems', () => {
             userId: USER,
             status: 'Rejected',
             reportDate: '2026-10-28',
-            adminNote: 'Kulang ang detalye'
+            adminNote: 'Incomplete details'
           }
         ]
       }),
@@ -59,7 +59,7 @@ describe('buildAttentionItems', () => {
     });
 
     expect(items[0].tone).toBe('danger');
-    expect(items[0].detail).toBe('Kulang ang detalye');
+    expect(items[0].detail).toBe('Incomplete details');
     expect(items[0].to).toBe('/student/daily-reports');
   });
 

@@ -112,7 +112,9 @@ export function Opportunities() {
                         <span key={idx} className="thrust-tag">{thrust}</span>
                       ))}
                     </div>
-                    <Button size="sm" style={{ width: '100%', marginTop: '16px' }}>
+                    {/* Pinned by the shared flex-column card rule, so the row
+                        of cards shows one button baseline. */}
+                    <Button size="sm" style={{ width: '100%' }}>
                       View Details & Apply
                     </Button>
                   </Card>

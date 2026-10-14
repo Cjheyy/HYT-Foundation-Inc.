@@ -8,6 +8,8 @@ import { Modal } from '../../components/Modal';
 import { Icon } from '../../components/icons';
 import { getApplicationsByStudent } from '../../services/applicationService';
 import { getOJTByStudent } from '../../services/ojtService';
+import { getEventSlotState, isEventActive } from '../../services/supabaseService';
+import { formatEventWindow } from './Events';
 import {
   formatDate,
   formatScheduleRange,
@@ -19,6 +21,7 @@ import {
   deriveExperienceEntries,
   computeExperienceSchedule,
   getApplicationListingTitle,
+  getApplicationListingTypeLabel,
   isApplicationActive
 } from '../../utils/experience';
 import './Dashboard.css';
@@ -35,7 +38,7 @@ const formatHours = (value) => {
 
 export function StudentDashboard() {
   const { state } = useApp();
-  const { currentUser, applications, ojtRecords, announcements, requirements, programs, opportunities } = state;
+  const { currentUser, applications, ojtRecords, announcements, requirements, programs, opportunities, events } = state;
   const navigate = useNavigate();
 
   // "OJT / Experience" for an OJT/Intern, plain "Experience" for a Trainee.
@@ -57,7 +60,7 @@ export function StudentDashboard() {
   const [selectedApplication, setSelectedApplication] = useState(null);
 
   const listingTitle = (app) =>
-    getApplicationListingTitle(app, { opportunities, programs });
+    getApplicationListingTitle(app, { opportunities, programs, events });
 
   const myOJT = getOJTByStudent(ojtRecords, currentUser?.id);
   const myRequirements = requirements.filter(req => req.studentId === currentUser?.id);
@@ -74,6 +77,7 @@ export function StudentDashboard() {
       applications,
       programs,
       opportunities,
+      events,
       currentUser
     });
 
@@ -89,7 +93,7 @@ export function StudentDashboard() {
         completedAt: myOJT?.completionDate || entry.completedAt
       })
     }));
-  }, [applications, programs, opportunities, currentUser, myOJT]);
+  }, [applications, programs, opportunities, events, currentUser, myOJT]);
 
   /** Rendered-vs-required hours, shared by the experience card and its bar. */
   const progress = useMemo(() => {
@@ -99,6 +103,19 @@ export function StudentDashboard() {
     const percent = required > 0 ? Math.min(100, (rendered / required) * 100) : 0;
     return { required, rendered, remaining, percent };
   }, [currentUser, myOJT]);
+
+  /**
+   * The published events this portal can still join.  RLS already restricts a
+   * non-admin session to PUBLISHED rows, but the status test is repeated here
+   * so the dashboard, the Events page and the landing page cannot disagree
+   * about what "available" means.
+   */
+  const availableEvents = useMemo(
+    () => (events || []).filter(
+      (item) => String(item.status).toLowerCase() === 'published' && isEventActive(item)
+    ),
+    [events]
+  );
 
   const journeyStages = [
     { name: 'Discover', active: true, completed: true },
@@ -167,6 +184,65 @@ export function StudentDashboard() {
               </Button>
             </div>
           )}
+        </Card>
+
+        {/* Events — the published events this portal can still join. Reuses the
+            Active Application card's list markup so no new design is added. */}
+        <Card className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">{terms.eventsLabel}</h3>
+            {availableEvents.length > 0 && (
+              <span className="active-app-count">{availableEvents.length}</span>
+            )}
+          </div>
+          <div className="card-content">
+            {availableEvents.length > 0 ? (
+              <>
+                <ul className="active-app-list">
+                  {availableEvents.map((event) => {
+                    const slots = getEventSlotState(event);
+                    return (
+                      <li key={event.id}>
+                        <button
+                          type="button"
+                          className="active-app-row"
+                          onClick={() => navigate('/student/events')}
+                          aria-label={`More info about ${event.title}`}
+                        >
+                          <span className="active-app-main">
+                            <span className="active-app-title">{event.title}</span>
+                            <span className="active-app-date">{formatEventWindow(event)}</span>
+                          </span>
+                          <Badge color={slots.isFull ? 'red' : 'green'}>
+                            {slots.isFull ? 'Full' : `${slots.available} slots`}
+                          </Badge>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/student/events')}
+                  style={{ marginTop: '12px', width: '100%' }}
+                >
+                  Browse {terms.eventsLabel}
+                </Button>
+              </>
+            ) : (
+              <div className="empty-card-content">
+                <p className="empty-text">No events posted yet</p>
+                <p className="empty-hint">
+                  Only published events appear here — a draft stays hidden until an
+                  administrator publishes it
+                </p>
+                <Button size="sm" onClick={() => navigate('/student/events')}>
+                  Browse {terms.eventsLabel}
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Experience — every approved application lands here */}
@@ -436,7 +512,7 @@ export function StudentDashboard() {
             <div className="application-detail-row">
               <span className="application-detail-label">Type</span>
               <span className="application-detail-value">
-                {selectedApplication.opportunityId ? 'OJT Posting' : 'Training Program'}
+                {getApplicationListingTypeLabel(selectedApplication)}
               </span>
             </div>
             <div className="application-detail-row">

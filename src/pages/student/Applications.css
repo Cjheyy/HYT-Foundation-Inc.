@@ -57,26 +57,49 @@
   color: var(--muted-text);
 }
 
+/* Equal-sized tiles instead of one full-width row per application.  A card
+   holding a title, a date and a badge stretched across the whole viewport read
+   as a large, mostly empty box; `auto-fill` keeps the tiles the same width and
+   the default `align-items: stretch` keeps the ones sharing a row the same
+   height, so they stay "pantay pantay" while being much smaller.  On a narrow
+   screen this collapses back to a single column. */
 .applications-list {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-items: stretch;
+  gap: 14px;
+}
+
+/* The base `.card` padding is sized for page-level cards; these tiles are
+   small, so the same 24px reads as dead space. */
+.applications-list .card {
+  padding: 18px 20px;
 }
 
 .application-card-header {
   display: flex;
   justify-content: space-between;
   align-items: start;
+  gap: 12px;
+  /* No trailing gap when the header is the whole card — the accepted/declined
+     notice boxes add their own top margin when they are present. */
+  margin-bottom: 0;
+}
+
+.application-card-header:not(:last-child) {
   margin-bottom: 12px;
 }
 
 .application-card-info {
   flex: 1;
+  min-width: 0;
 }
 
 .application-card-title {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .application-card-date {

@@ -1,4 +1,4 @@
-import { getFirstName, formatRelativeTime, toLocalISODate, formatScheduleRange } from './helpers';
+import { getFirstName, formatRelativeTime, toLocalISODate, toIsoInstant, formatScheduleRange } from './helpers';
 
 describe('toLocalISODate', () => {
   test('formats a Date using LOCAL calendar parts', () => {
@@ -26,6 +26,52 @@ describe('toLocalISODate', () => {
   test('returns empty string for junk so the caller keeps its "--" fallback', () => {
     [undefined, null, '', 'not-a-date', NaN].forEach((value) => {
       expect(toLocalISODate(value)).toBe('');
+    });
+  });
+});
+
+describe('toIsoInstant', () => {
+  // A `datetime-local` value is the admin's WALL-CLOCK time.  Handed raw to a
+  // timestamptz column, POSTGRES picks the zone — and Supabase's session is UTC
+  // — so 09:00 Manila would come back as 17:00 Manila.  These assertions are
+  // deliberately round-trip rather than string-equality: the whole point is
+  // that the value means the same LOCAL time, whatever zone the test box is in.
+  test('a datetime-local value means the same local time on the way back', () => {
+    const instant = toIsoInstant('2026-10-20T09:00');
+    const back = new Date(instant);
+    expect(back.getFullYear()).toBe(2026);
+    expect(back.getMonth()).toBe(9);
+    expect(back.getDate()).toBe(20);
+    expect(back.getHours()).toBe(9);
+    expect(back.getMinutes()).toBe(0);
+  });
+
+  test('an evening time does not roll over to the next day', () => {
+    const back = new Date(toIsoInstant('2026-10-20T23:30'));
+    expect(back.getDate()).toBe(20);
+    expect(back.getHours()).toBe(23);
+  });
+
+  test('a midnight start stays on its own date', () => {
+    const back = new Date(toIsoInstant('2026-12-31T00:00'));
+    expect(back.getDate()).toBe(31);
+    expect(back.getHours()).toBe(0);
+  });
+
+  test('produces a real UTC instant, not a naive string', () => {
+    // The bug this guards: passing '2026-10-20T09:00' straight through, which
+    // Postgres would read as 09:00 in the SESSION zone.
+    expect(toIsoInstant('2026-10-20T09:00')).toMatch(/Z$/);
+  });
+
+  test('accepts a Date as well as a string', () => {
+    const date = new Date(2026, 9, 20, 9, 0);
+    expect(toIsoInstant(date)).toBe(date.toISOString());
+  });
+
+  test('returns undefined for junk so the column keeps its default', () => {
+    [undefined, null, '', 'not-a-date'].forEach((value) => {
+      expect(toIsoInstant(value)).toBeUndefined();
     });
   });
 });

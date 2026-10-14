@@ -28,6 +28,25 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md', c
   const restoreFocusRef = useRef(null);
   const titleId = useId();
 
+  // `onClose` is held in a ref rather than used as an effect dependency.
+  //
+  // Every caller in this app passes it as an inline arrow — `() => closeModal()`
+  // and friends — so its identity changes on every parent render.  With
+  // `onClose` in the dependency array the focus trap below re-ran on every one
+  // of those renders, and each re-run moved focus back to the first control in
+  // the dialog.  For a controlled field that means the field loses focus after
+  // a single keystroke: the create-forms for OJT postings, programs and events
+  // could only be filled in one character per click.
+  //
+  // The ref keeps the latest handler reachable from the keydown listener
+  // without making it a dependency, so the trap now runs only when `isOpen`
+  // actually changes.  Assigning in an effect (rather than during render) keeps
+  // this safe under StrictMode's double render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -53,8 +72,16 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md', c
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
+        // A nested popover that owns its own Escape gets first refusal.  The
+        // date picker marks itself with `data-escape-owns` only while its
+        // calendar is open, so pressing Escape with a calendar showing
+        // dismisses the calendar — tearing down the whole form (and everything
+        // typed into it) to close a date picker would be the wrong answer.
+        if (event.target instanceof Element && event.target.closest('[data-escape-owns]')) {
+          return;
+        }
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -83,7 +110,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md', c
         restore.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

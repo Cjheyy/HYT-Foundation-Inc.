@@ -16,6 +16,7 @@ import { GalleryModal } from '../../components/GalleryModal';
 import { Modal } from '../../components/Modal';
 import { galleryItems } from '../../data/galleryData';
 import { isEventActive } from '../../services/supabaseService';
+import { formatEventWindow } from '../student/Events';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -28,7 +29,14 @@ import './HomeMotion.css';
 // The hero headline is rendered word-by-word so each word can rise out of its
 // own clip box. Kept as data rather than inline spans so the stagger is derived
 // from the index and the wording stays in one place.
-const HERO_WORDS = ['Bringing', 'the', 'Next', 'Generation', 'Forward'];
+//
+// The LAST word is a rotating slot rather than a static word: it flips through
+// HERO_ROTATE_WORDS in 3D. The static words keep their original stagger, and the
+// slot takes the fifth word's position, so the reveal is unchanged for the first
+// four words. The sentence still exists in full on the H1's aria-label (and in
+// the footer tagline), so nothing depends on the rotating word for meaning.
+const HERO_WORDS = ['Bringing', 'the', 'Next', 'Generation'];
+const HERO_ROTATE_WORDS = ['Forward', 'Ahead', 'Upward', 'Beyond'];
 
 const FEATURES = [
   {
@@ -106,7 +114,7 @@ const pad2 = (n) => String(n + 1).padStart(2, '0');
 export function Home() {
   const navigate = useNavigate();
   const { state } = useApp();
-  const { opportunities, programs } = state;
+  const { opportunities, programs, events } = state;
   const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
@@ -125,6 +133,12 @@ export function Home() {
 
   const publishedPrograms = (programs || [])
     .filter((program) => String(program.status).toLowerCase() === 'published' && isEventActive(program))
+    .slice(0, 3);
+
+  // Events are a separate listing kind, so they get their own rail rather than
+  // sharing the programmes one — see the two sections below.
+  const publishedEvents = (events || [])
+    .filter((event) => String(event.status).toLowerCase() === 'published' && isEventActive(event))
     .slice(0, 3);
 
   const handleSlideClick = (item) => {
@@ -257,34 +271,71 @@ export function Home() {
     <div className="home-page" ref={pageRef}>
       {/* Hero Section */}
       <section className="hero">
-        {/* Decorative layers — aurora blobs behind, cursor spotlight above. */}
+        {/* Decorative layers, painted back to front: aurora blobs, then the four
+            added light layers (stage-light, ribbons, horizon), then the gold
+            pool behind the accent word, then the ring pulses and the cursor
+            spotlight. The aurora and the three light layers are all additive
+            `screen`, so their relative order does not change the result; only
+            the glow, the rings and the spotlight use normal blending, and those
+            are stacked explicitly in HomeMotion.css. */}
         <div className="hero-aurora" aria-hidden="true">
           <span className="blob blob-1" />
           <span className="blob blob-2" />
           <span className="blob blob-3" />
         </div>
+        <div className="hero-beam" aria-hidden="true" />
+        <div className="hero-ribbons" aria-hidden="true">
+          <span />
+          <span />
+        </div>
+        <div className="hero-horizon" aria-hidden="true" />
         <div className="hero-spot" aria-hidden="true" />
 
         <div className="container">
           <div className="hero-content">
-            <h1 className="hero-title">
+            {/* The whole sentence lives on the H1's aria-label and every
+                rendered word is aria-hidden, so assistive tech reads
+                "Bringing the Next Generation Forward" once instead of hearing
+                the rotating word churn through four values. */}
+            <h1 className="hero-title" aria-label="Bringing the Next Generation Forward">
               {HERO_WORDS.map((word, index) => (
                 <span
                   key={word}
                   className="hero-word"
                   style={{ '--wd': `${0.06 + index * 0.08}s` }}
                 >
-                  <span
-                    className={
-                      index === HERO_WORDS.length - 1
-                        ? 'hero-word-inner is-accent'
-                        : 'hero-word-inner'
-                    }
-                  >
+                  <span className="hero-word-inner" aria-hidden="true">
                     {word}
                   </span>
                 </span>
               ))}
+              {/* The rotating slot. Its box is the accent word's box, which is
+                  what lets the ring pulses anchor to it exactly: the rings are a
+                  SIBLING of the clip box, not a descendant, because the clip's
+                  `overflow: hidden` would otherwise slice them in half. */}
+              <span className="hero-rot" aria-hidden="true">
+                <span className="hero-rot-clip">
+                  <span className="hero-rot-inner">
+                    {/* The sizer is the widest of the four words and stays
+                        invisible: it holds the slot's width, so the H1 never
+                        reflows as the words flip. */}
+                    <span className="hero-rot-sizer is-accent">Forward</span>
+                    {HERO_ROTATE_WORDS.map((word, index) => (
+                      <span
+                        key={word}
+                        className="is-accent"
+                        style={{ '--i': `${index}` }}
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                <span className="hero-rings" aria-hidden="true">
+                  <span />
+                  <span />
+                </span>
+              </span>
             </h1>
             <p className="hero-subtitle">
               Discover opportunities, build experience, develop your skills, and grow with HYT Foundation
@@ -486,12 +537,13 @@ export function Home() {
         </section>
       )}
 
-      {/* Featured Trainee Programs & Events */}
+      {/* Featured Trainee Programs — its own rail now that programmes and
+          events are separate listings. */}
       {publishedPrograms.length > 0 && (
         <section className="section bg-white">
           <div className="container">
             <div className="section-header" data-reveal>
-              <h2 className="section-title">Featured Trainee Programs &amp; Events</h2>
+              <h2 className="section-title">Featured Trainee Programs</h2>
               <Link to="/programs">
                 <Button variant="ghost">View All →</Button>
               </Link>
@@ -515,6 +567,43 @@ export function Home() {
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                     <Button size="sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); navigate(`/programs/${program.id}`); }}>View Details</Button>
                     <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate(`/programs/${program.id}`); }}>Apply Now</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Events */}
+      {publishedEvents.length > 0 && (
+        <section className="section bg-white">
+          <div className="container">
+            <div className="section-header" data-reveal>
+              <h2 className="section-title">Featured Events</h2>
+              <Link to="/events">
+                <Button variant="ghost">View All →</Button>
+              </Link>
+            </div>
+            <div className="grid grid-3">
+              {publishedEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  clickable
+                  data-reveal
+                  className="reveal-card"
+                  onClick={() => navigate('/events')}
+                >
+                  <span className="reveal-wipe" aria-hidden="true" />
+                  <h3 className="card-title">{event.title}</h3>
+                  <p className="card-description">{String(event.description || '').substring(0, 100)}...</p>
+                  <div className="card-meta">
+                    <span className="meta-item"><Icon name="pin" size={14} /> {event.location}</span>
+                    <span className="meta-item"><Icon name="calendar" size={14} /> {formatEventWindow(event)}</span>
+                  </div>
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                    <Button size="sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); navigate('/events'); }}>View Details</Button>
+                    <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate('/events'); }}>Apply Now</Button>
                   </div>
                 </Card>
               ))}

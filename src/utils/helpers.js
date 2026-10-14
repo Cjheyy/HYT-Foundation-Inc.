@@ -205,6 +205,21 @@ export const PROGRAM_CATEGORIES = [
 
 export const PROGRAM_SLOT_OPTIONS = [5, 10, 20, 50, 100];
 
+/**
+ * Categories an EVENT may carry.
+ *
+ * Kept separate from PROGRAM_CATEGORIES: a programme is a Dream Academy unit's
+ * ongoing service, while an event is a one-off activity.  "Leadership" is
+ * included because a live row already uses it.
+ */
+export const EVENT_CATEGORIES = [
+  'Leadership',
+  'Community Outreach',
+  'Skill Building',
+  'Technical Training',
+  'General'
+];
+
 export const CERTIFICATE_TYPES = [
   'OJT Completion with Hours',
   'Trainee Skills Completion'
@@ -240,6 +255,27 @@ export function toLocalISODate(value) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * A `datetime-local` value (`YYYY-MM-DDTHH:mm`, in the ADMIN's local time) as a
+ * real instant, ready for a `timestamptz` column.
+ *
+ * The sibling of `toLocalISODate` and the same GMT+8 trap.  Handing
+ * `'2026-10-20T09:00'` straight to Postgres lets POSTGRES pick the zone, and
+ * Supabase's session runs in UTC — so 09:00 Manila would be stored as 09:00Z
+ * and read back as 17:00.  `new Date()` treats a date-TIME string with no
+ * offset as LOCAL (only a date-ONLY string is UTC), so `.toISOString()` yields
+ * the correct instant.
+ *
+ * Returns undefined for junk, so the caller drops the key instead of writing an
+ * invalid timestamp.
+ */
+export function toIsoInstant(value) {
+  if (value === null || value === undefined || value === '') return undefined;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
 }
 
 export function formatScheduleRange(startISO, endISO) {

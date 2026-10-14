@@ -7,7 +7,8 @@
 
    Contents:
      0. Design tokens — easing + ink scale
-     1. Hero — aurora blobs, cursor spotlight, word mask-reveal, magnetic
+     1. Hero — aurora blobs, cursor spotlight, word mask-reveal, the rotating
+        accent word, four added light layers, magnetic buttons
      2. "What We Do" — pinned horizontal scroll
      3. Scroll reveal — the page-wide [data-reveal] system
      4. 8 HYT Thrusts — the floor's CTA (the rail's motion is gone with it)
@@ -162,12 +163,310 @@
   color: var(--yellow, #F3DB6E);
 }
 
+/* --- Rotating accent word --------------------------------------------------
+   The last word of the H1 is a slot rather than a static word: it flips through
+   Forward -> Ahead -> Upward -> Beyond in 3D, one word at a time, on an 11.2s
+   cycle with a 2.8s stagger. The slot's width is held by an invisible sizer, so
+   the H1 keeps its line count no matter which word is showing.
+
+   Three nested boxes, and each one is doing a job:
+     .hero-rot      the slot's own box. Carries .hero-word's box model EXCEPT the
+                    clip, and is the containing block for the ring pulses.
+     .hero-rot-clip the clip box that makes the change read as a slot.
+     .hero-rot-inner the positioned parent the four words sit in.
+   The clip has to be its own element: `overflow: hidden` on .hero-rot would
+   also clip .hero-rings, which is a sibling of the clip precisely so it escapes.
+
+   The accent colour has to be re-declared here. The rotating words are NOT
+   .hero-word-inner, so `.hero-word-inner.is-accent` above never reaches them —
+   without the rule below they silently render white and the gold accent that
+   the whole headline hangs on just disappears. */
+
+.hero-rot {
+  position: relative;
+  display: inline-block;
+  vertical-align: bottom;
+  margin-right: 0.24em;
+  perspective: 620px;
+}
+
+/* Mirrors .hero-word: `padding-bottom` + negative `margin-bottom` keep
+   descenders (the "y" in Beyond) from being clipped.
+   `vertical-align: bottom` is load-bearing, not cosmetic: an inline-block with
+   `overflow: hidden` uses its BOTTOM MARGIN EDGE as its baseline, so with the
+   default `baseline` alignment the outer .hero-rot line box also reserved the
+   56px strut's descender space below it — measured, that made the H1 11.19px
+   taller than the same slot built from a single .hero-word. */
+.hero-rot-clip {
+  display: inline-block;
+  vertical-align: bottom;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+.hero-rot-sizer {
+  visibility: hidden;
+}
+
+.hero-rot-inner {
+  position: relative;
+  display: inline-block;
+}
+
+/* `:not(.hero-rot-sizer)` is load-bearing. Without it the sizer is absolutely
+   positioned too, contributes no width, and the slot collapses to 0 — which
+   quietly pulls the H1 from two lines onto one. */
+.hero-rot-inner > span:not(.hero-rot-sizer) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  transform-origin: 50% 100%;
+  backface-visibility: hidden;
+  opacity: 0;
+  animation: rotWord 11.2s var(--e-out) infinite;
+  animation-delay: calc(var(--i) * 2.8s);
+}
+
+@keyframes rotWord {
+  0%   { opacity: 0; transform: rotateX(-92deg) translateY(12%); }
+  2.5% { opacity: 1; transform: rotateX(0deg) translateY(0); }
+  22%  { opacity: 1; transform: rotateX(0deg) translateY(0); }
+  25%  { opacity: 0; transform: rotateX(92deg) translateY(-12%); }
+  100% { opacity: 0; transform: rotateX(92deg) translateY(-12%); }
+}
+
+.hero-rot-inner > span.is-accent {
+  color: var(--yellow, #F3DB6E);
+}
+
+/* The gold pool behind the accent word, pulsing once per flip so the word
+   change lands rather than merely happening. */
+.hero::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  width: 52%;
+  height: 150%;
+  right: 4%;
+  top: -25%;
+  background: radial-gradient(closest-side, rgba(243, 219, 110, 0.32), transparent 72%);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: rotGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes rotGlow {
+  0%, 20% { opacity: 0.95; }
+  26%, 100% { opacity: 0.22; }
+}
+
+/* --- Added background layers ----------------------------------------------
+   Four additive light layers around the hero. Three of them run on the rotating
+   word's OWN clocks (2.8s per flip, 11.2s per full cycle) so the background
+   reads as one system rather than a pile of unrelated loops.
+
+   All of them are additive light in the aurora's existing `screen` language,
+   which is also why their order relative to the aurora does not matter: screen
+   blending is commutative, so a stack of screen layers composites to the same
+   result in any order. Only the glow above, the rings and the spotlight use
+   normal blending, and those are stacked explicitly.
+
+   The opacities are measured values, not a first guess. Four additive layers
+   stack up fast, and an early pass at .55 / .34 / .50-.95 blew the hero out to
+   a pale warm wash that lost the teal -> terracotta diagonal entirely. */
+
+/* A. Ring pulses — two rings expand from behind the accent word on each flip,
+      so the word change reads as a drop in water. Border only, no blur.
+
+      The origin is the SLOT's centre, because .hero-rings is a child of
+      .hero-rot and .hero-rot's box IS the accent word's box. That is exact on
+      both axes at every width — which neither alternative is:
+        - a percentage of the hero box drifts from 26% to 43%, because the hero's
+          height comes from its padding and the headline;
+        - a percentage of the H1 is only right when the accent word ends a line
+          on its own, and the H1 is one line at 768px, two lines at 1440px, and
+          wraps as "...Generation Forward" at 900px. Measured, that was off by
+          up to 265px horizontally. */
+.hero-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Behind the type. .hero-rot sets `perspective`, so it is a stacking context
+     of its own: -1 puts the rings under the headline but still inside the slot. */
+  z-index: -1;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.hero-rings span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 300px;
+  margin: -150px 0 0 -150px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(243, 219, 110, 0.62);
+  opacity: 0;
+  transform: scale(0.3);
+  animation: ringOut 2.8s var(--e-out) infinite;
+}
+
+.hero-rings span:nth-child(2) {
+  border-color: rgba(255, 255, 255, 0.5);
+  animation-delay: 0.42s;
+}
+
+@keyframes ringOut {
+  0%   { opacity: 0; transform: scale(0.3); }
+  10%  { opacity: 0.75; }
+  48%  { opacity: 0; transform: scale(2.5); }
+  100% { opacity: 0; transform: scale(2.5); }
+}
+
+/* B. Rotating stage-light — a huge conic wedge layer spinning one full turn
+      every 28s, so light pans across the hero instead of only drifting.
+      Deliberately NOT blurred: the conic stops are already soft, and blurring a
+      ~2300px rotating layer buys the same look at several times the cost. */
+.hero-beam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 200%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(0deg);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.38;
+  mix-blend-mode: screen;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0) 0deg,
+    rgba(255, 255, 255, 0.08) 30deg,
+    rgba(255, 255, 255, 0) 70deg,
+    rgba(243, 219, 110, 0.095) 140deg,
+    rgba(255, 255, 255, 0) 188deg,
+    rgba(180, 229, 241, 0.09) 262deg,
+    rgba(255, 255, 255, 0) 310deg,
+    rgba(255, 255, 255, 0) 360deg
+  );
+  animation: beamSpin 28s linear infinite;
+}
+
+@keyframes beamSpin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* C. Aurora ribbons — two wide light bands flowing horizontally at different
+      speeds. The existing blobs drift radially, which leaves the hero with no
+      horizontal flow at all; this is the layer that supplies it. */
+.hero-ribbons {
+  position: absolute;
+  inset: -15% -8%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-ribbons span {
+  position: absolute;
+  left: -35%;
+  right: -35%;
+  height: 30%;
+  border-radius: 50%;
+  filter: blur(44px);
+  mix-blend-mode: screen;
+  opacity: 0.2;
+}
+
+.hero-ribbons span:nth-child(1) {
+  top: 12%;
+  background: linear-gradient(
+    90deg,
+    rgba(180, 229, 241, 0) 0%,
+    rgba(180, 229, 241, 0.36) 38%,
+    rgba(255, 255, 255, 0.26) 52%,
+    rgba(243, 219, 110, 0.32) 72%,
+    rgba(243, 219, 110, 0) 100%
+  );
+  animation: ribbonA 19s ease-in-out infinite;
+}
+
+.hero-ribbons span:nth-child(2) {
+  top: 62%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 185, 154, 0) 0%,
+    rgba(255, 185, 154, 0.34) 30%,
+    rgba(180, 229, 241, 0.28) 62%,
+    rgba(180, 229, 241, 0) 100%
+  );
+  animation: ribbonB 27s ease-in-out infinite;
+}
+
+@keyframes ribbonA {
+  0%, 100% { transform: translate3d(-7%, 0, 0) scaleY(1); }
+  50%      { transform: translate3d(7%, -2%, 0) scaleY(1.25); }
+}
+
+@keyframes ribbonB {
+  0%, 100% { transform: translate3d(8%, 1%, 0) scaleY(1.15); }
+  50%      { transform: translate3d(-6%, -1%, 0) scaleY(0.9); }
+}
+
+/* D. Horizon glow — a soft warm band along the bottom edge that breathes on a
+      14s cycle. It is anchored BELOW the subtitle's band, so it lights the CTA
+      row without lifting the field behind the copy. */
+.hero-horizon {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -18%;
+  height: 46%;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(243, 219, 110, 0.22),
+    rgba(255, 185, 154, 0.12) 55%,
+    transparent 78%
+  );
+  filter: blur(38px);
+  mix-blend-mode: screen;
+  animation: horizonBreathe 14s ease-in-out infinite;
+}
+
+@keyframes horizonBreathe {
+  0%, 100% { opacity: 0.26; transform: scaleY(0.92) translateY(2%); }
+  50%      { opacity: 0.52; transform: scaleY(1.08) translateY(-2%); }
+}
+
 /* Magnetic buttons need their own short transform transition; the base `.btn`
    transition is 0.3s with an overshoot curve, which feels mushy while the
    cursor is moving. */
 .hero-actions .btn {
   transition: transform 0.22s ease-out, box-shadow 0.3s ease, background 0.3s ease,
     color 0.3s ease;
+}
+
+/* The added layers, on the same 768px breakpoint Home.css uses for the hero.
+   Only the ring SIZE needs an override — the origin is anchored in `em` to the
+   H1's last line, so it follows the accent word on its own. The rings shrink so
+   they still read as ripples rather than as hard edges against a 390px hero. */
+@media (max-width: 768px) {
+  .hero-rings span {
+    width: 190px;
+    height: 190px;
+    margin: -95px 0 0 -95px;
+  }
+
+  .hero-ribbons span {
+    height: 36%;
+  }
 }
 
 /* ==========================================================================
@@ -513,9 +812,43 @@
    ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Kill the hero's decorative motion outright. `!important` is deliberate and
+     load-bearing here: several of these animations are declared through
+     `:nth-child()` selectors (`.hero-ribbons span:nth-child(1)`), which outrank
+     a plain `.hero-ribbons span` on specificity no matter where the override
+     sits in the file. The first version of this block left both ribbons
+     animating for exactly that reason. A reduced-motion override is the one
+     place where "this must not move, whatever else says so" is the requirement.
+
+     `.hero::before` is the hero's own 15s glow, declared in Home.css. It was
+     already animating under reduced motion before any of this — it is listed
+     here because a pulsing glow is exactly what the preference asks to stop. */
+  .hero::before,
   .hero-aurora .blob,
-  .glow-ring {
-    animation: none;
+  .glow-ring,
+  .hero-beam,
+  .hero-ribbons span,
+  .hero-horizon,
+  .hero-rings span {
+    animation: none !important;
+  }
+
+  /* The gold pool needs a resting opacity as well as a dead animation: with the
+     animation off it would otherwise sit at the animation's initial value of 1. */
+  .hero::after {
+    animation: none !important;
+    opacity: 0.45;
+  }
+
+  /* Drop the flip entirely and show the sizer as a static word, so the slot
+     keeps its width and the H1 keeps its line count. This is also what keeps
+     the rendered headline identical to the H1's aria-label. */
+  .hero-rot-inner > span:not(.hero-rot-sizer) {
+    display: none;
+  }
+
+  .hero-rot-sizer {
+    visibility: visible;
   }
 
   .hero-word-inner {

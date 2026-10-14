@@ -17,7 +17,7 @@ import './Admin.css';
 
 export function ApplicationReview() {
   const { state, refreshData } = useApp();
-  const { programs, opportunities, users } = state;
+  const { programs, opportunities, events, users } = state;
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [eventApplications, setEventApplications] = useState([]);
@@ -115,8 +115,13 @@ export function ApplicationReview() {
   if (loading) return <div className="admin-page"><ListItemSkeleton rows={3} /></div>;
 
   const resolveEventTitle = (app) => {
-    if (app.type === 'program' || app.programId || app.program_id) {
-      return programs.find((program) => program.id === (app.programId || app.program_id))?.title || 'Program application';
+    const programId = app.programId || app.program_id;
+    const eventId = app.eventId || app.event_id;
+    if (app.type === 'program' || programId) {
+      return programs.find((program) => program.id === programId)?.title || 'Program application';
+    }
+    if (app.type === 'event' || eventId) {
+      return (events || []).find((item) => item.id === eventId)?.title || 'Event application';
     }
     return opportunities.find((opportunity) => opportunity.id === (app.opportunityId || app.opportunity_id))?.title || 'OJT Posting application';
   };

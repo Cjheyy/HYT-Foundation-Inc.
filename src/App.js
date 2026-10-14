@@ -16,6 +16,7 @@ import { Home } from './pages/public/Home';
 import { About } from './pages/public/About';
 import { Programs } from './pages/public/Programs';
 import { ProgramDetail } from './pages/public/ProgramDetail';
+import { Events as PublicEvents } from './pages/public/Events';
 import { Opportunities } from './pages/public/Opportunities';
 import { OpportunityDetail } from './pages/public/OpportunityDetail';
 import { Impact } from './pages/public/Impact';
@@ -30,6 +31,7 @@ import { AuthConfirm } from './pages/public/AuthConfirm';
 import { StudentDashboard } from './pages/student/Dashboard';
 import { StudentProfile } from './pages/student/Profile';
 import { StudentOpportunities } from './pages/student/Opportunities';
+import { StudentEvents } from './pages/student/Events';
 import { StudentApplications } from './pages/student/Applications';
 import { StudentOJT } from './pages/student/OJT';
 import { AttendanceNew } from './pages/student/Attendance';
@@ -46,6 +48,7 @@ import { TraineeLayout } from './layouts/TraineeLayout';
 import { AdminDashboard } from './pages/admin/Dashboard';
 import { AdminStudents } from './pages/admin/Students';
 import { AdminPrograms } from './pages/admin/Programs';
+import { AdminEvents } from './pages/admin/Events';
 import { AdminOpportunities } from './pages/admin/Opportunities';
 import { AdminOJT } from './pages/admin/OJT';
 import { AdminDailyReports } from './pages/admin/DailyReports';
@@ -57,6 +60,7 @@ import { AttendanceVerification } from './pages/admin/AttendanceVerification';
 import { OtApprovals } from './pages/admin/OtApprovals';
 import { ReportApprovals } from './pages/admin/ReportApprovals';
 import { ApplicationReview } from './pages/admin/ApplicationReview';
+import { DtrSummary } from './pages/admin/DtrSummary';
 
 function PublicLayout({ children }) {
   return (
@@ -91,6 +95,7 @@ function App() {
           <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
           <Route path="/programs" element={<PublicLayout><Programs /></PublicLayout>} />
           <Route path="/programs/:id" element={<PublicLayout><ProgramDetail /></PublicLayout>} />
+          <Route path="/events" element={<PublicLayout><PublicEvents /></PublicLayout>} />
           <Route path="/opportunities" element={<PublicLayout><Opportunities /></PublicLayout>} />
           <Route path="/opportunities/:id" element={<PublicLayout><OpportunityDetail /></PublicLayout>} />
           <Route path="/impact" element={<PublicLayout><Impact /></PublicLayout>} />
@@ -118,11 +123,16 @@ function App() {
               <StudentLayout><StudentProfile /></StudentLayout>
             </ProtectedRoute>
           } />
-          <Route path="/student/programs" element={
+          {/* OJT/Interns see the OJT postings and the events — never the Dream
+              Academy programmes, which belong to the Trainee portal. */}
+          <Route path="/student/events" element={
             <ProtectedRoute requiredRole="OJT/Intern">
-              <StudentLayout><Programs /></StudentLayout>
+              <StudentLayout><StudentEvents /></StudentLayout>
             </ProtectedRoute>
           } />
+          {/* The OJT portal has no Programmes page any more.  An old bookmark
+              lands on the Events listing instead of a dead end. */}
+          <Route path="/student/programs" element={<Navigate to="/student/events" replace />} />
           <Route path="/student/opportunities" element={
             <ProtectedRoute requiredRole="OJT/Intern">
               <StudentLayout><StudentOpportunities /></StudentLayout>
@@ -185,6 +195,11 @@ function App() {
               <TraineeLayout><Programs /></TraineeLayout>
             </ProtectedRoute>
           } />
+          <Route path="/trainee/events" element={
+            <ProtectedRoute requiredRole="Trainee">
+              <TraineeLayout><StudentEvents /></TraineeLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/trainee/opportunities" element={
             <ProtectedRoute requiredRole="Trainee">
               <TraineeLayout><StudentOpportunities /></TraineeLayout>
@@ -240,6 +255,11 @@ function App() {
           <Route path="/admin/programs" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><AdminPrograms /></AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/events" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><AdminEvents /></AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin/opportunities" element={
@@ -322,6 +342,13 @@ function App() {
           <Route path="/admin/application_review" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><ApplicationReview /></AdminLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Printable DTR summary for one trainee (letterhead + signatures). */}
+          <Route path="/admin/dtr-summary" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><DtrSummary /></AdminLayout>
             </ProtectedRoute>
           } />
 

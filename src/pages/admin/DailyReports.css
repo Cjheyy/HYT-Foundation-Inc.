@@ -1,0 +1,81 @@
+/* ============================================================================
+   Admin → Daily Reports — the three-slot day, read back
+
+   A trainee files three updates a day (11:00, 15:00, 17:00).  The administrator
+   reads the day as ONE consolidated block rather than three separate reports —
+   which is the whole point of the 17:00 filing.
+
+   Scoped under `.admin-report-*` so nothing here can reach the trainee screen.
+   The shared `.report-day-flag` pill (complete / "No 5 PM report") lives in
+   the student stylesheet, which this page imports alongside this file.
+   ========================================================================== */
+
+.admin-report-day-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.admin-report-day-cell {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #FAFBFC;
+}
+
+.admin-report-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--accent-text);
+  margin-bottom: 6px;
+}
+
+.admin-report-day-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted-text);
+  white-space: nowrap;
+}
+
+.admin-report-day-tag.is-submitted {
+  color: #1B7F4B;
+  border-color: rgba(27, 127, 75, 0.35);
+  background: rgba(27, 127, 75, 0.08);
+}
+
+.admin-report-day-tag.is-missed {
+  color: #B42318;
+  border-color: rgba(180, 35, 24, 0.30);
+  background: rgba(180, 35, 24, 0.07);
+}
+
+.admin-report-day-tag.is-open {
+  color: var(--accent-text);
+  border-color: rgba(184, 68, 31, 0.35);
+  background: rgba(184, 68, 31, 0.08);
+}
+
+.admin-report-day-line {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.admin-report-field {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted-text);
+}

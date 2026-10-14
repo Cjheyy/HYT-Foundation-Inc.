@@ -74,7 +74,8 @@ export function useRevealOnScroll(rootRef) {
 
     scan();
 
-    // "Featured OJT Postings" and "Featured Trainee Programs & Events" only
+    // "Featured OJT Postings", "Featured Trainee Programs" and "Featured
+    // Events" only
     // render once their Supabase data arrives — long after this effect runs.
     // Without a re-scan they would never be observed, and because `has-reveal`
     // is already on the root the CSS would hold them at opacity 0 forever.

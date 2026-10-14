@@ -8,9 +8,11 @@ import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import { Select } from '../../components/Select';
+import { DateField } from '../../components/DateField';
 import { Icon } from '../../components/icons';
 import { createOpportunity, cleanupExpiredEvents, isEventActive, getEventSlotState } from '../../services/supabaseService';
 import { PROGRAM_SLOT_OPTIONS, formatScheduleRange } from '../../utils/helpers';
+import { todayIso } from '../../utils/dateParts';
 import { PARTNER_ORGANIZATIONS } from '../../data/partnerOrganizations';
 import { showToast } from '../../utils/notifications';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
@@ -171,8 +173,8 @@ export function AdminOpportunities() {
           <div>
             <span className="form-label">Schedule Range (optional)</span>
             <div className="schedule-range-grid">
-              <Input type="date" name="scheduleStart" value={formData.scheduleStart} onChange={handleChange} error={errors.scheduleStart} aria-label="Schedule start date" />
-              <Input type="date" name="scheduleEnd" value={formData.scheduleEnd} onChange={handleChange} error={errors.scheduleEnd} min={formData.scheduleStart || undefined} aria-label="Schedule end date" />
+              <DateField name="scheduleStart" value={formData.scheduleStart} onChange={handleChange} error={errors.scheduleStart} aria-label="Schedule start date" />
+              <DateField name="scheduleEnd" value={formData.scheduleEnd} onChange={handleChange} error={errors.scheduleEnd} min={formData.scheduleStart || undefined} aria-label="Schedule end date" />
             </div>
             {schedulePreview && (
               <div className="schedule-preview" aria-live="polite" style={{ marginTop: '8px' }}>
@@ -182,7 +184,7 @@ export function AdminOpportunities() {
           </div>
           <Input label="Required Hours (optional)" type="number" name="requiredHours" value={formData.requiredHours} onChange={handleChange} error={errors.requiredHours} min="0" />
           <Select label="Total Slots" name="totalSlots" value={formData.totalSlots} onChange={handleChange} error={errors.totalSlots} options={SLOT_OPTIONS} placeholder="Select total slots" help="Available slots start equal to total slots and decrement automatically on each application." required />
-          <Input label="Application Deadline" type="date" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} error={errors.applicationDeadline} min={new Date().toISOString().split('T')[0]} required />
+          <DateField label="Application Deadline" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} error={errors.applicationDeadline} min={todayIso()} required />
           <Select label="Status" name="status" value={formData.status} onChange={handleChange} options={['Draft', 'Published']} />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <Button type="button" variant="outline" onClick={() => closeModal()} disabled={saving}>Cancel</Button>

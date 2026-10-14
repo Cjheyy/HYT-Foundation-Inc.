@@ -38,7 +38,7 @@ export function ProgramDetail() {
         <div className="container">
           <div className="not-found">
             <h2>Program Not Found</h2>
-            <Button onClick={() => navigate('/programs')}>Back to Trainee Programs & Events</Button>
+            <Button onClick={() => navigate('/programs')}>Back to Trainee Programs</Button>
           </div>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function ProgramDetail() {
     <div className="detail-page">
       <div className="container">
         <Button variant="ghost" onClick={() => navigate('/programs')}>
-          Back to Trainee Programs & Events
+          Back to Trainee Programs
         </Button>
 
         <div className="detail-grid">

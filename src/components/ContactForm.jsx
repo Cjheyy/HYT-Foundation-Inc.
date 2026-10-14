@@ -60,8 +60,8 @@ export function ContactForm() {
 
       // EmailJS configuration
       // Replace these with your actual EmailJS service ID and template ID
-      const serviceId = 'YOUR_SERVICE_ID'; // From EmailJS dashboard
-      const templateId = 'YOUR_TEMPLATE_ID'; // From EmailJS dashboard
+      const serviceId = 'service_jtooogf'; // From EmailJS dashboard
+      const templateId = '5lfg2w9'; // From EmailJS dashboard
 
       const templateParams = {
         from_name: formData.name,
@@ -74,7 +74,7 @@ export function ContactForm() {
 
       await emailjs.send(serviceId, templateId, templateParams);
 
-      toast.success('Message sent successfully. We will get back to you soon.');
+      toast.success('✅ Message sent successfully! We\'ll get back to you soon.');
       
       // Clear form
       setFormData({

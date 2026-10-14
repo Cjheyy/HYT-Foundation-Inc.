@@ -27,6 +27,7 @@ export function PublicFooter() {
             <ul className="footer-links">
               <li><Link to="/about" onClick={handleLinkClick}>About Us</Link></li>
               <li><Link to="/programs" onClick={handleLinkClick}>Programs</Link></li>
+              <li><Link to="/events" onClick={handleLinkClick}>Events</Link></li>
               <li><Link to="/opportunities" onClick={handleLinkClick}>Opportunities</Link></li>
               <li><Link to="/impact" onClick={handleLinkClick}>Our Impact</Link></li>
             </ul>

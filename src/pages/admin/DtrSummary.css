@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Admin — Printable DTR page
+   --------------------------------------------------------------------------
+   Colours come from the index.css tokens only.
+
+   The preview is not a re-drawing of the sheet: it is the sheet.  The exact
+   HTML string that goes to the print dialog is rendered into an iframe here,
+   so the admin cannot be shown one thing and hand HR another.
+   ========================================================================== */
+
+.dtr-summary-page {
+  min-height: 100vh;
+}
+
+.dtr-control-grid {
+  display: grid;
+  /* 5 fields: person, from, to, mentor, HR.  auto-fit keeps them from
+     collapsing into a cramped row on a laptop; 200px is the narrowest a date
+     input renders without the native picker icon clipping the text. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.dtr-control-grid .form-group {
+  margin-bottom: 0;
+}
+
+.dtr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* --- Live document preview ------------------------------------------------ */
+
+.dtr-frame-wrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  /* Matches the sheet's own page background, so the "paper" reads as a sheet
+     sitting on a surface rather than a white box on white. */
+  background: #f1f2f4;
+}
+
+.dtr-frame {
+  display: block;
+  width: 100%;
+  /* Height is measured from the rendered document in JS and applied inline;
+     this is only the floor for the first paint. */
+  min-height: 600px;
+  border: 0;
+  background: #f1f2f4;
+}
+
+/* --- States --------------------------------------------------------------- */
+
+.dtr-empty {
+  padding: 32px 8px;
+  text-align: center;
+  color: var(--muted-text);
+}
+
+/* Beats `.card :is(p, span, ...)` at (0,1,1). */
+.dtr-summary-page .dtr-error {
+  color: #B42318;
+  font-weight: 600;
+}
+
+.dtr-note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+@media (max-width: 768px) {
+  .dtr-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dtr-actions .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,327 @@
+/**
+ * DateField — the custom date / date-time picker.
+ *
+ * Colours come from the app's own tokens in `index.css`, so the field sits on
+ * the same surfaces as `Input` and `Select` instead of looking bolted on.
+ *
+ * The selected day is filled with `--accent-text` (#B8441F) rather than the
+ * brand `--primary-orange`: white on #D57156 measures 3.32:1, under the 4.5:1
+ * floor for the 13px numerals, while #B8441F measures 5.41:1.  The same
+ * reasoning already lives in `index.css` next to the token.
+ */
+
+.date-field {
+  position: relative;
+}
+
+.date-field-control {
+  position: relative;
+  display: block;
+}
+
+/* The trigger IS a `.form-input`, so it inherits the exact border, radius,
+   padding and focus ring of every other field on the form.  Only the button
+   defaults and the inner layout are overridden. */
+.date-field-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  padding-right: 34px;
+}
+
+.date-field-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.date-field-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date-field-trigger.is-empty .date-field-value {
+  color: var(--muted-text);
+}
+
+.date-field-icons {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-text);
+  flex-shrink: 0;
+}
+
+.date-field-clear {
+  position: absolute;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.date-field-clear:hover {
+  background: var(--border);
+  color: var(--dark-text);
+}
+
+.date-field-clear:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: 1px;
+}
+
+/* ---- Popover --------------------------------------------------------------
+   Portalled to <body> and positioned with `fixed`, so a modal's own scroll
+   container cannot clip it.  z-index sits above `.modal-overlay` (1000). */
+
+.date-field-popover {
+  position: fixed;
+  z-index: 1100;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  color: var(--dark-text);
+}
+
+.date-field-popover:focus {
+  outline: none;
+}
+
+.date-field-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.date-field-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dark-text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.date-field-nav-btn:hover {
+  border-color: var(--primary-orange);
+  color: var(--accent-text);
+}
+
+.date-field-nav-btn:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: 1px;
+}
+
+.date-field-month {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.date-field-weekdays,
+.date-field-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-field-weekdays {
+  margin-bottom: 4px;
+}
+
+.date-field-weekday {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted-text);
+}
+
+.date-field-day {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dark-text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.date-field-day:hover:not(:disabled) {
+  background: #FDF3F0;
+  border-color: var(--primary-orange);
+}
+
+.date-field-day:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: 1px;
+}
+
+.date-field-day.is-outside {
+  color: var(--muted-text);
+  opacity: 0.55;
+}
+
+.date-field-day.is-today {
+  border-color: var(--primary-orange);
+  font-weight: 700;
+}
+
+.date-field-day.is-selected {
+  background: var(--accent-text);
+  border-color: var(--accent-text);
+  color: #fff;
+  font-weight: 700;
+}
+
+.date-field-day:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* ---- Time ---------------------------------------------------------------- */
+
+.date-field-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.date-field-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted-text);
+  margin-right: 2px;
+}
+
+.date-field-select {
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dark-text);
+  font-size: 13px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.date-field-select:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(213, 113, 86, 0.1);
+}
+
+.date-field-meridiem {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.date-field-meridiem-btn {
+  padding: 5px 9px;
+  border: none;
+  background: #fff;
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.date-field-meridiem-btn.is-active {
+  background: var(--accent-text);
+  color: #fff;
+}
+
+.date-field-meridiem-btn:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: -2px;
+}
+
+/* ---- Actions ------------------------------------------------------------- */
+
+.date-field-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.date-field-link {
+  border: none;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+}
+
+.date-field-link:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: 2px;
+}
+
+.date-field-done {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-text);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.date-field-done:hover {
+  background: #9E3A1A;
+}
+
+.date-field-done:focus-visible {
+  outline: 2px solid var(--primary-orange);
+  outline-offset: 2px;
+}

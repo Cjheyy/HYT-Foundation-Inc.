@@ -25,7 +25,7 @@
 .gallery-modal-container {
   position: relative;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
   background: white;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -79,26 +79,38 @@
 /* Modal Content */
 .gallery-modal-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Slightly in the photo's favour: the info column is text and reads fine a
+     little narrower, while every pixel the photo gains is a pixel of detail. */
+  grid-template-columns: 1.05fr 1fr;
   gap: 0;
   min-height: 400px;
+  /* The photo panel must NOT stretch to the info column's height. The info is
+     text-driven and much taller than a 4:3 photo, so stretching it left the
+     photo floating in a black field - measured 600x450 of photo inside a 600x724
+     panel, i.e. 38% of the panel empty. Centred, the panel hugs the photo. */
+  align-items: center;
 }
 
 /* Modal Image */
 .gallery-modal-image {
   position: relative;
-  width: 100%;
+  width: calc(100% - 32px);
+  margin-left: 16px;
   background: #000;
-  border-radius: 20px 0 0 20px;
+  border-radius: 20px;
   overflow: hidden;
 }
 
+/* `contain`, not `cover`: the carousel is the teaser and may crop, but once the
+   visitor clicks through, the whole photo is the point.
+   `height: auto` (not `100%`) is what makes the panel take the photo's own 4:3
+   height instead of the stretched one, so the black background never shows as
+   letterbox bars - it is only ever the panel's own edge. */
 .gallery-modal-image img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
-  min-height: 400px;
 }
 
 /* Modal Info */
@@ -215,6 +227,10 @@
   .gallery-modal-image {
     border-radius: 20px 20px 0 0;
     min-height: 300px;
+    /* One column here, so the photo goes back to flush - the desktop inset would
+       leave a black frame around a full-width photo. */
+    width: 100%;
+    margin-left: 0;
   }
 
   .gallery-modal-image img {
@@ -255,6 +271,8 @@
   .gallery-modal-image {
     border-radius: 16px 16px 0 0;
     min-height: 250px;
+    width: 100%;
+    margin-left: 0;
   }
 
   .gallery-modal-image img {

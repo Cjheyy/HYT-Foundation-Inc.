@@ -8,14 +8,38 @@ import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import { Select } from '../../components/Select';
+import { DateField } from '../../components/DateField';
 import { Icon } from '../../components/icons';
 import { createProgram, cleanupExpiredEvents, isEventActive, getEventSlotState } from '../../services/supabaseService';
 import { PROGRAM_CATEGORIES, PROGRAM_SLOT_OPTIONS, formatScheduleRange } from '../../utils/helpers';
+import { todayIso } from '../../utils/dateParts';
+import { DA_UNITS } from '../../data/dreamAcademy';
 import { showToast } from '../../utils/notifications';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import './Admin.css';
 
+/**
+ * Programmes ARE the Dream Academy units.
+ *
+ * `data/dreamAcademy.js` already holds the academy's real offering — the eight
+ * units and the duties each one performs, which is exactly what the Home page
+ * renders under "Unit Assignments".  Rather than duplicating that list in the
+ * database, the add form reads it: picking a unit fills in the title and seeds
+ * the description from the unit's duties, which the admin may then edit.
+ *
+ * There is deliberately no required-hours field — programmes do not carry one —
+ * and slots are entered by hand.
+ */
+const UNIT_OPTIONS = DA_UNITS.map((unit) => ({ value: unit.name, label: unit.name }));
+
+const findUnit = (name) => DA_UNITS.find((unit) => unit.name === name) || null;
+
+const describeUnit = (unit) => (
+  unit ? `Service offered by the Dream Academy ${unit.name}:\n- ${unit.duties.join('\n- ')}` : ''
+);
+
 const emptyForm = {
+  unit: '',
   title: '',
   description: '',
   category: 'General',
@@ -63,8 +87,22 @@ export function AdminPrograms() {
     setErrors((previous) => ({ ...previous, [name]: '' }));
   };
 
+  /** Picking a unit is what names the programme and seeds its description. */
+  const handleUnitChange = (event) => {
+    const name = event.target.value;
+    const unit = findUnit(name);
+    setFormData((previous) => ({
+      ...previous,
+      unit: name,
+      title: unit ? unit.name : '',
+      description: unit ? describeUnit(unit) : previous.description
+    }));
+    setErrors((previous) => ({ ...previous, unit: '', title: '' }));
+  };
+
   const validate = () => {
     const nextErrors = {};
+    if (!formData.unit) nextErrors.unit = 'Select a Dream Academy unit';
     if (!formData.title.trim()) nextErrors.title = 'Title is required';
     if (!formData.description.trim()) nextErrors.description = 'Description is required';
     if (!formData.category) nextErrors.category = 'Select a category';
@@ -125,8 +163,8 @@ export function AdminPrograms() {
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1 className="page-title">Trainee Programs & Events</h1>
-        <p className="page-subtitle">Published programs and events expire automatically after their deadline.</p>
+        <h1 className="page-title">Programs</h1>
+        <p className="page-subtitle">Dream Academy programmes. Published programmes expire automatically after their deadline.</p>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <span className="muted-cell">{visiblePrograms.length} listing{visiblePrograms.length === 1 ? '' : 's'}</span>
@@ -172,16 +210,27 @@ export function AdminPrograms() {
         </Card>
       )}
 
-      <Modal isOpen={showCreateModal} onClose={() => closeModal()} title="Create New Program or Event">
+      <Modal isOpen={showCreateModal} onClose={() => closeModal()} title="Create New Program">
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto', padding: '4px' }}>
-          <Input label="Program or Event Title" name="title" value={formData.title} onChange={handleChange} error={errors.title} required />
+          <Select
+            label="Dream Academy Unit"
+            name="unit"
+            value={formData.unit}
+            onChange={handleUnitChange}
+            error={errors.unit}
+            options={UNIT_OPTIONS}
+            placeholder="Select a unit"
+            help="Programmes are the services the Dream Academy units provide. Picking a unit fills in the title and description below."
+            required
+          />
+          <Input label="Program Title" name="title" value={formData.title} onChange={handleChange} error={errors.title} required />
           <Textarea label="Description" name="description" value={formData.description} onChange={handleChange} error={errors.description} rows={4} required />
           <Select label="Category" name="category" value={formData.category} onChange={handleChange} error={errors.category} options={PROGRAM_CATEGORIES} placeholder="Select a category" required />
           <div>
             <span className="form-label">Schedule Range <span className="required-marker" aria-hidden="true"> *</span></span>
             <div className="schedule-range-grid">
-              <Input type="date" name="scheduleStart" value={formData.scheduleStart} onChange={handleChange} error={errors.scheduleStart} aria-label="Schedule start date" required />
-              <Input type="date" name="scheduleEnd" value={formData.scheduleEnd} onChange={handleChange} error={errors.scheduleEnd} min={formData.scheduleStart || undefined} aria-label="Schedule end date" required />
+              <DateField name="scheduleStart" value={formData.scheduleStart} onChange={handleChange} error={errors.scheduleStart} aria-label="Schedule start date" required />
+              <DateField name="scheduleEnd" value={formData.scheduleEnd} onChange={handleChange} error={errors.scheduleEnd} min={formData.scheduleStart || undefined} aria-label="Schedule end date" required />
             </div>
             <div className="schedule-preview" aria-live="polite" style={{ marginTop: '8px' }}>
               {schedulePreview ? `Selected schedule: ${schedulePreview}` : 'Select a start and end date to preview the schedule.'}
@@ -189,7 +238,7 @@ export function AdminPrograms() {
           </div>
           <Input label="Location" name="location" value={formData.location} onChange={handleChange} error={errors.location} required />
           <Select label="Total Slots" name="totalSlots" value={formData.totalSlots} onChange={handleChange} error={errors.totalSlots} options={SLOT_OPTIONS} placeholder="Select total slots" help="Available slots start equal to total slots and decrement automatically on each application." required />
-          <Input label="Application Deadline" type="date" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} error={errors.applicationDeadline} min={new Date().toISOString().split('T')[0]} required />
+          <DateField label="Application Deadline" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} error={errors.applicationDeadline} min={todayIso()} required />
           <Select label="Status" name="status" value={formData.status} onChange={handleChange} options={['Draft', 'Published']} />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <Button type="button" variant="outline" onClick={() => closeModal()} disabled={saving}>Cancel</Button>

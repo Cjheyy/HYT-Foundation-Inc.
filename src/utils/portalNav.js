@@ -15,12 +15,19 @@
  *    layouts cannot drift apart.
  *
  * `badge` values: 'requirements' (needs action) and 'announcements' (unread).
+ *
+ * 3. The two portals deliberately show DIFFERENT catalogues.  An OJT/Intern is
+ *    placed at a company, so they get the OJT Postings plus the Events they can
+ *    attend — but not the Dream Academy training programmes.  A Trainee is in
+ *    training, so they get the programmes plus the same Events — but not the
+ *    OJT Postings.  `Programs` and `Events` are separate listings, so they are
+ *    separate nav entries; the shared "Programs & Events" entry is gone.
  */
 
 export const STUDENT_NAV = [
   { path: '/student/dashboard', match: ['/student', '/student/dashboard'], label: 'Dashboard', icon: 'dashboard', group: 'Main' },
-  { path: '/student/programs', label: 'Programs & Events', icon: 'book', group: 'Main' },
   { path: '/student/opportunities', label: 'OJT Postings', icon: 'target', group: 'Main' },
+  { path: '/student/events', label: 'Events Postings', icon: 'calendar', group: 'Main' },
   { path: '/student/applications', label: 'My Applications', icon: 'file', group: 'My Work' },
   { path: '/student/requirements', label: 'Requirements', icon: 'inbox', group: 'My Work', badge: 'requirements' },
   { path: '/student/ojt', label: 'OJT / Experience', icon: 'briefcase', group: 'My Work' },
@@ -35,7 +42,8 @@ export const STUDENT_NAV = [
 // empty state.  Linking to it from the sidebar would be a new dead end.
 export const TRAINEE_NAV = [
   { path: '/trainee/dashboard', match: ['/trainee', '/trainee/dashboard'], label: 'Dashboard', icon: 'dashboard', group: 'Main' },
-  { path: '/trainee/programs', label: 'Programs & Events', icon: 'book', group: 'Main' },
+  { path: '/trainee/programs', label: 'Programs Available', icon: 'book', group: 'Main' },
+  { path: '/trainee/events', label: 'Events', icon: 'calendar', group: 'Main' },
   { path: '/trainee/applications', label: 'My Applications', icon: 'file', group: 'My Work' },
   { path: '/trainee/requirements', label: 'Requirements', icon: 'inbox', group: 'My Work', badge: 'requirements' },
   { path: '/trainee/attendance', label: 'Attendance', icon: 'check', group: 'My Work' },

@@ -42,12 +42,14 @@ export function AdminLayout({ children }) {
     { path: '/admin', label: 'Dashboard', icon: 'dashboard' },
     { path: '/admin/application-review', label: 'Application Review', icon: 'inbox' },
     { path: '/admin/students', label: 'Students', icon: 'users' },
-    { path: '/admin/programs', label: 'Trainee Programs & Events', icon: 'book' },
+    { path: '/admin/programs', label: 'Programs', icon: 'book' },
+    { path: '/admin/events', label: 'Events', icon: 'calendar' },
     { path: '/admin/opportunities', label: 'OJT Postings', icon: 'target' },
     { path: '/admin/attendance-verification', label: 'Attendance Verification', icon: 'check' },
     { path: '/admin/ot-approvals', label: 'OT Approvals', icon: 'clock' },
     { path: '/admin/report-approvals', label: 'Report Approvals', icon: 'file' },
     { path: '/admin/certificates', label: 'Certificates', icon: 'award' },
+    { path: '/admin/dtr-summary', label: 'Printable DTR', icon: 'clock' },
     { path: '/admin/announcements', label: 'Announcements', icon: 'bell' }
   ];
 
