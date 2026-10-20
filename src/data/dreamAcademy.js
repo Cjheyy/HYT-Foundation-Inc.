@@ -1,5 +1,5 @@
 /**
- * Dream Academy — content for the Home page section.
+ * Dream Academy - content for the Home page section.
  *
  * Kept as data rather than inline JSX so the copy lives in one place, the way
  * `hytThrusts.js` and `galleryData.js` already work.
@@ -36,7 +36,7 @@ export const DA_GOALS =
 /**
  * The eight units.
  *
- * Accents are cycled so that no two cards sharing an edge look alike — neither
+ * Accents are cycled so that no two cards sharing an edge look alike - neither
  * the side-by-side pair nor the one above/below it in the two-column grid. The
  * sequence is not a simple rotation for exactly that reason.
  */

@@ -7,7 +7,7 @@
  * `currentColor` and scale cleanly.
  *
  * Keyed by thrust name to match HYT_THRUSTS in src/data/hytThrusts.js. The
- * `icon` emoji field is deliberately left in place — the About page and any
+ * `icon` emoji field is deliberately left in place - the About page and any
  * other consumer keep working unchanged.
  */
 const GLYPHS = {

@@ -9,7 +9,7 @@ import { useCallback } from 'react';
  * card shares one vanishing point instead of each card inventing its own.
  *
  * CURRENTLY UNUSED. It drove the old `.thrusts-grid` cards, which were replaced
- * by the ribbon marquees in the Thrusts section — that grid, and the perspective
+ * by the ribbon marquees in the Thrusts section - that grid, and the perspective
  * rule that went with it, no longer exist. Kept as a working hook in case the
  * tilt is wanted again; it is not wired up anywhere.
  *

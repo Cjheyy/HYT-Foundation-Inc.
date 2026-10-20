@@ -1,5 +1,10 @@
 import { supabase, toCamelCase, toSnakeCase } from '../config/supabase';
-import { GEOFENCE_ENFORCEMENT_ENABLED } from '../utils/geofence';
+import {
+  GEOFENCE_ENFORCEMENT_ENABLED,
+  GEOFENCE_RADIUS_METERS,
+  OFFICE_LOCATIONS,
+  haversineDistanceMeters
+} from '../utils/geofence';
 import {
   mergeSlotEntry,
   readSlotEntries,
@@ -146,7 +151,7 @@ export const isEventActive = (event, referenceDate = todayISODate()) => {
 // foreign-key column on `applications` are derived from it in ONE place rather
 // than in a chain of ternaries.
 //
-// Adding a fourth kind means adding one line to each map — and nothing else.
+// Adding a fourth kind means adding one line to each map - and nothing else.
 
 export const LISTING_TABLE_BY_KIND = {
   program: 'programs',
@@ -176,7 +181,7 @@ const toTimestamp = (value) => {
  * A listing's occupied window as epoch millis.
  *
  * An event with only a start is treated as a single instant.  A listing with NO
- * structured time at all returns null — and two nulls never clash, so legacy
+ * structured time at all returns null - and two nulls never clash, so legacy
  * rows and programs without timestamps can never block an application.
  */
 export const eventWindow = (row) => {
@@ -191,7 +196,7 @@ export const eventWindow = (row) => {
  *
  * The comparison is INCLUSIVE: an event that ends at 10:00 and another that
  * starts at 10:00 count as a clash.  That is the conservative reading of
- * "no overlap" — a back-to-back pair usually still needs travel time, and a
+ * "no overlap" - a back-to-back pair usually still needs travel time, and a
  * whole-day event (00:00-23:59) must block anything else on that date.
  */
 export const eventWindowsOverlap = (a, b) => {
@@ -211,7 +216,7 @@ const requireSupabase = () => {
 // The RPCs this app calls.  A "does not exist" error only means the RPC was
 // never installed when it names one of these.  If it names an inner helper
 // (e.g. hyt_close_previous_attendance) then the RPC DOES exist and its real
-// error must surface — masking it as "migration required" hides the cause and
+// error must surface - masking it as "migration required" hides the cause and
 // sends you chasing a migration that already ran.
 const ATTENDANCE_RPC_NAMES = [
   'request_clock_in',
@@ -228,7 +233,7 @@ const isMissingFunctionError = (error, functionName = null) => {
   // PostgREST's own "not in the schema cache" answer (surfaces as HTTP 404).
   if (code === 'PGRST202') return true;
 
-  // 42883 / "does not exist" — counts only when the missing function is the RPC
+  // 42883 / "does not exist" - counts only when the missing function is the RPC
   // that was actually called, never when it is a helper that RPC calls.
   if (code === '42883' || message.includes('does not exist')) {
     const names = functionName ? [functionName] : ATTENDANCE_RPC_NAMES;
@@ -522,7 +527,7 @@ export const deleteProgram = async (programId) => {
 };
 
 // ==========================================================================
-// EVENTS — the third listing kind, separate from Programs and Opportunities
+// EVENTS - the third listing kind, separate from Programs and Opportunities
 // ==========================================================================
 
 export const getEvents = async ({ includeInactive = true } = {}) => {
@@ -718,8 +723,7 @@ export const cleanupExpiredEvents = async () => {
 
   // `events` is swept here, ALWAYS, before the RPC short-circuit below: the SQL
   // `expire_hyt_events` function may predate the events table, and a missed
-  // sweep would leave a stale event Published — and therefore applyable —
-  // forever.  A missing table simply returns an error object, never a throw.
+  // sweep would leave a stale event Published - and therefore applyable - // forever.  A missing table simply returns an error object, never a throw.
   const eventsSweep = await client
     .from('events')
     .update({ status: 'Closed' })
@@ -925,7 +929,7 @@ const buildProgramApplicationPayload = (userId, eventId, kind) => {
 };
 
 /**
- * Guard #3 — the EVENT rules.
+ * Guard #3 - the EVENT rules.
  *
  * A youth may hold at most MAX_ACTIVE_EVENT_APPLICATIONS live event
  * applications, and none of them may collide in time with the event being
@@ -933,7 +937,7 @@ const buildProgramApplicationPayload = (userId, eventId, kind) => {
  * the count and the window, which is what lets a student apply again once one
  * of their applications ends.
  *
- * `targetRow` is the event being applied for — the caller has already read it,
+ * `targetRow` is the event being applied for - the caller has already read it,
  * so this never issues a second query for it.
  */
 const assertEventApplicationAllowed = async (client, userId, eventId, targetRow) => {
@@ -986,7 +990,7 @@ export const applyToEvent = async (kind, eventId, userId) => {
   if (existingError && existingError.code !== 'PGRST116') throw existingError;
   if (existing) throw new Error('You have already applied to this listing.');
 
-  // An OJT/Intern may hold only ONE OJT posting application at a time — they
+  // An OJT/Intern may hold only ONE OJT posting application at a time - they
   // cannot be placed at two companies at once.  Rejected or withdrawn
   // applications release the hold so the intern can apply again.
   if (kind === 'opportunity') {
@@ -1004,7 +1008,7 @@ export const applyToEvent = async (kind, eventId, userId) => {
     }
   }
 
-  // A Trainee may hold only ONE training programme at a time — the mirror of
+  // A Trainee may hold only ONE training programme at a time - the mirror of
   // the OJT rule below.  Rejected or withdrawn applications release the hold so
   // the trainee can apply again.  Only `program_id` rows count, so an OJT
   // posting or an event never blocks a programme application.
@@ -1034,7 +1038,7 @@ export const applyToEvent = async (kind, eventId, userId) => {
     throw new Error('This listing is full. No slots available.');
   }
 
-  // Guard #3 — the event count and overlap rules.  `slotRow` is the event being
+  // Guard #3 - the event count and overlap rules.  `slotRow` is the event being
   // applied for, already read above, so its window costs no extra query.
   if (kind === 'event') {
     await assertEventApplicationAllowed(client, userId, eventId, slotRow || {});
@@ -1104,7 +1108,7 @@ export const setApplicationStatus = async (applicationId, statuses) => {
   if (readError) throw readError;
   if (!application) throw new Error('Application not found.');
 
-  // The listing this application points at — exactly one of the three keys is
+  // The listing this application points at - exactly one of the three keys is
   // set (check_application_target), so the first non-null wins.
   const table = application.program_id ? 'programs'
     : application.event_id ? 'events'
@@ -1492,7 +1496,7 @@ export const getSettings = async () => {
 };
 
 // ==========================================================================
-// ATTENDANCE_LOGS — dual approval state machine
+// ATTENDANCE_LOGS - dual approval state machine
 // ==========================================================================
 
 const attendanceUserSelect = `
@@ -1515,13 +1519,13 @@ const rowUserId = (row) => {
 
 /**
  * Re-attach the `user` profile to rows that arrived without one.
- * Used by the attendance queue AND the daily-report feed — anywhere a row
+ * Used by the attendance queue AND the daily-report feed - anywhere a row
  * carries an owner id but the joined profile may be absent.
  *
  * The embedded `user:users(...)` relation in `attendanceUserSelect` is the fast
  * path, but it is not guaranteed: on a deployment whose
- * `attendance_logs.user_id → users.id` foreign key is absent — or whose
- * PostgREST schema cache has not picked the relation up — the relation select
+ * `attendance_logs.user_id → users.id` foreign key is absent - or whose
+ * PostgREST schema cache has not picked the relation up - the relation select
  * fails and every caller below falls back to `select('*')`.  That fallback
  * returns rows with **no `user` key at all**, so `log.user?.fullName` evaluated
  * to undefined and the admin attendance queue, the dashboard feed and the
@@ -1565,8 +1569,7 @@ const attachUserProfiles = async (rows, client = requireSupabase()) => {
 /**
  * Single source of truth for "who is this?" on every attendance surface.
  *
- * Only returns a placeholder once every identifying field is genuinely absent —
- * a full name, a composed first/last name, an e-mail or a truncated id all
+ * Only returns a placeholder once every identifying field is genuinely absent - * a full name, a composed first/last name, an e-mail or a truncated id all
  * resolve first, so "Unknown" can no longer appear for a real person.
  */
 export const resolveUserName = (user, fallbackRow = null) => {
@@ -1676,7 +1679,7 @@ export const updateAttendanceLog = async (attendanceId, updates) => {
  * write fails with exactly "permission denied for table attendance_logs".
  *
  * The geofence decision is made inside that function, driven by
- * settings.geofence_enforcement_enabled — so the testing bypass no longer needs
+ * settings.geofence_enforcement_enabled - so the testing bypass no longer needs
  * (and must not use) a client-side write path.
  */
 export const clockIn = async (userId, latitude, longitude) => {
@@ -1688,33 +1691,25 @@ export const clockIn = async (userId, latitude, longitude) => {
   }
 
   // Client-side Haversine is a fast pre-check for a friendlier message without
-  // a round trip.  It is NOT authoritative — request_clock_in re-validates.
-  // Strict Haversine check (HYT Natividad QC + Atlanta San Juan).
-  const toRad = (deg) => (Number(deg) * Math.PI) / 180;
-  const haversineMeters = (a1, o1, a2, o2) => {
-    const R = 6371000;
-    const dLat = toRad(a2 - a1);
-    const dLon = toRad(o2 - o1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-      + Math.cos(toRad(a1)) * Math.cos(toRad(a2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-  const offices = [
-    { name: 'HYT Foundation Building, Natividad, QC', latitude: 14.6433, longitude: 121.0125 },
-    { name: 'Atlanta Centre, San Juan', latitude: 14.6041, longitude: 121.0538 }
-  ];
-  const distances = offices.map((office) => ({
+  // a round trip.  It is NOT authoritative - request_clock_in re-validates.
+  //
+  // The office list and the distance function come from utils/geofence, which
+  // is the only place they are written down.  This used to be a second, private
+  // copy of the coordinates, and it had drifted 5.9 km from the first one.
+  const distances = OFFICE_LOCATIONS.map((office) => ({
     ...office,
-    distance: haversineMeters(lat, lon, office.latitude, office.longitude)
+    distance: haversineDistanceMeters(lat, lon, office.latitude, office.longitude)
   }));
   const nearest = distances.sort((a, b) => a.distance - b.distance)[0];
   // Skipped while the testing bypass is on; the server applies the same rule
-  // whenever settings.geofence_enforcement_enabled is true.
-  if (GEOFENCE_ENFORCEMENT_ENABLED && (!nearest || nearest.distance > 100)) {
+  // whenever settings.geofence_enforcement_enabled is true.  The radius comes
+  // from the shared constant so this check cannot drift away from the one the
+  // Attendance page shows the student.
+  if (GEOFENCE_ENFORCEMENT_ENABLED && (!nearest || nearest.distance > GEOFENCE_RADIUS_METERS)) {
     throw new Error(
       nearest
-        ? `You are currently ${Math.round(nearest.distance)} meters away from the nearest approved office. You must be within 100 meters to clock in.`
-        : 'You must be within 100 meters of an approved HYT location to clock in.'
+        ? `You are currently ${Math.round(nearest.distance)} meters away from the nearest approved office. You must be within ${GEOFENCE_RADIUS_METERS} meters to clock in.`
+        : `You must be within ${GEOFENCE_RADIUS_METERS} meters of an approved HYT location to clock in.`
     );
   }
 
@@ -1745,7 +1740,7 @@ export const clockIn = async (userId, latitude, longitude) => {
 /**
  * LAST-RESORT compatibility writer, used only when request_clock_in is missing
  * from the database.  Attendance is RPC-only in production, so this path
- * normally cannot succeed — a hardened database has no INSERT grant on
+ * normally cannot succeed - a hardened database has no INSERT grant on
  * attendance_logs for `authenticated`, and the write comes back as 42501.
  */
 const writePendingClockInDirect = async (client, userId, lat, lon) => {
@@ -1792,7 +1787,7 @@ const writePendingClockInDirect = async (client, userId, lat, lon) => {
   }
   if (result.error) {
     // 42501 = insufficient_privilege.  Means the RPC is missing AND the table
-    // grants are hardened — surface the real remedy instead of a raw Postgres
+    // grants are hardened - surface the real remedy instead of a raw Postgres
     // string that looks like a browser location-permission problem.
     if (result.error.code === '42501') throw attendanceMigrationRequired();
     throw result.error;
@@ -2127,11 +2122,10 @@ export const rejectOtRequest = async (otRequestId, adminNote) => {
 //
 // A trainee/OJT tells the administrator in advance that they cannot attend,
 // and why.  This is deliberately NOT an approval workflow: the administrator
-// only *acknowledges* it with "Noted", so the request has exactly two states —
-// Submitted (waiting to be seen) and Noted (seen).  Nothing here credits or
+// only *acknowledges* it with "Noted", so the request has exactly two states - // Submitted (waiting to be seen) and Noted (seen).  Nothing here credits or
 // removes hours.
 //
-// Requires the absence_requests table — see ABSENCE_REQUESTS_MIGRATION.sql.
+// Requires the absence_requests table - see ABSENCE_REQUESTS_MIGRATION.sql.
 // Every reader degrades to an empty list when the table has not been created
 // yet, so the attendance page still loads on an older database.
 // ==========================================================================
@@ -2223,7 +2217,7 @@ export const createAbsenceRequest = async ({ userId, absenceDate, reason }) => {
 };
 
 /**
- * Acknowledge a request.  There is no approve/reject — the administrator simply
+ * Acknowledge a request.  There is no approve/reject - the administrator simply
  * marks it as seen, optionally with a short note back to the trainee.
  */
 export const acknowledgeAbsenceRequest = async (requestId, adminNote = '', adminUserId = null) => {
@@ -2286,7 +2280,7 @@ export const getDailyReports = async (userId = null) => {
     rows = (result.data || []).map(normalizeReportRow);
   }
   // normalizeReportRow() always sets userId, so the same profile attach used by
-  // the attendance queue works here — the admin feed showed "User <id>" because
+  // the attendance queue works here - the admin feed showed "User <id>" because
   // the report rows arrived with no joined user.
   rows = await attachUserProfiles(rows, client);
   if (!userId) return rows;
@@ -2304,8 +2298,8 @@ export const getPendingDailyReports = async () => {
  * Verified against the live project: the table is
  *   id · user_id · report_date · accomplishments · slot_entries · status · created_at
  *
- * The legacy names the code used to fall back on — `student_id`, `ojt_id`,
- * `date`, `tasks_completed`, `notes`, `attachments` — do NOT exist there. Sending
+ * The legacy names the code used to fall back on - `student_id`, `ojt_id`,
+ * `date`, `tasks_completed`, `notes`, `attachments` - do NOT exist there. Sending
  * them made PostgREST answer PGRST204 ("Could not find the 'student_id' column
  * ... in the schema cache") on the first attempt and the same for 'date' on the
  * fallback, so every filing failed with a 400 no matter which path ran.
@@ -2351,7 +2345,7 @@ export const createDailyReport = async (reportData) => {
  * Is the `slot_entries` column present yet?
  *
  * A read-only capability probe.  The three-slot report needs one added column,
- * and the migration that adds it is run by hand in the SQL editor — so the page
+ * and the migration that adds it is run by hand in the SQL editor - so the page
  * has to be able to say "run the migration" instead of failing on submit with a
  * Postgres error code.  `select('slot_entries')` answers with 42703 when the
  * column is absent, which is exactly the question being asked.
@@ -2375,7 +2369,7 @@ export const reportSlotsReady = async () => {
  *
  * A day is one row.  The three slots live together in `slot_entries` (jsonb),
  * so filing the 15:00 slot merges into the row the 11:00 filing created rather
- * than inserting a second report — which is what lets the administrator read
+ * than inserting a second report - which is what lets the administrator read
  * the whole day as a single consolidated report.
  *
  * `accomplishments` is kept in step with the latest filed slot.  Every older
@@ -2395,7 +2389,7 @@ export const submitReportSlot = async ({ userId, studentId, reportDate, slot, en
   const client = requireSupabase();
 
   // Fail loudly and early rather than filing into a day that cannot hold its
-  // slots — without this column the whole three-slot model has nowhere to write.
+  // slots - without this column the whole three-slot model has nowhere to write.
   const probe = await client.from('daily_reports').select('slot_entries').limit(1);
   if (probe.error && isMissingColumnError(probe.error)) {
     throw new Error(

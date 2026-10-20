@@ -3,7 +3,7 @@ import { useEffect, useId, useRef } from 'react';
 /**
  * Shared modal.
  *
- * The dialog semantics below are not decoration — without them a keyboard or
+ * The dialog semantics below are not decoration - without them a keyboard or
  * screen-reader user can tab straight past the overlay into the page behind it,
  * and Escape does nothing.  Specifically:
  *
@@ -19,7 +19,7 @@ import { useEffect, useId, useRef } from 'react';
  * reaching into the shared markup.  It defaults to empty, so the other callers
  * render exactly the same class list they did before.
  *
- * `style` is merged over the size preset for the same reason — the partner
+ * `style` is merged over the size preset for the same reason - the partner
  * dialog passes its brand accent through as custom properties.  It defaults to
  * undefined, so nothing changes for callers that do not pass it.
  */
@@ -30,8 +30,8 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md', c
 
   // `onClose` is held in a ref rather than used as an effect dependency.
   //
-  // Every caller in this app passes it as an inline arrow — `() => closeModal()`
-  // and friends — so its identity changes on every parent render.  With
+  // Every caller in this app passes it as an inline arrow - `() => closeModal()`
+  // and friends - so its identity changes on every parent render.  With
   // `onClose` in the dependency array the focus trap below re-ran on every one
   // of those renders, and each re-run moved focus back to the first control in
   // the dialog.  For a controlled field that means the field loses focus after
@@ -75,7 +75,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md', c
         // A nested popover that owns its own Escape gets first refusal.  The
         // date picker marks itself with `data-escape-owns` only while its
         // calendar is open, so pressing Escape with a calendar showing
-        // dismisses the calendar — tearing down the whole form (and everything
+        // dismisses the calendar - tearing down the whole form (and everything
         // typed into it) to close a date picker would be the wrong answer.
         if (event.target instanceof Element && event.target.closest('[data-escape-owns]')) {
           return;

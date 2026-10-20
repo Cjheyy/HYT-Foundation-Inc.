@@ -12,10 +12,10 @@ import {
  * `dtrColumns()` takes its date/time formatters as ARGUMENTS, so `dtrRows.js`
  * itself has no import of its own.  The CSV export module (`utils/csvExport.js`)
  * is not part of this build, so the two formatters it used to supply live here
- * instead — same behaviour, kept local so this DTR test stays self-contained.
+ * instead - same behaviour, kept local so this DTR test stays self-contained.
  */
 function formatDateOnly(value) {
-  // `new Date(null)` is the epoch (1970-01-01), not an invalid date — null
+  // `new Date(null)` is the epoch (1970-01-01), not an invalid date - null
   // coerces to 0, and 0 is a perfectly good timestamp.  So a missing date would
   // render as "1970-01-01" instead of an empty cell.  Reject empty input first.
   if (value === null || value === undefined || value === '') return '';
@@ -186,22 +186,22 @@ describe('reportDescription / reportLink', () => {
 describe('attendanceNote', () => {
   test('strips the MANUAL tag and its separator', () => {
     // This is the exact string request_manual_attendance() writes.
-    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL — Day 1 - orientation' }))
+    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL - Day 1 - orientation' }))
       .toBe('Day 1 - orientation');
   });
 
   test('keeps a hyphen inside the note itself', () => {
-    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL — Half-day - AM only' }))
+    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL - Half-day - AM only' }))
       .toBe('Half-day - AM only');
   });
 
   test('a bare tag means the trainee left no note', () => {
     expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL' })).toBe('');
-    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL — ' })).toBe('');
+    expect(attendanceNote({ status: 'MANUAL', adminNote: 'MANUAL - ' })).toBe('');
   });
 
   test('reads the snake_case column straight off the database', () => {
-    expect(attendanceNote({ status: 'MANUAL', admin_note: 'MANUAL — Encoding' })).toBe('Encoding');
+    expect(attendanceNote({ status: 'MANUAL', admin_note: 'MANUAL - Encoding' })).toBe('Encoding');
   });
 
   test('ignores an administrator note on a non-manual row', () => {
@@ -221,12 +221,12 @@ describe('attendanceNote', () => {
   });
 });
 
-describe('mergeDtrRows — description fallback', () => {
+describe('mergeDtrRows - description fallback', () => {
   test('uses the manual note when there is no daily report', () => {
     // Without this the Description column printed blank for every backfilled
     // day, which is most of a hand-entered DTR.
     const [row] = mergeDtrRows(
-      [attendance({ status: 'MANUAL', adminNote: 'MANUAL — Day 1 - orientation' })],
+      [attendance({ status: 'MANUAL', adminNote: 'MANUAL - Day 1 - orientation' })],
       []
     );
     expect(row.description).toBe('Day 1 - orientation');
@@ -234,7 +234,7 @@ describe('mergeDtrRows — description fallback', () => {
 
   test('a daily report still wins over the manual note', () => {
     const [row] = mergeDtrRows(
-      [attendance({ status: 'MANUAL', adminNote: 'MANUAL — short note' })],
+      [attendance({ status: 'MANUAL', adminNote: 'MANUAL - short note' })],
       [report({ accomplishments: 'The full daily report' })]
     );
     expect(row.description).toBe('The full daily report');

@@ -4,7 +4,7 @@
  * There is no PDF library in this project, so the honest way to hand a user a
  * PDF is the browser's own "Save as PDF" destination.  This renders the
  * document into an off-screen iframe and opens the print dialog on it, which
- * produces a real PDF with selectable text — unlike the previous behaviour of
+ * produces a real PDF with selectable text - unlike the previous behaviour of
  * downloading a `.html` file.
  *
  * The iframe is removed on `afterprint`, with a timeout fallback for browsers

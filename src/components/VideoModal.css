@@ -29,7 +29,7 @@
   position: relative;
   width: 100%;
   max-width: 1200px;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: scaleIn 0.3s ease-out;
@@ -55,10 +55,10 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-frosted);
   border: none;
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--dark-text);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -69,7 +69,7 @@
 }
 
 .video-modal-close:hover {
-  background: white;
+  background: var(--surface);
   transform: scale(1.1) rotate(90deg);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -93,13 +93,13 @@
 .video-modal-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin: 0 0 8px 0;
 }
 
 .video-modal-description {
   font-size: 16px;
-  color: #666;
+  color: var(--muted-text);
   margin: 0;
   line-height: 1.5;
 }
@@ -155,8 +155,8 @@
 
 .video-error-button {
   padding: 12px 32px;
-  background: white;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--dark-text);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -166,7 +166,7 @@
 }
 
 .video-error-button:hover {
-  background: #f0f0f0;
+  background: var(--surface-sunken);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }

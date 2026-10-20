@@ -25,14 +25,14 @@ import './DateField.css';
  *
  * The admin forms used `<input type="date">` and `<input type="datetime-local">`.
  * Those are drawn by the BROWSER: the calendar popup is Chrome's own widget, and
- * a page has no API to close it — there is no "dismiss" call, and `blur()` is an
+ * a page has no API to close it - there is no "dismiss" call, and `blur()` is an
  * undocumented trick that may stop working in any Chrome release.  So after
  * picking a date the popup stayed open over the form, which is what the admin
  * kept running into.
  *
  * This component renders the calendar itself, so "it closes when you are done"
  * is a fact rather than a hope: the popover closes on **Done**, on **Escape**,
- * on a click outside, and — for a date-only field — the moment a day is picked.
+ * on a click outside, and - for a date-only field - the moment a day is picked.
  *
  * ## Drop-in shape
  *
@@ -46,7 +46,7 @@ import './DateField.css';
  * `required` draws the asterisk and sets `aria-required`, but it is NOT a native
  * constraint: a button cannot carry `required`.  Every one of the four admin
  * forms already validates its own dates in `validate()` and renders the message
- * inline, so an empty date still cannot be submitted — the error just comes from
+ * inline, so an empty date still cannot be submitted - the error just comes from
  * the form instead of the browser's bubble.
  *
  * ## Portalled on purpose
@@ -258,8 +258,7 @@ export function DateField({
   //
   // Escape is on `document` in the CAPTURE phase, which is also where <Modal>
   // listens.  The modal defers to any open field marked `data-escape-owns` (see
-  // Modal.jsx), so this handler is the one that acts and the dialog stays up —
-  // otherwise Escape would tear down the whole form just to dismiss a calendar.
+  // Modal.jsx), so this handler is the one that acts and the dialog stays up - // otherwise Escape would tear down the whole form just to dismiss a calendar.
   useEffect(() => {
     if (!open) return undefined;
 
@@ -313,7 +312,7 @@ export function DateField({
       aria-label={label || props['aria-label'] || 'Choose a date'}
       tabIndex={-1}
       /* The popover is portalled to <body>, so it is NOT a DOM descendant of
-         the `.date-field` wrapper — it has to carry the marker itself or the
+         the `.date-field` wrapper - it has to carry the marker itself or the
          modal's Escape deferral would not see it. */
       data-escape-owns="true"
       style={{
@@ -450,8 +449,7 @@ export function DateField({
           // The trigger opens a dialog and reports a value, so it is announced
           // as a combobox rather than a plain button. The role is what makes
           // aria-invalid / aria-required legal here: on an implicit `button`
-          // role both attributes are unsupported, and jsx-a11y rejects them —
-          // which `CI=true` turns into a build failure, so this is also what
+          // role both attributes are unsupported, and jsx-a11y rejects them - // which `CI=true` turns into a build failure, so this is also what
           // keeps the production build compiling.
           role="combobox"
           aria-haspopup="dialog"

@@ -4,8 +4,7 @@
  * Why a data URI and not an ordinary CRA asset import:
  *
  * The printable DTR is rendered into an off-screen IFRAME, then printed.  A
- * CRA asset import resolves to a path like `/static/media/HYT.<hash>.png` —
- * which the iframe resolves relative to ITS OWN document, not the app's
+ * CRA asset import resolves to a path like `/static/media/HYT.<hash>.png` - * which the iframe resolves relative to ITS OWN document, not the app's
  * origin.  When that lookup fails the print dialog shows a broken-image icon,
  * and worse, it fails SILENTLY (the on-screen preview still looks fine).
  *

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Icon } from '../components/icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { ProfileModal } from '../components/ProfileModal';
 import { AttentionCenter } from '../components/AttentionCenter';
 import { TRAINEE_NAV, groupNavItems, resolveActiveNavPath } from '../utils/portalNav';
@@ -146,6 +147,7 @@ export function TraineeLayout({ children }) {
               <Icon name="dashboard" size={15} /><span>Dashboard</span>
             </Link>
             <AttentionCenter basePath="/trainee" />
+            <ThemeToggle />
           </div>
         </header>
 

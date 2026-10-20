@@ -5,24 +5,24 @@ import './DreamAcademy.css';
 const ordinal = (index) => String(index + 1).padStart(2, '0');
 
 /**
- * Dream Academy — the closing section of the Home page.
+ * Dream Academy - the closing section of the Home page.
  *
  * Five beats, in the order the source copy reads:
- *   1. header   — photo, the academy's name, and who it is run with
- *   2. about    — the one-paragraph explanation, on a card that breaks the
+ *   1. header - photo, the academy's name, and who it is run with
+ *   2. about - the one-paragraph explanation, on a card that breaks the
  *                 ramp rule between the header and the rest
- *   3. program  — Training Program / Training Objectives, as a two-panel spec
- *   4. goals    — Dreamer's Goals, as a pull-quote on the ink band
- *   5. units    — the eight units and what a trainee actually does in each
+ *   3. program - Training Program / Training Objectives, as a two-panel spec
+ *   4. goals - Dreamer's Goals, as a pull-quote on the ink band
+ *   5. units - the eight units and what a trainee actually does in each
  *
  * Reveals ride the page-wide `data-reveal` system (useRevealOnScroll), which
- * scans for new nodes — so nothing here needs its own observer.
+ * scans for new nodes - so nothing here needs its own observer.
  *
  * The header's contrast is GUARANTEED, not eyeballed: the scrim is a flat
  * `rgba(14, 23, 38, 0.66)` painted over both the photo and the ramp wash, with a
  * strictly ADDITIVE bottom gradient over it. So whatever the photograph happens
  * to be under a glyph, the brightest possible pixel behind it is ~rgb(96, 102,
- * 112) — 5.78:1 against white. That is why the ramp wash sits BELOW the scrim
+ * 112) - 5.78:1 against white. That is why the ramp wash sits BELOW the scrim
  * rather than on top of it, and why the gradient may only ever add ink.
  */
 export function DreamAcademy() {

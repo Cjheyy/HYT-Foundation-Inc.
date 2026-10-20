@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '../context/ThemeContext';
 import { StudentLayout } from './StudentLayout';
 import { TraineeLayout } from './TraineeLayout';
 
@@ -23,9 +24,11 @@ const studentState = () => ({
 });
 
 const renderAt = (Layout, path) => render(
-  <MemoryRouter initialEntries={[path]}>
-    <Layout><div>page content</div></Layout>
-  </MemoryRouter>
+  <ThemeProvider>
+    <MemoryRouter initialEntries={[path]}>
+      <Layout><div>page content</div></Layout>
+    </MemoryRouter>
+  </ThemeProvider>
 );
 
 // The active sidebar entry is the only link marked aria-current="page", so this

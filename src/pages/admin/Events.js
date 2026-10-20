@@ -18,6 +18,7 @@ import {
   isEventActive
 } from '../../services/supabaseService';
 import { EVENT_CATEGORIES, PROGRAM_SLOT_OPTIONS, formatDate, formatDateTime, toIsoInstant } from '../../utils/helpers';
+import { formatListingSchedule, spansMultipleDays } from '../../utils/experience';
 import { todayIso } from '../../utils/dateParts';
 import { showToast } from '../../utils/notifications';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
@@ -29,7 +30,7 @@ import './Admin.css';
  * Events live in their own table (`public.events`), separate from the Dream
  * Academy programmes, so they get their own screen.  The only structural
  * difference from the programme form is that the schedule is a real
- * start/end DATE-TIME pair rather than a free-text range — the youth-facing
+ * start/end DATE-TIME pair rather than a free-text range - the youth-facing
  * overlap rule needs to compare actual instants.
  */
 
@@ -109,7 +110,15 @@ export function AdminEvents() {
     try {
       setSaving(true);
       const total = Math.max(1, Number(formData.totalSlots) || 0);
-      const schedule = `${formatDateTime(formData.startsAt)} – ${formatDateTime(formData.endsAt)}`;
+      // The human-readable cache every list and announcement reads. Built with
+      // the same formatter the student side uses, so a whole-day event is
+      // stored as "October 20, 2026 · Whole day" instead of a literal
+      // "12:00 AM - 11:59 PM" that then leaks into announcements.
+      const schedule =
+        formatListingSchedule(
+          { startsAt: formData.startsAt, endsAt: formData.endsAt },
+          { isEvent: true }
+        ) || `${formatDateTime(formData.startsAt)} - ${formatDateTime(formData.endsAt)}`;
       const saved = await createEvent({
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -142,7 +151,7 @@ export function AdminEvents() {
         try {
           const announcement = await createAnnouncement({
             title: `New event: ${saved.title}`,
-            content: `${saved.title} — ${schedule} at ${saved.location}. `
+            content: `${saved.title} - ${schedule} at ${saved.location}. `
               + `${total} slot${total === 1 ? '' : 's'} available; apply on or before ${formatDate(saved.applicationDeadline) || saved.applicationDeadline}.`,
             category: 'Events',
             priority: 'High',
@@ -219,7 +228,7 @@ export function AdminEvents() {
                     {item.description?.length > 120 ? '...' : ''}
                   </p>
                   <div className="admin-card-meta">
-                    <span><span className="meta-icon-svg"><Icon name="calendar" size={15} /></span>{item.schedule || '--'}</span>
+                    <span><span className="meta-icon-svg"><Icon name="calendar" size={15} /></span>{formatListingSchedule(item, { isEvent: true }) || item.schedule || '--'}</span>
                     <span><span className="meta-icon-svg"><Icon name="pin" size={15} /></span>{item.location || '--'}</span>
                     <span><span className="meta-icon-svg"><Icon name="users" size={15} /></span>{slots.available} of {slots.total} slots remaining</span>
                     <span><span className="meta-icon-svg"><Icon name="clock" size={15} /></span>{item.applicationDeadline || 'No deadline'}</span>
@@ -248,9 +257,26 @@ export function AdminEvents() {
             </div>
             <div className="schedule-preview" aria-live="polite" style={{ marginTop: '8px' }}>
               {formData.startsAt && formData.endsAt
-                ? `Selected schedule: ${formatDateTime(formData.startsAt)} – ${formatDateTime(formData.endsAt)}`
+                ? `Selected schedule: ${formatListingSchedule(
+                    { startsAt: formData.startsAt, endsAt: formData.endsAt },
+                    { isEvent: true }
+                  )}`
                 : 'Select a start and end date and time. This is what the overlap rule compares.'}
             </div>
+            {/* A span that crosses midnight is stored as ONE continuous window, so
+                a student is blocked from every other event for the whole range -
+                including the night in between. That is fine when the event really
+                fills each day, but wrong for a morning-only session across two
+                days, where the afternoon of day one would be blocked for nothing.
+                A hint, not a validation error: it never stops the save. */}
+            {spansMultipleDays(formData.startsAt, formData.endsAt) && (
+              <p className="schedule-warning" role="status">
+                This runs across more than one day. It is stored as one continuous
+                window, so applicants are blocked from any other event for the whole
+                span, including the night in between. If it only runs a few hours
+                each day, create one event per day instead.
+              </p>
+            )}
           </div>
           <Input label="Location" name="location" value={formData.location} onChange={handleChange} error={errors.location} required />
           <Select label="Total Slots" name="totalSlots" value={formData.totalSlots} onChange={handleChange} error={errors.totalSlots} options={SLOT_OPTIONS} placeholder="Select total slots" help="Available slots start equal to total slots and decrement automatically on each approval." required />

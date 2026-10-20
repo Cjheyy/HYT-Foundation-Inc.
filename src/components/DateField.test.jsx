@@ -50,7 +50,7 @@ function Harness({ initial = '', ...rest }) {
   );
 }
 
-describe('DateField — trigger', () => {
+describe('DateField - trigger', () => {
   test('shows a placeholder while empty and the formatted date once set', () => {
     const { rerender } = render(<Harness />);
     expect(trigger()).toHaveTextContent('Select a date');
@@ -88,7 +88,7 @@ describe('DateField — trigger', () => {
   });
 });
 
-describe('DateField — the picker closes', () => {
+describe('DateField - the picker closes', () => {
   test('opens on the trigger and shows the month of its value', () => {
     render(<Harness initial={PINNED} />);
     expect(popover()).toBeNull();
@@ -156,7 +156,7 @@ describe('DateField — the picker closes', () => {
   });
 });
 
-describe('DateField — datetime-local', () => {
+describe('DateField - datetime-local', () => {
   test('keeps the popover open after a day so the time can still be set', () => {
     render(<Harness initial={PINNED} type="datetime-local" />);
     fireEvent.click(trigger());
@@ -242,7 +242,7 @@ describe('DateField — datetime-local', () => {
   });
 });
 
-describe('DateField — navigation and limits', () => {
+describe('DateField - navigation and limits', () => {
   test('steps to the next and previous month', () => {
     render(<Harness initial={PINNED} />);
     fireEvent.click(trigger());
@@ -309,7 +309,7 @@ describe('DateField — navigation and limits', () => {
   });
 });
 
-describe('DateField — inside a Modal', () => {
+describe('DateField - inside a Modal', () => {
   function ModalHarness() {
     const [open, setOpen] = useState(true);
     return (
@@ -322,7 +322,7 @@ describe('DateField — inside a Modal', () => {
   test('Escape closes the calendar and leaves the form open', () => {
     // The bug this guards: the modal listens for Escape on `document` in the
     // capture phase, so without the deferral one Escape tore down the whole
-    // form — and everything typed into it — just to dismiss a calendar.
+    // form - and everything typed into it - just to dismiss a calendar.
     render(<ModalHarness />);
     fireEvent.click(trigger());
     expect(popover()).not.toBeNull();

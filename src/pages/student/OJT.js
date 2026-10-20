@@ -21,7 +21,7 @@ export function StudentOJT() {
   const { state } = useApp();
   const { currentUser, ojtRecords, applications, opportunities, dataLoading } = state;
 
-  // Shared by the OJT/Intern and Trainee portals — the Trainee used to read
+  // Shared by the OJT/Intern and Trainee portals - the Trainee used to read
   // "OJT / Experience" and "Apply to postings to start your OJT journey".
   const terms = getRoleTerms(currentUser?.role);
 
@@ -283,7 +283,7 @@ export function StudentOJT() {
                     />
                   </svg>
                   <div className="ojt-ring-center">
-                    <b>{activeMeasure.hasData ? `${activeMeasure.percent.toFixed(1)}%` : '—'}</b>
+                    <b>{activeMeasure.hasData ? `${activeMeasure.percent.toFixed(1)}%` : '-'}</b>
                     <span>{activeMeasure.caption}</span>
                   </div>
                 </div>

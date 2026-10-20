@@ -5,7 +5,7 @@ import { partnerMonogram } from '../data/partnerOrganizations';
  * A partner's brand mark.
  *
  * If the logo file ever fails to load this degrades to the company's initials
- * rather than leaving an empty plate — which is why `partnerMonogram` is still
+ * rather than leaving an empty plate - which is why `partnerMonogram` is still
  * exported by the data module even though the tiles now show real logos.
  *
  * `alt` is empty on purpose: the company name is always rendered alongside the

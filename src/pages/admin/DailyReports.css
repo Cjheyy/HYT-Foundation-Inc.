@@ -1,14 +1,95 @@
 /* ============================================================================
-   Admin → Daily Reports — the three-slot day, read back
+   Admin → Daily Reports - the three-slot day, read back whole
 
    A trainee files three updates a day (11:00, 15:00, 17:00).  The administrator
-   reads the day as ONE consolidated block rather than three separate reports —
-   which is the whole point of the 17:00 filing.
+   reviews the day as ONE consolidated block and approves it once - which is the
+   whole point of the 17:00 filing.  The list is split into "ready to approve"
+   and "incomplete" so the gap in an unfinished day stays visible without
+   cluttering the approval queue.
 
    Scoped under `.admin-report-*` so nothing here can reach the trainee screen.
    The shared `.report-day-flag` pill (complete / "No 5 PM report") lives in
    the student stylesheet, which this page imports alongside this file.
    ========================================================================== */
+
+.admin-report-section {
+  margin-bottom: 28px;
+}
+
+.admin-report-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.admin-report-section-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.admin-report-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-report-section-note {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--muted-text);
+  max-width: 68ch;
+}
+
+.admin-report-section-list {
+  display: grid;
+  gap: 16px;
+}
+
+/* ---- one day ------------------------------------------------------------ */
+
+.admin-report-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.admin-report-card-who {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-report-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.admin-report-card-date {
+  font-size: 14px;
+  color: var(--muted-text);
+  margin-bottom: 12px;
+}
+
+.admin-report-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ---- the three slots ---------------------------------------------------- */
 
 .admin-report-day-grid {
   display: grid;
@@ -16,11 +97,16 @@
   gap: 12px;
 }
 
+.admin-report-day-grid.is-compact {
+  margin-top: 4px;
+}
+
 .admin-report-day-cell {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  background: #FAFBFC;
+  background: var(--surface-alt);
+  min-width: 0;
 }
 
 .admin-report-day-head {
@@ -33,6 +119,7 @@
   letter-spacing: 0.3px;
   color: var(--accent-text);
   margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 
 .admin-report-day-tag {
@@ -54,7 +141,7 @@
 }
 
 .admin-report-day-tag.is-missed {
-  color: #B42318;
+  color: var(--danger-text);
   border-color: rgba(180, 35, 24, 0.30);
   background: rgba(180, 35, 24, 0.07);
 }
@@ -78,4 +165,89 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--muted-text);
+}
+
+/* ---- the review modal --------------------------------------------------- */
+
+.admin-review-meta {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.admin-review-note {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.admin-review-note.is-warning {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.admin-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* ============================================================================
+   PHONE
+
+   Three things break at these widths and only these three:
+
+     1. the review buttons sit in a right-hand column, so on a narrow screen
+        they squeeze the trainee's name and the day into a thin strip;
+     2. a three-column slot grid at 200px minimum needs ~640px, so on a phone
+        it either overflows or crushes the cells;
+     3. the modal's action row runs three buttons wide, which wraps raggedly.
+
+   The fix in each case is to stack, and to let the buttons span the full width
+   so the touch target is the whole row rather than a 60px chip.
+   ========================================================================== */
+
+@media (max-width: 720px) {
+  .admin-report-card-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .admin-report-card-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Full-width approve/review button: easier to hit, and it stops the flag and
+     the button from fighting for the same 200px. */
+  .admin-report-card-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-report-day-grid,
+  .admin-report-day-grid.is-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .admin-report-day-head {
+    flex-wrap: wrap;
+  }
+
+  .admin-review-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .admin-review-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

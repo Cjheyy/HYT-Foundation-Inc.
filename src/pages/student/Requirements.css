@@ -1,4 +1,4 @@
-/* Requirements — adopted from the previously orphaned stylesheet, plus the
+/* Requirements - adopted from the previously orphaned stylesheet, plus the
  * drag-and-drop uploader that replaces the "File Name" text field.
  * Selectors are unique to this page (checked against every other .css in src/).
  */
@@ -61,9 +61,9 @@
   place-items: center;
   gap: 6px;
   padding: 28px 20px;
-  border: 2px dashed #D1D5DB;
+  border: 2px dashed var(--border-strong);
   border-radius: 12px;
-  background: #FAFBFC;
+  background: var(--surface-alt);
   text-align: center;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease;
@@ -115,9 +115,9 @@
   gap: 10px;
   margin-top: 12px;
   padding: 10px 12px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .requirement-file-chip-icon {
@@ -128,8 +128,8 @@
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: #FDF0EA;
-  color: #C2410C;
+  background: var(--tint-warm);
+  color: var(--accent-strong);
 }
 
 .requirement-file-chip-body {

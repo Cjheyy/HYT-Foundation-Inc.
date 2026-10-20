@@ -53,7 +53,7 @@ export function DtrSummary() {
         getDailyReports(),
         // Only for the "Building / Office" column: attendance → ojt_records →
         // opportunities.location.  These two are decoration on an otherwise
-        // complete sheet, so a failure here must NOT blank the DTR — it just
+        // complete sheet, so a failure here must NOT blank the DTR - it just
         // leaves the column empty.
         getOjtRecords().catch(() => []),
         getOpportunities().catch(() => [])
@@ -84,7 +84,7 @@ export function DtrSummary() {
   );
 
   // Every row for the chosen person, merged with their daily reports and
-  // narrowed to the date range — the same merge the CSV export uses, so the
+  // narrowed to the date range - the same merge the CSV export uses, so the
   // printed sheet and the spreadsheet can never disagree.
   const rows = useMemo(() => {
     if (!userId) return [];
@@ -106,14 +106,14 @@ export function DtrSummary() {
 
   const requiredHours = selectedPerson?.requiredHours ?? selectedPerson?.required_hours ?? 0;
 
-  // The building / office printed in the last column — resolved from the OJT
+  // The building / office printed in the last column - resolved from the OJT
   // posting this trainee was accepted into, not from the attendance row.
   const workplace = useMemo(
     () => resolveWorkplace(ojtRecords, opportunities, userId),
     [ojtRecords, opportunities, userId]
   );
 
-  // Reset the signature fields whenever the person changes — a leftover mentor
+  // Reset the signature fields whenever the person changes - a leftover mentor
   // name from the previous trainee is exactly the kind of error that gets
   // signed without being noticed.
   useEffect(() => {
@@ -169,7 +169,7 @@ export function DtrSummary() {
       return;
     }
     const opened = printHtmlDocument(dtrHtml, {
-      title: `DTR — ${normalizeName(selectedPerson)}`
+      title: `DTR - ${normalizeName(selectedPerson)}`
     });
     if (!opened) {
       showToast('Could not open the print dialog. Please try again.', 'error');
@@ -245,7 +245,7 @@ export function DtrSummary() {
       {!loadError && selectedPerson && (
         <Card className="dtr-preview">
           <div className="card-header">
-            <h2 className="card-title">Preview — {normalizeName(selectedPerson)}</h2>
+            <h2 className="card-title">Preview - {normalizeName(selectedPerson)}</h2>
           </div>
 
           {rows.length === 0 ? (
@@ -256,14 +256,14 @@ export function DtrSummary() {
                 <iframe
                   ref={frameRef}
                   className="dtr-frame"
-                  title={`DTR preview — ${normalizeName(selectedPerson)}`}
+                  title={`DTR preview - ${normalizeName(selectedPerson)}`}
                   srcDoc={dtrHtml}
                   onLoad={handleFrameLoad}
                   style={{ height: `${frameHeight}px` }}
                 />
               </div>
               <p className="dtr-note">
-                Ito na mismo ang ipi-print na dokumento — awtomatikong nagbabago habang
+                Ito na mismo ang ipi-print na dokumento - awtomatikong nagbabago habang
                 tina-type mo ang pangalan ng Mentor at HR o binabago ang date range.
                 I-print o i-save bilang PDF kapag tama na ang nakikita mo.
               </p>

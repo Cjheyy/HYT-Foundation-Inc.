@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Icon } from '../components/icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { ProfileModal } from '../components/ProfileModal';
 import hytLogo from '../assets/HYT.png';
 import './PortalLayout.css';
@@ -47,7 +48,9 @@ export function AdminLayout({ children }) {
     { path: '/admin/opportunities', label: 'OJT Postings', icon: 'target' },
     { path: '/admin/attendance-verification', label: 'Attendance Verification', icon: 'check' },
     { path: '/admin/ot-approvals', label: 'OT Approvals', icon: 'clock' },
-    { path: '/admin/report-approvals', label: 'Report Approvals', icon: 'file' },
+    // One entry, one screen. The three-slot day is approved here, whole - // `/admin/report-approvals` is the older per-filing queue and is kept only
+    // as a route, not as a second competing door in the sidebar.
+    { path: '/admin/daily-reports', label: 'Daily Reports', icon: 'file' },
     { path: '/admin/certificates', label: 'Certificates', icon: 'award' },
     { path: '/admin/dtr-summary', label: 'Printable DTR', icon: 'clock' },
     { path: '/admin/announcements', label: 'Announcements', icon: 'bell' }
@@ -131,6 +134,7 @@ export function AdminLayout({ children }) {
           </button>
           <div className="header-title">Admin Portal</div>
           <div className="portal-header-actions">
+            <ThemeToggle />
             <Link to="/" className="portal-header-btn" title="Visit the public home page">
               <Icon name="home" size={15} /><span>Home</span>
             </Link>

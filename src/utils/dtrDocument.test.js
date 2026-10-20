@@ -2,8 +2,8 @@ import { buildDtrHtml, summariseDtr } from './dtrDocument';
 import { HYT_LOGO_DATA_URI } from '../assets/hytLogoDataUri';
 
 /**
- * The inlined logo is ~93 KB of base64, and base64 uses the full A–Za–z0–9+/ set
- * — so the literal substring "NaN" DOES occur inside it by chance.  A naive
+ * The inlined logo is ~93 KB of base64, and base64 uses the full A - Za - z0 - 9+/ set
+ * - so the literal substring "NaN" DOES occur inside it by chance.  A naive
  * `expect(html).not.toContain('NaN')` therefore fails on a perfectly correct
  * document.  Every "no NaN on the sheet" assertion below goes through this
  * helper, which looks at the document with the logo stripped out.
@@ -162,10 +162,10 @@ describe('buildDtrHtml', () => {
     const html = buildDtrHtml({
       user: person,
       rows: [dtrRow()],
-      workplace: 'HYT Foundation — HR Office, Quezon City'
+      workplace: 'HYT Foundation - HR Office, Quezon City'
     });
     expect(html).toContain('Building / Office');
-    expect(html).toContain('HYT Foundation — HR Office, Quezon City');
+    expect(html).toContain('HYT Foundation - HR Office, Quezon City');
     expect(html).not.toContain('Description of Tasks');
   });
 
@@ -179,7 +179,7 @@ describe('buildDtrHtml', () => {
   });
 
   test('never reproduces the daily-report text on the printed sheet', () => {
-    // The reports themselves are untouched — they still live in the database
+    // The reports themselves are untouched - they still live in the database
     // and in the CSV export.  They are simply not printed here.
     const html = buildDtrHtml({
       user: person,
@@ -254,7 +254,7 @@ describe('buildDtrHtml', () => {
   test('collapses a single-day period to one date instead of a range', () => {
     const html = buildDtrHtml({ user: person, rows: [dtrRow({ date: '2026-09-23' })] });
     expect(html).toContain('September 23, 2026');
-    expect(html).not.toContain('September 23, 2026 — September 23, 2026');
+    expect(html).not.toContain('September 23, 2026 - September 23, 2026');
   });
 
   test('shows a range when the listed days span more than one day', () => {
@@ -262,7 +262,7 @@ describe('buildDtrHtml', () => {
       user: person,
       rows: [dtrRow({ date: '2026-09-08' }), dtrRow({ id: 'a2', date: '2026-09-15' })]
     });
-    expect(html).toContain('September 8, 2026 — September 15, 2026');
+    expect(html).toContain('September 8, 2026 - September 15, 2026');
   });
 
   test('always prints both signature lines, even unnamed', () => {
@@ -346,6 +346,6 @@ describe('buildDtrHtml', () => {
     const sheet = withoutLogo(html);
     expect(sheet).not.toContain('NaN');
     expect(sheet).not.toContain('Infinity');
-    expect(sheet).toContain('—');
+    expect(sheet).toContain('-');
   });
 });

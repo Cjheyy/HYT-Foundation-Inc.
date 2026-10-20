@@ -77,7 +77,7 @@
 }
 
 .section.bg-white {
-  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);
 }
 
 .content-grid {
@@ -129,7 +129,7 @@
   position: sticky;
   top: 100px;
   padding: 32px;
-  background: white;
+  background: var(--surface);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid rgba(229, 231, 235, 0.5);
@@ -156,7 +156,7 @@
 }
 
 /* ==========================================================================
-   Thrusts — even grid, equal-height cards.
+   Thrusts - even grid, equal-height cards.
    `auto-fit` + `minmax` guarantees every card in a row is the same width, so
    the tiles can never end up staggered like they did before.
    ========================================================================== */
@@ -177,7 +177,7 @@
   align-items: flex-start;
   /* No `height: 100%` here: an explicit height disables the grid's
      `align-items: stretch`, and a percentage against an auto-sized row
-     resolves circularly — which left one tile per row taller than its
+     resolves circularly - which left one tile per row taller than its
      neighbour and made the grid look staggered. */
   padding: 30px 32px;
   border-radius: 20px;
@@ -186,7 +186,7 @@
   /* Gradient hairline border via the padding-box/border-box trick. */
   border: 2px solid transparent;
   background:
-    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
     linear-gradient(135deg, rgba(213, 113, 86, 0.22), rgba(39, 158, 182, 0.22), rgba(243, 219, 110, 0.22)) border-box;
   box-shadow: 0 4px 18px rgba(31, 41, 55, 0.06);
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
@@ -205,7 +205,7 @@
   transform: translateY(-8px);
   box-shadow: 0 20px 46px rgba(213, 113, 86, 0.22);
   background:
-    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
     linear-gradient(135deg, #D57156, #279EB6, #F3DB6E) border-box;
 }
 
@@ -285,7 +285,7 @@
 }
 
 .thrust-item:hover .thrust-title {
-  color: #B5553C;
+  color: var(--accent-text);
 }
 
 /* Capped measure so the copy reads in a comfortable column instead of
@@ -302,8 +302,8 @@
    Partner organizations
    Every class is prefixed `partner-`: CRA bundles all stylesheets into one
    global scope, so an unprefixed `.card`/`.tile` would collide elsewhere.
-   Colour choices use the deepened brand siblings (#16697A, #B8441F, #0E1726,
-   #374151) so white and body text both clear their contrast minimums.
+   Colour choices use the deepened brand siblings (#16697A, var(--accent-text), var(--dark-text),
+   var(--dark-text)) so white and body text both clear their contrast minimums.
    ========================================================================== */
 .partners-grid {
   display: grid;
@@ -329,15 +329,15 @@
   font: inherit;
   cursor: pointer;
   border-radius: 18px;
-  /* Own stacking context, so the sheen layer can sit at z-index:-1 — above this
-     element's own background but below its content — without a z-index on each
+  /* Own stacking context, so the sheen layer can sit at z-index:-1 - above this
+     element's own background but below its content - without a z-index on each
      child. */
   isolation: isolate;
   /* Hairline border tinted with the brand accent, via the
      padding-box/border-box trick. */
   border: 2px solid transparent;
   background:
-    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
     linear-gradient(135deg, var(--accent-soft), var(--accent-mid)) border-box;
   box-shadow: 0 4px 16px rgba(14, 23, 38, 0.06);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
@@ -364,7 +364,7 @@
   transform: translateY(-5px);
   box-shadow: 0 18px 36px var(--accent-soft);
   background:
-    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
     linear-gradient(135deg, var(--accent), var(--accent-deep)) border-box;
 }
 
@@ -409,7 +409,7 @@
 
 /* No plate and no border.  Every logo is pre-composited onto the same 640x400
    canvas (see drafts/process-logos.py), so a plain `width: 100%` renders all
-   twelve at exactly the same size — and because each mark keeps its own white
+   twelve at exactly the same size - and because each mark keeps its own white
    background, that white blends into the white tile, which is what removes the
    "box" the plate used to draw. */
 .partner-logo {
@@ -459,7 +459,7 @@
   letter-spacing: 0.03em;
   color: #fff;
   /* White on this gradient is safe at every stop (worst case 5.41:1). */
-  background: linear-gradient(135deg, #16697A 0%, #B8441F 100%);
+  background: linear-gradient(135deg, #16697A 0%, var(--accent-text) 100%);
   box-shadow: 0 8px 18px rgba(22, 105, 122, 0.28);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
 }
@@ -480,7 +480,7 @@
 .partner-name {
   font-size: 13.5px;
   font-weight: 700;
-  color: #0E1726;
+  color: var(--dark-text);
   line-height: 1.35;
   max-width: 100%;
   /* Long names ("Level Up International Manpower Services Corp.") must wrap
@@ -492,14 +492,14 @@
    Partner dialog shell
    <Modal> appends the `partner-modal` class (see PartnerModal.jsx), so this one
    dialog can be branded without a `:has()` selector reaching into shared
-   markup — the other <Modal> callers render exactly as before.
+   markup - the other <Modal> callers render exactly as before.
    -------------------------------------------------------------------------- */
 .partner-modal .modal-header {
   /* The brand's deepened accent, derived from its own logo.  `accentDeep` is
      scaled toward black until white text on it clears 4.6:1, so the light
-     logos (gold #F1BB27, yellow-green #B0CE4B) are safe here too — their raw
+     logos (gold #F1BB27, yellow-green #B0CE4B) are safe here too - their raw
      accents would fail badly behind the white title. */
-  background: linear-gradient(135deg, var(--accent-deep) 0%, #0E1726 100%);
+  background: linear-gradient(135deg, var(--accent-deep) 0%, var(--footer-ink) 100%);
   border-bottom: none;
   /* Accent rule along the top edge of the dialog.  A border rather than an
      absolutely positioned bar, because `.modal` scrolls and an absolute child
@@ -547,7 +547,7 @@
   transition: background 0.25s ease, transform 0.25s ease;
 }
 
-/* Scaled, not rotated — a rotated × reads as a +. */
+/* Scaled, not rotated - a rotated × reads as a +. */
 .partner-modal .modal-close:hover {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
@@ -564,7 +564,7 @@
 
 /* Partner detail modal body (rendered inside the shared <Modal>). */
 .partner-detail {
-  color: #374151;
+  color: var(--dark-text);
 }
 
 /* Content rises in behind the header rather than appearing all at once.
@@ -585,7 +585,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Identity block — no panel and no plate.  The mark is composited on a white
+/* Identity block - no panel and no plate.  The mark is composited on a white
    canvas that disappears against the dialog, so the only thing behind it is a
    soft accent halo. */
 .partner-detail-head {
@@ -662,14 +662,14 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4B5563;
+  color: var(--muted-text-strong);
 }
 
 .partner-detail-about {
   margin: 0 0 22px;
   font-size: 16px;
   line-height: 1.7;
-  color: #374151;
+  color: var(--dark-text);
 }
 
 .partner-detail-columns {
@@ -692,7 +692,7 @@
   border: 1px solid var(--accent-soft);
   background:
     linear-gradient(180deg, var(--accent-soft) 0%, rgba(255, 255, 255, 0) 42%),
-    #FBFCFE;
+    var(--surface);
   animation: partner-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s backwards;
 }
 
@@ -702,10 +702,10 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #0E1726;
+  color: var(--dark-text);
 }
 
-/* Short accent rule under each panel heading — a second, quieter echo of the
+/* Short accent rule under each panel heading - a second, quieter echo of the
    brand colour that ties the panels to the header band. */
 .partner-detail-heading::after {
   content: '';
@@ -730,7 +730,7 @@
   padding-left: 18px;
   font-size: 14.5px;
   line-height: 1.5;
-  color: #374151;
+  color: var(--dark-text);
 }
 
 .partner-detail-item::before {
@@ -843,7 +843,7 @@
 .about-stat-box {
   text-align: center;
   padding: 40px 24px;
-  background: white;
+  background: var(--surface);
   border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   border: 2px solid rgba(229, 231, 235, 0.5);
@@ -882,7 +882,7 @@
 .team-card {
   text-align: center;
   padding: 32px;
-  background: white;
+  background: var(--surface);
   border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   border: 2px solid transparent;

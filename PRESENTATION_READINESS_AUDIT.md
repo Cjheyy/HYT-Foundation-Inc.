@@ -1,163 +1,141 @@
 # HYT Foundation — Presentation Readiness Audit
 
-**Audited:** 14 Oct 2026
-**Scope:** Full app — ~130 source files, ~60 routes, live Supabase DB (`qlulnldctvcjlzflpupe`)
-**Verdict:** **Not ready yet — but you are 1 focused day away.** Nothing is broken in the code. What will hurt you in the presentation is the *data on screen* and *one security hole*.
+**Audited:** 20 Oct 2026 (supersedes the 14 Oct audit)
+**Scope:** ~130 source files, ~60 routes, live Supabase DB (`qlulnldctvcjlzflpupe`), live deployment (`hyt-foundation-inc.vercel.app`)
+**Verdict:** **The code is ready. The deployment is not.** Every remaining blocker is data or process — none of it is a code defect.
+
+> **Correction to the first 20 Oct draft.** Two claims in it were wrong, and the
+> user was right both times:
+>
+> - **"There is no admin account"** — false. The SQL Editor shows **2** admin
+>   accounts (`admin.test@hyt-demo.com`, `admin@hyt-foundation.org`). The admin
+>   side *can* be demoed.
+> - **"The `users` table is fully readable by the anon key"** — false. RLS is
+>   doing its job: the anon key returns **1 of 14** rows, and the admin rows are
+>   not visible at all.
+>
+> The mistake: a REST probe through the anon key is filtered by RLS, so a small
+> row count proves nothing about what exists. Only the SQL Editor (service role)
+> shows the true totals. Any future audit must read the table through both paths
+> and compare, never through the anon key alone.
 
 ---
 
-## 🔴 BLOCKER 1 — Your database is a public leak (FIX BEFORE PRESENTING)
+## Scorecard
 
-I probed your live DB with the public anon key — the exact key that ships inside your website's JavaScript bundle. **Any visitor can read your entire `users` table.**
-
-```
-GET /rest/v1/users?select=*
-→ [{
-    "email": "mabbayad.christianjay.gazzingan@gmail.com",
-    "password_hash": "",          ← column is exposed
-    "full_name": "Mabbayad, Christian Jay G.",
-    "role": "OJT/Intern",
-    "required_hours": 486,
-    "is_active": false,
-    ...
-  }]
-```
-
-**Why this is a blocker and not a nice-to-have:** in a presentation, anyone with the browser DevTools open — or a panelist who knows Supabase — can pull your user list in one line. Right now there is 1 user so the blast radius is small, but the *policy* is what's broken. If you seed 50 demo students and then present, you've just exposed 50 real emails and names on a public endpoint.
-
-**The `password_hash` column being empty is good news** — you're using Supabase Auth, so the real hashes live in the protected `auth.users` table, not here. This column is dead weight and should be dropped.
-
-**Fix:** `users` should have RLS enabled with policies allowing:
-- `SELECT` own row only → `id = auth.uid()`
-- `SELECT` all rows → `public.is_hyt_admin()`
-- plus the admin policies you already use elsewhere
-
-I have **not touched RLS** — it can lock you out of your own app if done blind. Say the word and I'll write it as a reviewable `.sql` file first.
-
----
-
-## 🔴 BLOCKER 2 — Embarrassing junk data is live on your public pages
-
-These are **published** rows, visible to anyone:
-
-| Table | Title | Description | Problem |
-|---|---|---|---|
-| `events` | **Try poo** | "HAHAHAHAH namo" | profanity test row, Published |
-| `events` | Pitas Calamansi | "Pawis, Initm Asim niyan" | typo'd ("Initm"), unprofessional |
-| `opportunities` | **Ge** | "qq" (org: "Brains") | placeholder gibberish, Published |
-| `announcements` | New event: Pitas Calamansi | auto-generated from the junk event | junk propagates |
-
-A panelist opening your Events page sees **"Try poo"** as the first card. This will sink the demo faster than any bug.
-
-**Fix:** delete the junk rows, seed 5–6 realistic ones (see Blocker 3).
-
----
-
-## 🔴 BLOCKER 3 — The app is functionally empty
-
-Your code is done. Your data isn't. Live row counts:
-
-```
-programs         0   ← your flagship page is BLANK
-daily_reports    0
-attendance_logs  0
-applications     0
-requirements     0
-ojt_records      0
-certificates     0
-opportunities    1   ← and it's "Ge"
-events           2   ← and one is "Try poo"
-announcements    3
-users            1
-```
-
-**What a panelist will actually click through:**
-
-| Page | What they see | Impact |
+| Area | State | Evidence |
 |---|---|---|
-| Home | hero + motion (fine) | ✅ |
-| **Programs** | empty grid | 🔴 flagship looks unfinished |
-| **Events** | "Try poo" | 🔴 |
-| **Opportunities** | "Ge" | 🔴 |
-| Impact / About | static copy (fine) | ✅ |
-| Student dashboard | login → empty everything | 🔴 |
-
-**Fix:** seed realistic data across `programs`, `events`, `opportunities`, plus one demo student account with reports/attendance so the dashboard has something to show. This is the single highest-value hour you can spend.
+| Test suite | ✅ 479 / 479 passing (31 suites) | `CI=true react-scripts test` |
+| Production build | ✅ Compiles clean | `CI=true react-scripts build` |
+| Live deployment | ✅ Up to date | live bundle contains `Ready to approve`, `Return for revision`, phone CSS |
+| Mobile layout | ✅ No overflow, grids collapse | measured at 320–768 px |
+| Tagalog copy | ✅ Zero remaining in `src/` | full sweep |
+| Branding | ✅ Title / manifest / theme colour | verified in built output |
+| Admin accounts | ✅ 2 exist | SQL Editor |
+| `users` RLS | ✅ Filters correctly | anon sees 1 of 14, admin hidden |
+| **Content in listings** | ❓ **Unverified** | see Blocker 1 |
+| **Source of truth** | 🔴 **GitHub is 8 files behind** | see Blocker 2 |
 
 ---
 
-## 🟠 HIGH — UI still in Tagalog (mixed language)
+## ❓ BLOCKER 1 — The public listings look empty, but the cause is unconfirmed
 
-Last remaining Filipino UI file I found:
+What is verified: a request made with the public anon key returns **0 rows** for
+`programs`, `events`, and `opportunities`. A screenshot of the live
+`/programs` and `/events` pages confirms they render **"No Programs Found"** and
+**"No Events Found"** to a logged-out visitor.
 
-**`src/pages/admin/DtrSummary.js`** — 6 user-facing strings, lines 164, 168, 192, 241, 252:
+What is *not* verified: whether the tables are empty, or whether they hold rows
+that RLS simply does not expose to anonymous visitors. Given that the same probe
+under-reported `users` by 13 rows, both explanations are still open.
 
-```js
-164:  showToast('Pumili muna ng OJT/trainee.', 'warning');
-168:  showToast('Walang attendance record sa napiling range.', 'warning');
-192:  placeholder={loading ? 'Loading…' : 'Pumili ng trainee'}
-241:  <p className="dtr-empty">Pumili ng OJT/trainee para makita ang DTR preview.</p>
-252:  <p className="dtr-empty">Walang attendance record sa napiling range.</p>
+**Run `CHECK_CONTENT.sql`** — it counts every table as the service role and
+groups the listings by `status`. That separates the three possible causes:
+
+| Finding | Meaning | Fix |
+|---|---|---|
+| `total_rows = 0` | Nothing was ever created | Seed content |
+| Rows exist, `status` is Draft/Pending | Data is there but not published | Publish it |
+| Rows exist, `status` is Published, anon sees 0 | RLS blocks the public listing | Fix the policy |
+
+Until this is answered, "the site looks empty" is a symptom without a diagnosis.
+
+**Known leftover either way:** an announcement still reads *"New event: Pitas
+Calamansi — October 14, 2026"*, but that event has been deleted. It renders on
+the student dashboard and points at nothing.
+
+---
+
+## 🔴 BLOCKER 2 — GitHub does not contain the current code
+
+`origin/Main` is at commit `9e6f3ff` (14 Oct). The working tree has 7 modified
+files and 1 new test file that were never committed:
+
+```
+src/pages/admin/DailyReports.js        362 +/-   ← new approval flow
+src/pages/admin/DailyReports.css       178 +      ← admin layout + phone fixes
+src/pages/student/DailyReports.css     115 +      ← phone fixes
+src/pages/student/DailyReportsNew.jsx   29 +/-    ← review status for trainee
+src/utils/dailyReportSlots.js           23 +      ← reviewStateOf
+src/utils/dailyReportSlots.test.js      60 +      ← 13 new tests
+src/layouts/AdminLayout.jsx              5 +/-    ← nav fix
+src/__tests__/dailyReportPhoneLayout.test.js (new, 12 tests)
 ```
 
-Everything else (DailyReports, DailyReportsNew) is now English. This file is the last hold-out — it's admin-only, so lower priority than the blockers, but if you demo the DTR screen in front of a panel it shows.
-
----
-
-## 🟠 HIGH — Production build was broken (ALREADY FIXED)
-
-`CI=true npx react-scripts build` was **failing** on two jsx-a11y errors in `DateField.jsx`. Vercel/Netlify run builds with `CI=true`, so **your deploy would have failed.** Fixed by adding `role="combobox"` to the date-picker trigger button.
+Proof the branch is stale:
 
 ```
-Before:  Failed to compile  (DateField.jsx:443, aria-invalid / aria-required on implicit button role)
-After:   Compiled successfully.
-         368.54 kB (+8 B)  build/static/js/main.cc1f08af.js
-         39.63 kB          build/static/css/main.ed493b9a.css
+git show origin/Main:src/pages/admin/DailyReports.js  | grep -c "Ready to approve"   → 0
+git show origin/Main:src/pages/admin/DailyReports.css | grep -c "admin-report-card" → 0
 ```
 
-Also fixed earlier this session: the `daily_reports` 400 error (`PGRST204` — code sent `date`/`student_id`, live schema is `report_date`/`user_id`), the missing `slot_entries` column grant, and the unequal card heights on listing pages.
+The live site already serves this code, so it was deployed from local files, not
+from GitHub. **The current code exists in exactly one place: this machine's
+working tree.** If the folder is lost, or the project is rebuilt from GitHub, it
+is gone.
 
 ---
 
-## 🟡 MEDIUM — Repo hygiene (looks bad if they ask to see the code)
+## 🟡 Housekeeping
 
-- **67 markdown files at the repo root.** `URGENT_FIX.md`, `URGENT_FIX_NOW.md`, `RUN_THIS_NOW.md`, `SUCCESS.md`, `QUICK_FIX_SUMMARY.md`, `START_HERE.md`, `REGISTER_NOW.md`, `REFACTOR_COMPLETE_FINAL.md`… This reads as unmanaged. Keep `README.md`, move the rest to `docs/archive/`.
-- **27 SQL files at the root.** Same story. Actually — the sheer number of `FIX_*` / `URGENT_*` SQL files is a story in itself; consider consolidating into one `supabase/migrations/` folder.
-- **Orphan file:** `src/pages/admin/AttendanceReview.jsx` (+ its `.css`) is **not imported anywhere.** Dead code. Either wire it into `App.js` or delete it.
-- **Two project copies** exist: `HYTFoundation/hyt-foundation` and `HYTFoundation-New/hyt-foundation`. The `-New` copy is missing `src/pages/admin/Events.js`. Make sure you present from the right one.
-
----
-
-## ✅ What's genuinely good
-
-Don't fix what isn't broken — I checked these and they hold up:
-
-- **Deterministic test suite passing** (451/451 after this session's fixes).
-- **Zero stray `console.log`** in source (all cleaned).
-- **Zero mock/dummy data hardcoded in `src/`** — everything comes from Supabase.
-- **60 routes wired correctly** across public / admin / student / trainee portals.
-- **Design system is consistent** — shared `Badge`, `Button`, `Modal`, `DateField` components; card heights now aligned everywhere (verified with real Chrome measurements, not eyeballed).
-- **Three-slot daily report model** (11:00 / 15:00 / 17:00) is properly modelled and tested.
-- **Structured, well-commented service layer** (`supabaseService.js`) with a proper column-projection guard.
+- **Test-looking accounts in the user list.** The admin Users page shows
+  `admin.test@hyt-demo.com`, `ojt.test@hyt-demo.com`, `trainee.test@hyt-demo.com`,
+  and seeded rows with placeholder UUIDs (`00000000-…0001`, `11111111-…`,
+  `22222222-…`). In a presentation that reads as unfinished. Consider renaming to
+  realistic names, or hiding them behind a filter.
+- **One row still readable by anon.** RLS works overall, but the anon key does
+  return one real profile (`mabbayad.christianjay.gazzingan@gmail.com`, name and
+  role included). Worth closing, but it is one row, not a table leak.
+- 67 markdown files and 27 SQL files at the repo root.
+- `src/pages/admin/AttendanceReview.jsx` — imported nowhere.
+- `src/pages/admin/ReportApprovals.jsx` — the old per-filing approval screen. No
+  longer in the sidebar, but the route still exists and contradicts the new
+  one-approval-per-day model.
 
 ---
 
 ## Suggested order of work
 
-| # | Task | Effort | Why first |
-|---|---|---|---|
-| 1 | Delete junk rows ("Try poo", "Ge", etc.) | 15 min | Visible on every demo click |
-| 2 | Seed `programs` + events + opportunities + 1 demo student | 1–2 hr | Makes the app look alive |
-| 3 | Fix `users` RLS exposure | 30 min | Security; do before seeding real names |
-| 4 | Translate `DtrSummary.js` | 10 min | Last Tagalog hold-out |
-| 5 | Repo hygiene (queue MD/SQL files) | 20 min | Only if they'll see the code |
-| 6 | Delete/wire `AttendanceReview.jsx` | 5 min | Tidiness |
-
-**Tasks 1, 3, 4, 6 I can do right now** — 1 and 4 and 6 are safe; 3 I'll give you as a reviewable SQL file first so you don't lock yourself out.
+1. **Run `CHECK_CONTENT.sql`** — find out whether the listings are empty or
+   merely unpublished.
+2. **Commit and push** the 8 files so GitHub matches what is live.
+3. **Seed or publish** the listings, based on what step 1 returns.
+4. Remove the orphan "Pitas Calamansi" announcement.
+5. Tidy the test-looking accounts.
+6. Housekeeping.
 
 ---
 
-## Two things I need from you
+## What is genuinely in good shape
 
-1. **The `users` RLS fix** — do you want me to write it as SQL for you to review and run, or leave it alone?
-2. **Seeding** — should I invent realistic HYT-style content (programs like "Community Health Outreach", "Youth Leadership Program", etc.), or do you have real content you want to paste in?
+The parts that normally sink a student project are the parts already done:
+
+- 479 tests across 31 suites, including CSS-contract tests that fail the build if
+  the card alignment or phone layout regresses.
+- A production build that compiles under `CI=true`, where ESLint warnings are
+  hard errors.
+- The three-slot daily-report model (11:00 / 15:00 / 17:00) with one approval per
+  day, gated on the 5 PM filing — a real workflow, not a CRUD demo.
+- Responsive layout measured in a real browser, not eyeballed.
+- Working RLS: anonymous visitors cannot read the admin accounts.
+- Zero Tagalog, zero `console.log`, zero hardcoded mock data.

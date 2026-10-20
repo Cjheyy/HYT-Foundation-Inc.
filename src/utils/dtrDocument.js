@@ -11,10 +11,10 @@
  *
  * 1. THE LOGO IS A DATA URI.  An asset import resolves to `/static/media/...`,
  *    which the iframe resolves against its OWN document rather than the app
- *    origin — a broken image, and it fails silently.  `HYT_LOGO_DATA_URI`
+ *    origin - a broken image, and it fails silently.  `HYT_LOGO_DATA_URI`
  *    inlines the bytes so there is no lookup at all.
  *
- *    The logo is 1024x439 — a wide banner, NOT a square.  It is sized by WIDTH
+ *    The logo is 1024x439 - a wide banner, NOT a square.  It is sized by WIDTH
  *    with `height: auto` so the intrinsic ratio is preserved.  Pinning it to a
  *    square box letterboxes it into a thin strip across the middle of the box,
  *    which reads as a printing fault rather than a logo.
@@ -32,7 +32,7 @@
  *
  * 5. EVERY USER VALUE IS ESCAPED.  Names, schools and the building/office line
  *    come from the database; an unescaped `<` would break the document.  Note
- *    that escaping runs on RAW text — passing an already-escaped label such as
+ *    that escaping runs on RAW text - passing an already-escaped label such as
  *    `'Year &amp; Degree'` would double-escape and print the literal `&amp;`.
  *
  * 6. ZERO-MINUTE DAYS ARE NOT COUNTED.  A row with times but no rendered hours
@@ -44,7 +44,7 @@
  *
  * 8. THE LAST COLUMN IS THE STATION, NOT THE TASK LIST.  It prints the trainee's
  *    building / office (`resolveWorkplace()` in dtrRows.js), resolved from the
- *    OJT posting's location.  The daily reports themselves are untouched — they
+ *    OJT posting's location.  The daily reports themselves are untouched - they
  *    are simply not reproduced on this sheet, because the office that signs the
  *    DTR cares where the trainee was stationed, not what they typed that day.
  */
@@ -82,7 +82,7 @@ function formatClock(value) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-/** `YYYY-MM-DD` in LOCAL time (never toISOString — that shifts the day back). */
+/** `YYYY-MM-DD` in LOCAL time (never toISOString - that shifts the day back). */
 function formatIsoDay(value) {
   if (value === null || value === undefined || value === '') return '';
   if (typeof value === 'string') {
@@ -102,7 +102,7 @@ function rowDay(row) {
 /**
  * Monday-first weekday label, e.g. `2026-09-08` -> `Tuesday`.
  *
- * Parsed from the parts, NOT `new Date('2026-09-08')` — that form is treated as
+ * Parsed from the parts, NOT `new Date('2026-09-08')` - that form is treated as
  * UTC midnight and lands on the previous day west of Greenwich, which would
  * print "Monday" for every Tuesday.
  */
@@ -118,7 +118,7 @@ function weekdayLabel(isoDay) {
  * Total the hours on a set of DTR rows.
  *
  * Returns the hours, the count of days that actually carry hours, the local
- * dates so a caller can render a "period covered" line — and separately the
+ * dates so a caller can render a "period covered" line - and separately the
  * span of every day that appears on the sheet at all.
  */
 export function summariseDtr(rows) {
@@ -192,11 +192,11 @@ export function buildDtrHtml({
   const period = summary.firstListedDay
     ? (summary.firstListedDay === summary.lastListedDay
       ? formatLongDate(summary.firstListedDay)
-      : `${formatLongDate(summary.firstListedDay)} — ${formatLongDate(summary.lastListedDay)}`)
+      : `${formatLongDate(summary.firstListedDay)} - ${formatLongDate(summary.lastListedDay)}`)
     : 'No entries in this range';
 
   // The station is a property of the trainee, not of the day, so it is resolved
-  // once and repeated on every line — the same way a real DTR repeats the
+  // once and repeated on every line - the same way a real DTR repeats the
   // assignment down the sheet.
   const station = String(workplace ?? '').trim();
 
@@ -220,7 +220,7 @@ export function buildDtrHtml({
 
   const infoRow = (label, value) => (
     `<div class="info-pair"><span class="info-label">${escapeHtml(label)}</span>`
-    + `<span class="info-value">${escapeHtml(value || '—')}</span></div>`
+    + `<span class="info-value">${escapeHtml(value || '-')}</span></div>`
   );
 
   // The <th> widths below are measured, not guessed.  At 11px the longest date
@@ -228,7 +228,7 @@ export function buildDtrHtml({
   // 57px; each column needs that plus 12px of padding and border, or the cell
   // wraps to a second line and the row heights go ragged.
   return `<!doctype html><html><head><meta charset="utf-8" />
-<title>DTR — ${escapeHtml(fullName || 'Trainee')}</title>
+<title>DTR - ${escapeHtml(fullName || 'Trainee')}</title>
 <style>
   @page { size: A4 portrait; margin: 12mm; }
 
@@ -301,7 +301,7 @@ export function buildDtrHtml({
 
   /* ---- Table --------------------------------------------------------- */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  /* Repeat the header on every printed page — without this, page 2+ is
+  /* Repeat the header on every printed page - without this, page 2+ is
      unlabelled columns. */
   thead { display: table-header-group; }
   tr { break-inside: avoid; page-break-inside: avoid; }
@@ -369,7 +369,7 @@ export function buildDtrHtml({
     <div class="head-text">
       <p class="org">${escapeHtml(HYT_BRANDING.organization)}</p>
       <p class="tagline">${escapeHtml(HYT_BRANDING.tagline)}</p>
-      <p class="doc-title">Daily Time Record — OJT / Internship</p>
+      <p class="doc-title">Daily Time Record - OJT / Internship</p>
     </div>
   </div>
 
@@ -432,7 +432,7 @@ export function buildDtrHtml({
     <span>Generated ${escapeHtml(generatedAt.toLocaleString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   }))}</span>
-    <span>${escapeHtml(HYT_BRANDING.organization)} — Daily Time Record</span>
+    <span>${escapeHtml(HYT_BRANDING.organization)} - Daily Time Record</span>
   </div>
 
 </div>

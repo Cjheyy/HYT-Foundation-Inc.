@@ -107,7 +107,7 @@ export const PARTNER_ORGANIZATIONS = [
     ],
     industry: 'Education & Training',
     source:
-      'KGC Marketing File - 2026_compressed.pdf (company listing). NOTE: HYT GLOBAL INSTITUTE PROFILE 2025/2026.pdf is the primary source and has not been extracted — the 2025 file is 122 MB.'
+      'KGC Marketing File - 2026_compressed.pdf (company listing). NOTE: HYT GLOBAL INSTITUTE PROFILE 2025/2026.pdf is the primary source and has not been extracted - the 2025 file is 122 MB.'
   },
   {
     key: 'klassic-group',
@@ -314,9 +314,9 @@ export const partnerAccentVars = (accent, accentDeep) => {
   return {
     '--accent': accent,
     '--accent-deep': accentDeep || accent,
-    '--accent-soft': `${accent}29`, // 16% — tile glow
-    '--accent-mid': `${accent}4D`,  // 30% — hover ring
-    '--accent-ring': `${accent}66`  // 40% — focus ring
+    '--accent-soft': `${accent}29`, // 16% - tile glow
+    '--accent-mid': `${accent}4D`,  // 30% - hover ring
+    '--accent-ring': `${accent}66`  // 40% - focus ring
   };
 };
 

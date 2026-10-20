@@ -125,7 +125,7 @@ export function TraineeDashboard() {
           )}
         </Card>
 
-        {/* Events — the published events this portal can still join. Reuses the
+        {/* Events - the published events this portal can still join. Reuses the
             Active Training card's list markup so no new design is added. */}
         <Card className="dashboard-card">
           <div className="card-header">
@@ -173,7 +173,7 @@ export function TraineeDashboard() {
               <div className="empty-card-content">
                 <p className="empty-text">No events posted yet</p>
                 <p className="empty-hint">
-                  Only published events appear here — a draft stays hidden until an
+                  Only published events appear here - a draft stays hidden until an
                   administrator publishes it
                 </p>
                 <Button size="sm" onClick={() => navigate('/trainee/events')}>

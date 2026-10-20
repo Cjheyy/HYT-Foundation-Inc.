@@ -26,7 +26,7 @@ function Harness({ partner: opened = PARTNER }) {
   );
 }
 
-// The brand mark carries alt="" on purpose — the company name is rendered
+// The brand mark carries alt="" on purpose - the company name is rendered
 // beside it, so announcing the logo too would just repeat the name.  That
 // leaves it with no accessible role to query, so a direct lookup is the only
 // way to reach it.

@@ -1,12 +1,12 @@
 /**
- * DateField — the custom date / date-time picker.
+ * DateField - the custom date / date-time picker.
  *
  * Colours come from the app's own tokens in `index.css`, so the field sits on
  * the same surfaces as `Input` and `Select` instead of looking bolted on.
  *
- * The selected day is filled with `--accent-text` (#B8441F) rather than the
+ * The selected day is filled with `--accent-text` (var(--accent-text)) rather than the
  * brand `--primary-orange`: white on #D57156 measures 3.32:1, under the 4.5:1
- * floor for the 13px numerals, while #B8441F measures 5.41:1.  The same
+ * floor for the 13px numerals, while var(--accent-text) measures 5.41:1.  The same
  * reasoning already lives in `index.css` next to the token.
  */
 
@@ -94,7 +94,7 @@
 .date-field-popover {
   position: fixed;
   z-index: 1100;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
@@ -122,7 +122,7 @@
   justify-content: center;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   color: var(--dark-text);
   font-size: 15px;
   line-height: 1;
@@ -177,7 +177,7 @@
 }
 
 .date-field-day:hover:not(:disabled) {
-  background: #FDF3F0;
+  background: var(--tint-warm);
   border-color: var(--primary-orange);
 }
 
@@ -233,7 +233,7 @@
   padding: 5px 6px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   color: var(--dark-text);
   font-size: 13px;
   font-family: inherit;
@@ -258,7 +258,7 @@
 .date-field-meridiem-btn {
   padding: 5px 9px;
   border: none;
-  background: #fff;
+  background: var(--surface);
   color: var(--muted-text);
   font-size: 12px;
   font-weight: 600;

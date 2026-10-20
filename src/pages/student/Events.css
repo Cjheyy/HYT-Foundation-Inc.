@@ -1,5 +1,5 @@
 /**
- * Events listing — shared by the OJT/Intern and Trainee portals.
+ * Events listing - shared by the OJT/Intern and Trainee portals.
  *
  * Mirrors student/Opportunities.css so the two listing pages read as one
  * family.  The class names are distinct (`event-*` rather than
@@ -95,7 +95,7 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--accent-text, #B8441F);
+  color: var(--accent-text, var(--accent-text));
 }
 
 .event-detail-actions {

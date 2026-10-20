@@ -9,7 +9,7 @@
   color: var(--dark-text);
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: #FEF3C7;
+  background: var(--warning-surface);
   border-left: 4px solid var(--yellow);
   border-radius: 4px;
   font-weight: 500;
@@ -67,7 +67,7 @@
 }
 
 .terms-content::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: var(--surface-sunken);
   border-radius: 4px;
 }
 

@@ -65,7 +65,7 @@ describe('announcement read store', () => {
   });
 
   test('falls back to memory when localStorage throws', () => {
-    // Swap in a storage object whose every method throws — the shape a browser
+    // Swap in a storage object whose every method throws - the shape a browser
     // presents when storage is blocked (private mode, third-party cookie
     // blocking, exhausted quota).
     const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');

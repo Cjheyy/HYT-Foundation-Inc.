@@ -43,7 +43,7 @@ export function StudentCertificates() {
   const htmlFor = (cert) => buildCertificateHtml(buildPayload(cert, currentUser));
 
   /**
-   * "Save as PDF" — renders the certificate into an off-screen iframe and opens
+   * "Save as PDF" - renders the certificate into an off-screen iframe and opens
    * the browser's print dialog, where the destination can be set to
    * "Save as PDF".  That produces a real, printable PDF; the previous behaviour
    * only ever downloaded a `.html` file, which is not a certificate you can send
@@ -163,7 +163,7 @@ export function StudentCertificates() {
 
       {myCertificates.length > 0 && (
         <p className="certificate-download-note">
-          &ldquo;Save as PDF&rdquo; opens your browser&rsquo;s print dialog — choose
+          &ldquo;Save as PDF&rdquo; opens your browser&rsquo;s print dialog - choose
           &ldquo;Save as PDF&rdquo; as the destination. The HTML download keeps a
           self-contained copy that opens in any browser.
         </p>

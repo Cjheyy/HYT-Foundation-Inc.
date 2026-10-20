@@ -19,7 +19,7 @@ jest.mock('../../services/supabaseService', () => ({
  * This suite verifies a CSS contract, not a user-facing behaviour: DailyReports.css
  * is scoped under `.daily-reports-page`, and a set of class names previously
  * matched no stylesheet at all.  The class string is the subject under test, so
- * there is no ARIA role or text query that can stand in for it — a DOM lookup is
+ * there is no ARIA role or text query that can stand in for it - a DOM lookup is
  * the only way to assert it.  The exemption is confined to this one helper.
  */
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
@@ -29,8 +29,8 @@ const hasClass = (container, selector) => container.querySelector(selector) !== 
 /**
  * The page was reworked from a single free-text report into three timed slots
  * (11:00 / 15:00 / 17:00).  The copy is English throughout, and the old
- * assertions — 'Report History', 'No Reports Yet', and the `.report-content` /
- * `.admin-note` / `.section-label` block — described the predecessor UI and had
+ * assertions - 'Report History', 'No Reports Yet', and the `.report-content` /
+ * `.admin-note` / `.section-label` block - described the predecessor UI and had
  * been failing ever since.  These fixtures carry a filed day so both the
  * "has history" and "empty" branches can be exercised.
  */
@@ -68,7 +68,7 @@ describe('DailyReportsNew', () => {
     // The live vocabulary of the slot-based page.  The legacy names this list
     // used to carry (.report-content, .report-section, .section-label,
     // .section-text, .admin-note, .note-label, .note-text, .report-footer,
-    // .report-meta) are no longer emitted by any element — the JSX stopped
+    // .report-meta) are no longer emitted by any element - the JSX stopped
     // producing them.  Asserting them here is what made this suite fail.
     [
       '.submit-report-card',
@@ -95,7 +95,7 @@ describe('DailyReportsNew', () => {
     const { container } = render(<DailyReportsNew />);
     await screen.findByText('Previous days');
 
-    // One `.report-day-cell` per slot — the structural promise of the rework.
+    // One `.report-day-cell` per slot - the structural promise of the rework.
     expect(container.querySelectorAll('.report-day-cell')).toHaveLength(3);
   });
 

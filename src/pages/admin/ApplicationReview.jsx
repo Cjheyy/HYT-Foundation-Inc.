@@ -174,7 +174,7 @@ export function ApplicationReview() {
                   {isPending && (
                     <div className="application-actions">
                       <Button size="sm" variant="success" disabled={actionLoading} onClick={() => handleApproveEvent(application)}>Approve</Button>
-                      {/* Outline, not a second saturated fill — Approve is the
+                      {/* Outline, not a second saturated fill - Approve is the
                           card's one primary action. */}
                       <Button size="sm" variant="ghost" className="application-reject" disabled={actionLoading} onClick={() => handleRejectEvent(application)}>Reject</Button>
                     </div>

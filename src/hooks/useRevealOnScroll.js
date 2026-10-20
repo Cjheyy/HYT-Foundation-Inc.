@@ -11,11 +11,11 @@ import { useEffect } from 'react';
  *
  * 1. The hook adds `has-reveal` to the root itself, and the CSS only hides
  *    `[data-reveal]` elements UNDER `.has-reveal`. If JavaScript never runs the
- *    content is simply visible — it can never be left stuck at opacity 0.
+ *    content is simply visible - it can never be left stuck at opacity 0.
  *
  * 2. Under `prefers-reduced-motion: reduce` (or without IntersectionObserver)
  *    `has-reveal` is never added at all. Nothing is hidden without it, so this
- *    is the most robust "show everything" path there is — and unlike a one-off
+ *    is the most robust "show everything" path there is - and unlike a one-off
  *    pass over the DOM it also covers content that mounts later.
  *
  * 3. The revealed state is recorded as the `data-reveal-in` ATTRIBUTE rather
@@ -34,7 +34,7 @@ export function useRevealOnScroll(rootRef) {
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // See note 2 — never hide anything in this branch.
+    // See note 2 - never hide anything in this branch.
     if (reduceMotion || typeof IntersectionObserver === 'undefined') {
       return undefined;
     }
@@ -76,7 +76,7 @@ export function useRevealOnScroll(rootRef) {
 
     // "Featured OJT Postings", "Featured Trainee Programs" and "Featured
     // Events" only
-    // render once their Supabase data arrives — long after this effect runs.
+    // render once their Supabase data arrives - long after this effect runs.
     // Without a re-scan they would never be observed, and because `has-reveal`
     // is already on the root the CSS would hold them at opacity 0 forever.
     const mutations = new MutationObserver(scan);

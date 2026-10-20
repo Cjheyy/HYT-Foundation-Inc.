@@ -1,5 +1,5 @@
 .public-footer {
-  background: linear-gradient(180deg, #1F2937 0%, #111827 100%);
+  background: linear-gradient(180deg, var(--footer-ink) 0%, #111827 100%);
   color: white;
   padding: 80px 0 30px;
   margin-top: 100px;

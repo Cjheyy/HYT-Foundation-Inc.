@@ -70,7 +70,7 @@ const collectLiteralIconNames = () => {
 
 /**
  * Icon names that arrive through a data map (`icon: 'target'`) rather than a
- * literal `name=` attribute — the nav tables, the attention items, the admin
+ * literal `name=` attribute - the nav tables, the attention items, the admin
  * metrics, the registration role cards.
  *
  * Only lower-case words are collected, which is what separates a real icon name
@@ -121,7 +121,7 @@ describe('Icon (Lucide)', () => {
     expect([...ICON_NAMES].sort()).toEqual([
       'alert', 'award', 'bell', 'book', 'briefcase', 'calendar', 'check',
       'clock', 'dashboard', 'file', 'home', 'inbox', 'info', 'logout', 'menu',
-      'pin', 'search', 'target', 'user', 'users', 'x'
+      'moon', 'pin', 'search', 'sun', 'target', 'user', 'users', 'x'
     ]);
   });
 

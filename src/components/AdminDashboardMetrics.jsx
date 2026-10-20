@@ -91,7 +91,7 @@ const POLL_INTERVAL_MS = 30_000;
  * Session-wide snapshot, deliberately OUTSIDE the component.
  *
  * A `useRef` is recreated on every mount, so navigating away from the admin
- * dashboard and back showed the skeleton grid again — the stats "reloaded"
+ * dashboard and back showed the skeleton grid again - the stats "reloaded"
  * every single time the route was opened.  Hoisting the cache to module scope
  * means only the FIRST render of the session loads; every later mount paints
  * the last known numbers immediately and refreshes silently in the background.
@@ -213,7 +213,7 @@ export function AdminDashboardMetrics() {
   const statusTitle = useMemo(() => {
     if (error) return `Last successful update: ${lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleTimeString() : 'unknown'}`;
     if (realtimeStatus === 'live') return 'Realtime connected';
-    return `Up to date${lastUpdatedAt ? ` as of ${new Date(lastUpdatedAt).toLocaleTimeString()}` : ''} — refreshing in the background`;
+    return `Up to date${lastUpdatedAt ? ` as of ${new Date(lastUpdatedAt).toLocaleTimeString()}` : ''} - refreshing in the background`;
   }, [error, lastUpdatedAt, realtimeStatus]);
 
   if (loading) {

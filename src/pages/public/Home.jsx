@@ -23,7 +23,7 @@ import 'swiper/css';
 import 'swiper/css/effect-coverflow';
 import 'swiper/css/pagination';
 import './Home.css';
-// Motion layer — imported after Home.css so its rules win ties on specificity.
+// Motion layer - imported after Home.css so its rules win ties on specificity.
 import './HomeMotion.css';
 
 // The hero headline is rendered word-by-word so each word can rise out of its
@@ -100,7 +100,7 @@ const RIBBON_IMPACT = [
 ];
 
 // Impact figures. Kept as numbers (not pre-formatted strings) because the
-// bento counts them up — `suffix` carries the "+" / "%" and is rendered in its
+// bento counts them up - `suffix` carries the "+" / "%" and is rendered in its
 // own <em> so it can take the accent colour independently of the digits.
 const STATS = [
   { value: 500, suffix: '+', label: 'Youth Empowered' },
@@ -136,7 +136,7 @@ export function Home() {
     .slice(0, 3);
 
   // Events are a separate listing kind, so they get their own rail rather than
-  // sharing the programmes one — see the two sections below.
+  // sharing the programmes one - see the two sections below.
   const publishedEvents = (events || [])
     .filter((event) => String(event.status).toLowerCase() === 'published' && isEventActive(event))
     .slice(0, 3);
@@ -164,17 +164,17 @@ export function Home() {
 
   // Pinned mode depends on three things, so it is decided at runtime rather
   // than in CSS alone:
-  //   - `overflow: clip` support — without it `.home-page` would fall back to
+  //   - `overflow: clip` support - without it `.home-page` would fall back to
   //     `overflow-x: hidden`, which creates a scroll container and silently
   //     kills `position: sticky`.
-  //   - a wide viewport — below 769px the cards stack and horizontal travel is
+  //   - a wide viewport - below 769px the cards stack and horizontal travel is
   //     pointless (and would fight touch scrolling).
   //   - motion being allowed.
   useEffect(() => {
     // `matchMedia` is genuinely absent in some environments (jsdom, very old
     // browsers), and every other motion hook in the codebase guards it. A
     // missing API falls back to `false`, which keeps the section in its static
-    // stacked layout — the safe default.
+    // stacked layout - the safe default.
     const query = (mq) => (
       typeof window.matchMedia === 'function' ? window.matchMedia(mq).matches : false
     );
@@ -239,8 +239,7 @@ export function Home() {
   const journeyRef = useRef(null);
   const journeyPathRef = useRef(null);
   const [litSteps, setLitSteps] = useState(0);
-  // Dimming un-reached steps is only safe once JS is definitely running —
-  // otherwise a JS failure would leave the timeline permanently faded.
+  // Dimming un-reached steps is only safe once JS is definitely running - // otherwise a JS failure would leave the timeline permanently faded.
   const [journeyReady, setJourneyReady] = useState(false);
 
   useEffect(() => {
@@ -352,7 +351,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* Accomplishments Gallery — landscape coverflow. Deliberately the first
+      {/* Accomplishments Gallery - landscape coverflow. Deliberately the first
           section after the hero: this is the highlight, so it should not be
           buried at the bottom of the page.
           `container-wide` (1400px) rather than `container` (1200px): the coverflow
@@ -425,7 +424,7 @@ export function Home() {
         galleryItem={selectedGalleryItem}
       />
 
-      {/* What HYT Does — pinned horizontal scroll when the viewport allows it */}
+      {/* What HYT Does - pinned horizontal scroll when the viewport allows it */}
       <section
         ref={wwdSectionRef}
         className={`section what-we-do${pinned ? ' is-pinned' : ''}`}
@@ -463,10 +462,10 @@ export function Home() {
         </div>
       </section>
 
-      {/* 8 HYT Thrusts — M2 "Seam". The eight names run as two marquees on an
+      {/* 8 HYT Thrusts - M2 "Seam". The eight names run as two marquees on an
           ink floor, with the logo ramp on the seam above them.
           The rail + pane are gone: the pane held each thrust's *meaning*, and
-          that now lives on the About page — which is what the button below
+          that now lives on the About page - which is what the button below
           points at. So a second, static copy of the names up here would only
           repeat what the ribbons already say. */}
       <section className="thrusts-seam">
@@ -475,7 +474,7 @@ export function Home() {
             <div className="seam-kicker">Eight thrusts · one direction</div>
             <h2 className="section-title">The 8 HYT Thrusts</h2>
             <p className="section-subtitle">
-              See how each thrust shapes our work — every programme we run maps
+              See how each thrust shapes our work - every programme we run maps
               back to one of the eight.
             </p>
           </div>
@@ -537,7 +536,7 @@ export function Home() {
         </section>
       )}
 
-      {/* Featured Trainee Programs — its own rail now that programmes and
+      {/* Featured Trainee Programs - its own rail now that programmes and
           events are separate listings. */}
       {publishedPrograms.length > 0 && (
         <section className="section bg-white">
@@ -629,7 +628,7 @@ export function Home() {
         </Modal>
       )}
 
-      {/* Impact figures — bento (B3). The first figure becomes a full-height ink
+      {/* Impact figures - bento (B3). The first figure becomes a full-height ink
           hero panel, so the four numbers stop competing at equal weight and the
           section commits to a hierarchy. */}
       <section className="section stats-section">
@@ -684,7 +683,7 @@ export function Home() {
             {/* Horizontal connector that draws itself as the section scrolls.
                 viewBox is 1000 wide and the line runs 8.8%→91.2%, which is the
                 centre of the first and last column in a 5-column grid
-                (5 equal columns, 32px gaps) — so the line terminates *under*
+                (5 equal columns, 32px gaps) - so the line terminates *under*
                 the first and last circles.
                 `preserveAspectRatio="none"` lets it stretch to any width. */}
             <svg
@@ -697,7 +696,7 @@ export function Home() {
               <defs>
                 {/* userSpaceOnUse, NOT the default objectBoundingBox: this path
                     is perfectly horizontal, so its bounding box has zero height
-                    and a bounding-box gradient is degenerate — the stroke then
+                    and a bounding-box gradient is degenerate - the stroke then
                     renders as nothing at all. */}
                 <linearGradient
                   id="journeyPathGrad"
@@ -730,7 +729,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* Dream Academy — the closing section. Replaced the generic
+      {/* Dream Academy - the closing section. Replaced the generic
           "Ready to Start Your Journey?" CTA, which was removed on request. */}
       <DreamAcademy />
     </div>

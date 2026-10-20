@@ -7,7 +7,7 @@ import { Input } from './Input';
  * jsdom has no layout engine, so `offsetParent` is always null.  The focus
  * trap filters candidates on `element.offsetParent !== null` to skip hidden
  * controls, so without this the list degenerates to "whatever already has
- * focus" and the re-focus below becomes a no-op — hiding the very bug under
+ * focus" and the re-focus below becomes a no-op - hiding the very bug under
  * test.  Reporting the parent node is what a real browser does for a visible
  * element, so this makes the harness match the browser the user is typing in.
  */
@@ -28,8 +28,7 @@ beforeAll(() => {
  * `onClose` gets a fresh identity on each of those renders.
  *
  * If the modal's focus trap treats `onClose` as a dependency it re-runs on
- * every keystroke, and each re-run moves focus back to the first control —
- * so the field silently loses focus after one character.
+ * every keystroke, and each re-run moves focus back to the first control - * so the field silently loses focus after one character.
  */
 function Harness() {
   const [open, setOpen] = useState(true);

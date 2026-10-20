@@ -16,8 +16,8 @@ import './Programs.css';
 /**
  * Public Events listing.
  *
- * Events are their own listing kind — separate from the Dream Academy training
- * programmes — so the landing page links to them separately (see PublicHeader).
+ * Events are their own listing kind - separate from the Dream Academy training
+ * programmes - so the landing page links to them separately (see PublicHeader).
  * Only PUBLISHED events are shown: the row is also filtered by RLS, so an event
  * left in Draft is invisible to a guest no matter what this page does.
  *
@@ -125,7 +125,7 @@ export function Events() {
                       {event.applicationDeadline ? (
                         <div className="meta-item">
                           <span className="meta-icon"><Icon name="clock" size={15} /></span>
-                          <span>Apply before {formatDate(event.applicationDeadline) || '—'}</span>
+                          <span>Apply before {formatDate(event.applicationDeadline) || '-'}</span>
                         </div>
                       ) : null}
                     </div>

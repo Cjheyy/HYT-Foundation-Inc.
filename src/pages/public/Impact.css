@@ -45,7 +45,7 @@
   font-size: 60px;
   /* The story card is WHITE again, so the brand orange is the right watermark:
      #D57156 measures 3.32:1, clearing the 3:1 large-text bar a 60px glyph needs.
-     The brand yellow it briefly used is 1.38:1 on white — invisible. */
+     The brand yellow it briefly used is 1.38:1 on white - invisible. */
   color: var(--primary-orange);
   line-height: 1;
   margin-bottom: 16px;
@@ -71,11 +71,11 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  /* The teal chip is back — it reads as a coloured avatar on the white story
+  /* The teal chip is back - it reads as a coloured avatar on the white story
      card.  The stops are deepened, though: white 16px/700 initials on the old
      --light-cyan end (#5BC0C8) measured 2.14:1, well under 4.5:1.  #16697A ->
-     #0F5566 carries them at 6.30:1 -> 8.36:1. */
-  background: linear-gradient(135deg, #16697A, #0F5566);
+     var(--info-text) carries them at 6.30:1 -> 8.36:1. */
+  background: linear-gradient(135deg, #16697A, var(--info-text));
   color: white;
   display: flex;
   align-items: center;

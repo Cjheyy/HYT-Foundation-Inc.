@@ -74,7 +74,7 @@
 
 /* A pale teal chip on the WHITE posting card.  The old chip text (--teal,
    #279EB6) is only 3.16:1 on white, so the label uses the deepened brand teal
-   #0F5566, which measures 7.9:1 on the tinted chip.
+   var(--info-text), which measures 7.9:1 on the tinted chip.
    No hover override is needed: the card's hover sweep is a LIGHT wash, so the
    chip stays a pale teal lozenge with the same dark-teal label (6.9:1 on the
    wash's warmest stop). */
@@ -82,7 +82,7 @@
   font-size: 11px;
   padding: 4px 10px;
   background: rgba(22, 105, 122, 0.1);
-  color: #0F5566;
+  color: var(--info-text);
   border-radius: 12px;
   font-weight: 500;
 }

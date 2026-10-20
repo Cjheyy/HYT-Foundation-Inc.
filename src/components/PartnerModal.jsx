@@ -36,7 +36,7 @@ function DetailSection({ id, heading, items }) {
  * moves into the dialog when it opens, Tab is trapped inside it, Escape
  * closes it, and focus returns to the tile that opened it when it closes.
  *
- * The visual classes are the `partner-` ones declared in About.css — every
+ * The visual classes are the `partner-` ones declared in About.css - every
  * partner style is prefixed so nothing leaks into CRA's single global bundle.
  * The brand accent reaches the dialog as CSS custom properties via <Modal>'s
  * `style` prop, which is what tints the header band per partner.

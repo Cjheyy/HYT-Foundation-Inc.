@@ -21,7 +21,7 @@ export function StudentAnnouncements() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState(ALL_TAB);
 
-  // The old filter was `a.status === 'Published'` — case-sensitive — while the
+  // The old filter was `a.status === 'Published'` - case-sensitive - while the
   // public Home page already compared lower-cased values.  A casing change in
   // the database would have silently emptied this page.
   const published = useMemo(
@@ -148,7 +148,7 @@ export function StudentAnnouncements() {
                   <p className="announcement-card-content">{announcement.content}</p>
                   <div className={`announcement-card-date ${isUnread ? 'unread-label' : ''}`}>
                     <Icon name="calendar" size={14} />
-                    <span>{formatDate(announcement.publishedAt) || '—'}</span>
+                    <span>{formatDate(announcement.publishedAt) || '-'}</span>
                     {isUnread && <span>· Unread</span>}
                   </div>
                   {isUnread && (

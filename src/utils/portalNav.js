@@ -5,7 +5,7 @@
  *
  * 1. `match` lists every URL that should light an entry up.  The Dashboard is
  *    reachable at "/student" *and* "/student/dashboard", and "/student" is a
- *    prefix of every other student route — so a plain `startsWith()` left
+ *    prefix of every other student route - so a plain `startsWith()` left
  *    Dashboard highlighted on Attendance, Certificates, everything.
  *    resolveActiveNavPath() picks the longest matching target instead, which
  *    guarantees exactly one active entry.
@@ -18,8 +18,8 @@
  *
  * 3. The two portals deliberately show DIFFERENT catalogues.  An OJT/Intern is
  *    placed at a company, so they get the OJT Postings plus the Events they can
- *    attend — but not the Dream Academy training programmes.  A Trainee is in
- *    training, so they get the programmes plus the same Events — but not the
+ *    attend - but not the Dream Academy training programmes.  A Trainee is in
+ *    training, so they get the programmes plus the same Events - but not the
  *    OJT Postings.  `Programs` and `Events` are separate listings, so they are
  *    separate nav entries; the shared "Programs & Events" entry is gone.
  */

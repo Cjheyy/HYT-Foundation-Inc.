@@ -1,6 +1,6 @@
 /* Gallery Card */
 .gallery-card {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -34,7 +34,7 @@
   width: 100%;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2f7 100%);
+  background: linear-gradient(135deg, var(--tint-info) 0%, var(--tint-cool) 100%);
 }
 
 .gallery-card-image {
@@ -156,7 +156,7 @@
 .gallery-card-title {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin: 0 0 8px 0;
   line-height: 1.4;
   transition: color 0.2s ease;
@@ -168,7 +168,7 @@
 
 .gallery-card-description {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text);
   margin: 0;
   line-height: 1.6;
 }

@@ -1,19 +1,44 @@
 /**
  * Experience derivation shared by the OJT/Intern and Trainee portals.
  *
- * Two rules from the product spec live here so the dashboards cannot drift
- * apart:
+ * Rules that live here so the screens cannot drift apart:
  *
- * 1. An application that an administrator approved becomes an *experience*.
- *    It is **Ongoing** while the event is unfinished and **Already Done** once
- *    it completes.
- * 2. The projected end date is derived from the hours the user still has to
- *    render, spread over a standard working day — never hand-entered.
+ * 1. An application an administrator approved becomes an *experience*.
+ * 2. That experience is **Ongoing** until it is finished, then **Done**.
+ *    "Finished" means whichever of these happens first:
+ *      a. the application status itself says completed, or
+ *      b. the listing's own end date has passed (`endsAt` for an event,
+ *         `scheduleEnd` for an OJT posting), or
+ *      c. the required hours have been rendered.
+ * 3. The projected end date is derived from the hours still to be rendered,
+ *    spread over a standard working day. It is never hand-entered.
  *
- * Everything is pure and takes `today` as an argument so the projection can be
- * asserted without freezing the clock.
+ * Rule 2b needs care for events. An event is a single instant in the diary, and
+ * the admin form lets `ends_at` be left empty - `eventWindow` in
+ * supabaseService already treats a start-only event as a zero-length window.
+ * If the end date were simply null, such an event would stay Ongoing forever,
+ * so an event with no end falls back to its start day. An OJT posting must NOT
+ * get that fallback: `scheduleStart` with no `scheduleEnd` is a genuinely
+ * open-ended placement, and treating it as a one-day event would mark it Done
+ * on the day it started.
+ *
+ * A note on rule 2c. Hours are stored on the *user* (`users.rendered_hours`) or
+ * on a single OJT record, not on the application. So with two ongoing postings
+ * both cards would read the same balance, and reaching the requirement would
+ * flip all of them to Done at once. The hours rule is therefore only applied
+ * when the user has exactly one hour-bearing experience still in play, where the
+ * numbers are genuinely attributable to it. `hoursAttributable` carries that
+ * decision.
+ *
+ * "Hour-bearing" means an OJT posting and nothing else. An event is a diary
+ * entry and a programme has no `required_hours` column, so neither may finish on
+ * the student's hours - and neither may consume the pool that the posting needs.
+ *
+ * Everything is pure and takes `today` as an argument, so the projection and the
+ * finished/ongoing split can be asserted without freezing the clock.
  */
 import { normalizeStatus } from '../services/supabaseService';
+import { formatDate, formatTime } from './helpers';
 
 export const APPROVED_APPLICATION_STATUSES = ['APPROVED', 'ACCEPTED', 'ACTIVE', 'ONGOING'];
 export const COMPLETED_APPLICATION_STATUSES = ['COMPLETED', 'DONE', 'FINISHED'];
@@ -38,17 +63,186 @@ export const REJECTED_APPLICATION_STATUSES = [
 ];
 
 export const ONGOING_LABEL = 'Ongoing';
-export const ALREADY_DONE_LABEL = 'Already Done';
+export const ALREADY_DONE_LABEL = 'Done';
 
 /** A standard rendered-hours day.  Overridable per call site. */
 export const DEFAULT_HOURS_PER_DAY = 8;
 
 const round2 = (value) => Math.round(value * 100) / 100;
 
+/** `YYYY-MM-DD` with no clock time: a calendar day, not an instant. */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 const toValidDate = (value) => {
   if (!value) return null;
-  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  if (value instanceof Date) {
+    const copy = new Date(value.getTime());
+    return Number.isNaN(copy.getTime()) ? null : copy;
+  }
+  // `new Date('2026-10-20')` is parsed as UTC midnight, which lands on 08:00 in
+  // Manila and would make a whole-day event read "8:00 AM". A date with no time
+  // means local midnight.
+  if (typeof value === 'string' && DATE_ONLY.test(value.trim())) {
+    const [year, month, day] = value.trim().split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+};
+
+/** First defined value, so camelCase and snake_case rows both resolve. */
+const pick = (...values) => values.find((value) => value !== undefined && value !== null && value !== '') ?? null;
+
+/**
+ * The window a listing runs for, independent of any application.
+ *
+ * Events carry `startsAt` / `endsAt`; OJT postings carry
+ * `scheduleStart` / `scheduleEnd`. Both shapes are accepted here so the caller
+ * does not have to know which kind of listing it is holding.
+ */
+export const getListingWindow = (listing) => {
+  if (!listing) return { startDate: null, endDate: null };
+  return {
+    startDate: toValidDate(
+      pick(listing.startsAt, listing.starts_at, listing.scheduleStart, listing.schedule_start, listing.startDate, listing.start_date)
+    ),
+    endDate: toValidDate(
+      pick(listing.endsAt, listing.ends_at, listing.scheduleEnd, listing.schedule_end, listing.endDate, listing.end_date)
+    )
+  };
+};
+
+/**
+ * The date a listing is considered over.
+ *
+ * An event is a single diary entry, so a start with no end is a zero-length
+ * window rather than an open-ended one - its start day doubles as its end. This
+ * mirrors `eventWindow`, which already collapses a start-only event to an
+ * instant. Anything else (an OJT posting, a programme) keeps a null end, which
+ * means "no end on file" and is never treated as finished.
+ */
+export const getListingEndDate = (listing, { isEvent = false } = {}) => {
+  const { startDate, endDate } = getListingWindow(listing);
+  if (endDate) return endDate;
+  return isEvent ? startDate : null;
+};
+
+/**
+ * True when the listing's own end date is already in the past.
+ *
+ * Compared at day precision, not instant precision: an event ending at 18:00
+ * today is still ongoing at 09:00 today, and an event that ended at 18:00
+ * yesterday is finished. Without that, a same-day event would flicker to Done
+ * the moment its start time passed.
+ */
+export const isListingFinished = (listing, today = new Date(), { isEvent = false } = {}) => {
+  const endDate = getListingEndDate(listing, { isEvent });
+  const reference = toValidDate(today) || new Date();
+  if (!endDate) return false;
+  const endOfEndDay = new Date(endDate.getTime());
+  endOfEndDay.setHours(23, 59, 59, 999);
+  return endOfEndDay.getTime() < reference.getTime();
+};
+
+/**
+ * Whether an event occupies a whole calendar day rather than a time slot.
+ *
+ * There is no all-day column, so this is read off the timestamps. All three of
+ * these are a whole day:
+ *
+ *   00:00 - 23:59          the literal full day
+ *   00:00 - next 00:00     a 24-hour span
+ *   a date with no time    `YYYY-MM-DD`, which toValidDate puts at midnight
+ *
+ * A window that starts at 00:00 but ends at midday is a morning session, not a
+ * whole day, and is left as timed.
+ */
+export const isWholeDayEvent = (listing) => {
+  const { startDate, endDate } = getListingWindow(listing);
+  if (!startDate) return false;
+
+  const midnight = new Date(startDate.getTime());
+  midnight.setHours(0, 0, 0, 0);
+  if (startDate.getTime() !== midnight.getTime()) return false;
+
+  if (!endDate) return true;
+
+  const span = endDate.getTime() - startDate.getTime();
+  // 23h59m for 00:00-23:59, 24h for 00:00-next 00:00.
+  return span >= 23 * 60 * 60 * 1000 + 59 * 60 * 1000;
+};
+
+/** Whether two wall-clock values fall on different calendar days. */
+export const spansMultipleDays = (start, end) => {
+  const from = toValidDate(start);
+  const to = toValidDate(end);
+  if (!from || !to) return false;
+  return from.toDateString() !== to.toDateString();
+};
+
+/** Which kind of listing an application points at, or null if it points nowhere. */
+export const getApplicationListingKind = (application) => {
+  if (!application) return null;
+  if (application.opportunityId || application.opportunity_id) return 'opportunity';
+  if (application.programId || application.program_id) return 'program';
+  if (application.eventId || application.event_id) return 'event';
+  return null;
+};
+
+/**
+ * The date half of the Done rule, resolved for a specific application.
+ *
+ * This is the call the screens should use. It is the only place that knows an
+ * event's start-only window behaves differently from a posting's, so neither
+ * page has to re-derive it and drift.
+ */
+export const isApplicationWindowFinished = (application, listing, today = new Date()) =>
+  isListingFinished(listing, today, {
+    isEvent: getApplicationListingKind(application) === 'event'
+  });
+
+/**
+ * A listing's schedule in words, the way its own kind should read.
+ *
+ * An event is a diary entry: the clock time IS the schedule, so "20 October
+ * 2026" on its own does not say when to turn up. A posting or programme runs
+ * over weeks, where the dates are what matter and a time on every one of them
+ * would be noise.
+ *
+ * Events come in two shapes and they must not be worded the same way:
+ *
+ *   whole day   00:00-23:59, 00:00-next 00:00, or a date with no time at all
+ *               -> "October 20, 2026 · Whole day". Printing "12:00 AM - 11:59 PM"
+ *               for a clean-up drive is worse than printing nothing.
+ *   timed       any other window -> "October 20, 2026 · 08:00 AM - 05:00 PM".
+ *
+ * Lives here rather than in a page because four screens print this string and
+ * they drifted apart once already.
+ */
+export const formatListingSchedule = (listing, { isEvent = false } = {}) => {
+  const { startDate, endDate } = getListingWindow(listing);
+
+  if (isEvent) {
+    if (!startDate) return listing?.schedule || null;
+
+    const lastDay = getListingEndDate(listing, { isEvent: true });
+    const wholeDay = isWholeDayEvent(listing);
+
+    if (startDate.toDateString() === lastDay.toDateString()) {
+      if (wholeDay) return `${formatDate(startDate)} · Whole day`;
+      if (endDate) {
+        return `${formatDate(startDate)} · ${formatTime(startDate)} - ${formatTime(endDate)}`;
+      }
+      return `${formatDate(startDate)} · ${formatTime(startDate)}`;
+    }
+
+    return `${formatDate(startDate)} - ${formatDate(lastDay)}${wholeDay ? ' · Whole day' : ''}`;
+  }
+
+  if (startDate && endDate) return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+  if (endDate) return formatDate(endDate);
+  if (startDate) return `Started ${formatDate(startDate)}`;
+  return null;
 };
 
 /** Owner id regardless of whether the row came back camelCased or not. */
@@ -73,11 +267,43 @@ export const isApplicationApproved = (application) =>
   isApplicationCompleted(application) ||
   APPROVED_APPLICATION_STATUSES.includes(normalizeStatus(application?.status));
 
-/** The Ongoing / Already Done label, or null when it is not an experience yet. */
-export const getApplicationExperienceState = (application) => {
+/**
+ * The Ongoing / Done label, or null when it is not an experience yet.
+ *
+ * Called with only an application, this falls back to the status alone, which
+ * keeps every existing caller working. Pass `listing` (and optionally the hours)
+ * to get the date-aware answer.
+ */
+export const getApplicationExperienceState = (application, options = {}) => {
+  const {
+    listing = null,
+    requiredHours = 0,
+    renderedHours = 0,
+    today = new Date(),
+    hoursAttributable = false
+  } = options;
+
+  if (!isApplicationApproved(application)) return null;
+
+  // a. The status itself says the experience finished.
   if (isApplicationCompleted(application)) return ALREADY_DONE_LABEL;
-  if (isApplicationApproved(application)) return ONGOING_LABEL;
-  return null;
+
+  // b. The listing has run its course. Events resolve their start-only window
+  //    here, so a same-day event with no `ends_at` still finishes.
+  if (isApplicationWindowFinished(application, listing, today)) return ALREADY_DONE_LABEL;
+
+  // c. The hours are done - but only when they can be attributed to this one
+  //    experience, AND only for an experience that has hours at all. `required_hours`
+  //    exists on the user and on ojt_records; no event or programme row carries
+  //    one. Without the kind test the user's balance finished every card on the
+  //    page, including a whole-day event that has no requirement to meet.
+  if (hoursAttributable && getApplicationListingKind(application) === 'opportunity') {
+    const required = Number(requiredHours) || 0;
+    const rendered = Number(renderedHours) || 0;
+    if (required > 0 && rendered >= required) return ALREADY_DONE_LABEL;
+  }
+
+  return ONGOING_LABEL;
 };
 
 /**
@@ -92,7 +318,7 @@ export const isApplicationActive = (application) =>
  * Human title for an application's listing.
  *
  * Application rows carry only the foreign key (`opportunityId` / `programId` /
- * `eventId`) — there is no title column and no `opportunityTitle` field, so
+ * `eventId`). There is no title column and no `opportunityTitle` field, so
  * reading one straight off the row always fell back to the generic label.
  * Resolve it from the loaded listings instead.
  */
@@ -111,11 +337,24 @@ export function getApplicationListingTitle(application, { opportunities = [], pr
   return 'Application';
 }
 
+/** The listing row an application points at, or null. */
+export function findApplicationListing(application, { opportunities = [], programs = [], events = [] } = {}) {
+  if (!application) return null;
+  const opportunityId = application.opportunityId || application.opportunity_id || null;
+  const programId = application.programId || application.program_id || null;
+  const eventId = application.eventId || application.event_id || null;
+
+  if (opportunityId) return (opportunities || []).find((item) => item && item.id === opportunityId) || null;
+  if (programId) return (programs || []).find((item) => item && item.id === programId) || null;
+  if (eventId) return (events || []).find((item) => item && item.id === eventId) || null;
+  return null;
+}
+
 /**
  * Short noun for an application's listing kind.
  *
  * Used by the dashboards' "more info" dialog, which previously read
- * `opportunityId ? 'OJT Posting' : 'Training Program'` — so an EVENT
+ * `opportunityId ? 'OJT Posting' : 'Training Program'`, so an EVENT
  * application was mislabelled a training programme.
  */
 export function getApplicationListingTypeLabel(application) {
@@ -128,7 +367,8 @@ export function getApplicationListingTypeLabel(application) {
   return 'Application';
 }
 
-/** Advance a date by N working days (Mon-Fri), leaving weekends out. */export function addWorkingDays(from, days) {
+/** Advance a date by N working days (Mon-Fri), leaving weekends out. */
+export function addWorkingDays(from, days) {
   const start = toValidDate(from);
   const count = Math.ceil(Number(days));
   if (!start || !Number.isFinite(count) || count <= 0) return null;
@@ -147,10 +387,34 @@ export function getApplicationListingTypeLabel(application) {
 }
 
 /**
+ * Whether the user-level hours figure may decide a Done state.
+ *
+ * Hours live on the user (`users.rendered_hours`), so they can only speak for
+ * one experience at a time. Critically, only an OJT posting carries an hours
+ * requirement: an event is a diary entry and a programme has no `required_hours`
+ * column at all. So neither may be counted as a competing consumer of the same
+ * pool. Before this, one placement plus one whole-day event meant two
+ * experiences "in play", the hours were never attributed, and the placement
+ * could never complete on hours no matter how many were rendered.
+ *
+ * `entries` is `[{ application, listing }]` - the same shape both screens build.
+ */
+export const isHoursAttributable = (entries, today = new Date()) => {
+  const inPlay = (Array.isArray(entries) ? entries : []).filter(
+    (entry) =>
+      entry &&
+      getApplicationListingKind(entry.application) === 'opportunity' &&
+      !isApplicationCompleted(entry.application) &&
+      !isApplicationWindowFinished(entry.application, entry.listing, today)
+  );
+  return inPlay.length === 1;
+};
+
+/**
  * Start date + projected end date for one experience.
  *
  * `endDate` is the day the remaining hours land on, projected forward from
- * whichever is later: the start date or today.  A finished experience reports
+ * whichever is later: the start date or today. A finished experience reports
  * the date it finished instead of a projection.
  */
 export function computeExperienceSchedule({
@@ -204,68 +468,96 @@ export function computeExperienceSchedule({
 }
 
 /**
- * Turn a student's applications into the experience list both dashboards show.
+ * Turn a student's applications into the experience list the screens show.
  *
  * Only approved applications qualify, so a pending application can never be
- * presented as an experience.  Pending ones stay in "My Applications".
+ * presented as an experience. Pending ones stay in "My Applications".
+ *
+ * `requiredHours` / `renderedHours` are the user-level figures. They are only
+ * allowed to decide the Done state when exactly one experience is still in play
+ * (see the note at the top of the file).
  */
 export function deriveExperienceEntries({
   applications = [],
   programs = [],
   opportunities = [],
   events = [],
-  currentUser = null
+  currentUser = null,
+  requiredHours = 0,
+  renderedHours = 0,
+  today = new Date()
 } = {}) {
   const ownerId = currentUser?.id || null;
   const programList = Array.isArray(programs) ? programs : [];
   const opportunityList = Array.isArray(opportunities) ? opportunities : [];
   const eventList = Array.isArray(events) ? events : [];
 
-  return (Array.isArray(applications) ? applications : [])
-    .filter((application) => {
-      if (!application) return false;
-      const applicationOwner = getApplicationOwnerId(application);
-      if (ownerId && applicationOwner && applicationOwner !== ownerId) return false;
-      return isApplicationApproved(application);
+  const approved = (Array.isArray(applications) ? applications : []).filter((application) => {
+    if (!application) return false;
+    const applicationOwner = getApplicationOwnerId(application);
+    if (ownerId && applicationOwner && applicationOwner !== ownerId) return false;
+    return isApplicationApproved(application);
+  });
+
+  // Pass 1: resolve the listing for each approved application.
+  const withListing = approved.map((application) => ({
+    application,
+    listing: findApplicationListing(application, {
+      opportunities: opportunityList,
+      programs: programList,
+      events: eventList
     })
-    .map((application) => {
-      const opportunityId = application.opportunityId || application.opportunity_id || null;
-      const programId = application.programId || application.program_id || null;
-      const eventId = application.eventId || application.event_id || null;
-      const listing = opportunityId
-        ? opportunityList.find((item) => item.id === opportunityId) || null
-        : programId
-          ? programList.find((item) => item.id === programId) || null
-          : eventId
-            ? eventList.find((item) => item.id === eventId) || null
-            : null;
+  }));
 
-      const isComplete = isApplicationCompleted(application);
+  // Pass 2: how many hour-bearing experiences are still in play? Only those may
+  // compete for the user's single hours balance - see isHoursAttributable.
+  const hoursAttributable = isHoursAttributable(withListing, today);
 
-      return {
-        id: application.id,
-        application,
+  return withListing.map(({ application, listing }) => {
+    const opportunityId = application.opportunityId || application.opportunity_id || null;
+    const programId = application.programId || application.program_id || null;
+    const eventId = application.eventId || application.event_id || null;
+
+    const isComplete = getApplicationExperienceState(application, {
+      listing,
+      requiredHours,
+      renderedHours,
+      today,
+      hoursAttributable
+    }) === ALREADY_DONE_LABEL;
+
+    return {
+      id: application.id,
+      application,
+      listing,
+      type: opportunityId ? 'opportunity' : programId ? 'program' : eventId ? 'event' : 'program',
+      title:
+        listing?.title ||
+        (opportunityId ? 'OJT Posting' : programId ? 'Program' : eventId ? 'Event' : 'Experience'),
+      organization:
+        listing?.organization ||
+        listing?.company ||
+        listing?.location ||
+        'HYT Foundation Inc.',
+      state: getApplicationExperienceState(application, {
         listing,
-        type: opportunityId ? 'opportunity' : programId ? 'program' : eventId ? 'event' : 'program',
-        title:
-          listing?.title ||
-          (opportunityId ? 'OJT Posting' : programId ? 'Program' : eventId ? 'Event' : 'Experience'),
-        organization:
-          listing?.organization ||
-          listing?.company ||
-          listing?.location ||
-          'HYT Foundation Inc.',
-        state: getApplicationExperienceState(application),
-        isComplete,
-        appliedAt: application.appliedAt || application.createdAt || null,
-        approvedAt:
-          application.reviewedAt ||
-          application.updatedAt ||
-          application.createdAt ||
-          null,
-        completedAt: application.completedAt || application.completionDate || null
-      };
-    });
+        requiredHours,
+        renderedHours,
+        today,
+        hoursAttributable
+      }),
+      isComplete,
+      window: getListingWindow(listing),
+      hoursAttributable,
+      appliedAt: application.appliedAt || application.createdAt || null,
+      approvedAt:
+        application.reviewedAt ||
+        application.updatedAt ||
+        application.createdAt ||
+        null,
+      completedAt: application.completedAt || application.completionDate || null
+    };
+  });
 }
 
 /** Split applications the way "My Applications" presents them. */

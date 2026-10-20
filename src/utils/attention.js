@@ -95,7 +95,7 @@ export function buildAttentionItems({ state, userId, basePath = '/student', read
       tone: 'danger',
       icon: 'alert',
       title: rejectedReports.length === 1
-        ? `Daily report returned${reportDate ? ` — ${formatDate(reportDate)}` : ''}`
+        ? `Daily report returned${reportDate ? ` - ${formatDate(reportDate)}` : ''}`
         : `${pluralize(rejectedReports.length, 'daily report')} returned`,
       detail: latest.adminNote || latest.adminRemarks || latest.admin_note || 'Open the report to read the admin note',
       to: `${basePath}/daily-reports`

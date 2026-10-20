@@ -11,13 +11,13 @@
 .signin-wall-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1F2937;
+  color: var(--dark-text);
   margin-bottom: 12px;
 }
 
 .signin-wall-message {
   font-size: 15px;
-  color: #6B7280;
+  color: var(--muted-text);
   line-height: 1.6;
   margin-bottom: 32px;
 }
@@ -31,14 +31,14 @@
 
 .signin-wall-benefits {
   padding-top: 24px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
   text-align: left;
 }
 
 .benefits-title {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--dark-text);
   margin-bottom: 12px;
 }
 
@@ -53,7 +53,7 @@
 
 .benefits-list li {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   padding-left: 8px;
 }
 

@@ -16,7 +16,7 @@
 
 .auth-card {
   padding: 3rem;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
@@ -95,7 +95,7 @@
 
 .auth-divider span {
   position: relative;
-  background: white;
+  background: var(--surface);
   padding: 0 1rem;
   color: var(--muted-text);
   font-size: 0.875rem;
@@ -135,9 +135,9 @@
 }
 
 .alert-error {
-  background-color: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FECACA;
+  background-color: var(--danger-surface);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
 }
 
 /* Responsive */
@@ -208,7 +208,7 @@
   cursor: pointer;
   border-radius: 12px;
   border: 2px solid var(--border);
-  background: white;
+  background: var(--surface);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
 }

@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FEF3C7 0%, var(--background) 100%);
+  background: linear-gradient(135deg, var(--warning-surface) 0%, var(--background) 100%);
   padding: 2rem 1rem;
 }
 
@@ -16,7 +16,7 @@
 
 .auth-card {
   padding: 3rem;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
@@ -87,7 +87,7 @@
 
 .form-error {
   font-size: 0.875rem;
-  color: #DC2626;
+  color: var(--danger-text);
   margin-top: 0.25rem;
 }
 
@@ -119,9 +119,9 @@
 }
 
 .alert-error {
-  background-color: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FECACA;
+  background-color: var(--danger-surface);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
 }
 
 /* Responsive */
@@ -235,19 +235,19 @@
 }
 
 .strength-weak .strength-text {
-  color: #EF4444;
+  color: var(--danger-text);
 }
 
 .strength-medium .strength-text {
-  color: #F59E0B;
+  color: var(--warning-text);
 }
 
 .strength-good .strength-text {
-  color: #3B82F6;
+  color: var(--link-text);
 }
 
 .strength-strong .strength-text {
-  color: #10B981;
+  color: var(--success-text);
 }
 
 /* Password Match Indicator */
@@ -258,18 +258,18 @@
 }
 
 .match-text {
-  color: #10B981;
+  color: var(--success-text);
 }
 
 .no-match-text {
-  color: #EF4444;
+  color: var(--danger-text);
 }
 
 /* ID Format Info Box */
 .id-format-info {
   padding: 12px;
-  background: #F0F9FF;
-  border: 1px solid #BAE6FD;
+  background: var(--tint-info);
+  border: 1px solid var(--border-info);
   border-radius: 8px;
   font-size: 0.875rem;
   color: var(--dark-text);
@@ -318,7 +318,7 @@
   cursor: pointer;
   border-radius: 12px;
   border: 2px solid var(--border);
-  background: white;
+  background: var(--surface);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
 }

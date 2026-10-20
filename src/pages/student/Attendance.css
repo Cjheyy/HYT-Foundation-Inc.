@@ -11,13 +11,13 @@
 .page-title {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin-bottom: 8px;
 }
 
 .page-subtitle {
   font-size: 16px;
-  color: #666;
+  color: var(--muted-text);
 }
 
 /* Today's Attendance Card.
@@ -34,18 +34,18 @@
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 
 .card-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dark-text);
 }
 
 .card-date {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text);
 }
 
 .attendance-status {
@@ -82,7 +82,7 @@
 
 .no-attendance {
   text-align: center;
-  color: #999;
+  color: var(--muted-text);
   padding: 32px;
   font-size: 16px;
 }
@@ -109,26 +109,26 @@
 
 .pending-notice {
   border-color: #f59e0b;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-surface);
+  color: var(--warning-text);
 }
 
 .active-notice {
   border-color: #3b82f6;
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--info-surface);
+  color: var(--link-text);
 }
 
 .approved-notice {
   border-color: #10b981;
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-surface);
+  color: var(--success-text);
 }
 
 .rejected-notice {
   border-color: #ef4444;
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 
 .attendance-locked-message {
@@ -139,8 +139,8 @@
   padding: 16px;
   border: 2px solid #f59e0b;
   border-radius: 12px;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-surface);
+  color: var(--warning-text);
   text-align: center;
 }
 
@@ -150,8 +150,8 @@
 
 .final-message {
   border-color: #10b981;
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-surface);
+  color: var(--success-text);
 }
 
 .completed-badge {
@@ -210,7 +210,7 @@
    It has to stay scoped to its own container. CRA bundles every route into ONE
    stylesheet, so a bare `.progress-bar` here leaked into `components/ProgressBar`
    and into the dashboard's `.experience-progress` bar, handing them
-   `display: flex`, `min-width: 50px` and — the damaging one — `padding-right:
+   `display: flex`, `min-width: 50px` and - the damaging one - `padding-right:
    16px`. With `box-sizing: border-box` that padding comes out of the *content*
    box, so `.progress-bar-fill`'s `width: 40%` was 40% of a box 16px narrower
    than the track it is drawn in: a 40% bar measured 37.96%, and a 100% bar
@@ -219,7 +219,7 @@
 .progress-bar-container {
   width: 100%;
   height: 32px;
-  background: #e5e7eb;
+  background: var(--border);
   border-radius: 16px;
   overflow: hidden;
   position: relative;
@@ -229,7 +229,7 @@
   height: 100%;
   /* Deepened so the white percentage clears 4.5:1 across the whole fill;
      #279EB6 was 3.16:1 against white. */
-  background: linear-gradient(90deg, #16697A, #0F5566);
+  background: linear-gradient(90deg, #16697A, var(--info-text));
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -252,7 +252,7 @@
 }
 
 .ot-form {
-  background: #f9fafb;
+  background: var(--surface-alt);
   padding: 24px;
   border-radius: 8px;
   margin-bottom: 24px;
@@ -266,14 +266,14 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--dark-text);
   margin-bottom: 8px;
 }
 
 .form-textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
@@ -311,7 +311,7 @@
 .section-subtitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin-bottom: 16px;
 }
 
@@ -319,7 +319,7 @@
 .table-responsive {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
 }
 
 .data-table {
@@ -328,7 +328,7 @@
 }
 
 .data-table thead {
-  background: #f9fafb;
+  background: var(--surface-alt);
 }
 
 .data-table th {
@@ -336,7 +336,7 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted-text);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -344,12 +344,12 @@
 .data-table td {
   padding: 16px;
   font-size: 14px;
-  color: #374151;
-  border-top: 1px solid #e5e7eb;
+  color: var(--dark-text);
+  border-top: 1px solid var(--border);
 }
 
 .data-table tr.rejected-row {
-  background: #fef2f2;
+  background: var(--danger-surface);
 }
 
 .reason-cell {
@@ -368,7 +368,7 @@
 
 .empty-state {
   text-align: center;
-  color: #9ca3af;
+  color: var(--muted-text);
   padding: 48px 24px;
   font-size: 14px;
 }
@@ -379,7 +379,7 @@
   align-items: center;
   min-height: 400px;
   font-size: 18px;
-  color: #666;
+  color: var(--muted-text);
 }
 
 /* Responsive */
@@ -421,7 +421,7 @@
 /* ============================================================================
    DASHBOARD LAYOUT
    ----------------------------------------------------------------------------
-   Presentation only — same six cards, same markup, same ids, same content.
+   Presentation only - same six cards, same markup, same ids, same content.
    Two columns at wide widths, one column below 1080px.
 
    Every track is `minmax(0, 1fr)`, never a bare `1fr`. A bare `1fr` is
@@ -456,7 +456,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   One recipe for every tinted tile in this layout — the key/value strip under
+   One recipe for every tinted tile in this layout - the key/value strip under
    the timer and the OJT-progress stat block. `.kv` and `.summary-item` are
    different card subtrees with identical needs, so they share a rule rather
    than repeating it. Two classes (0,2,0) so it outranks `.attendance-col > *`
@@ -469,11 +469,9 @@
   gap: 4px;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--border, #E5E7EB);
+  border: 1px solid var(--border, var(--border));
   border-radius: 10px;
-  background: #F9FAFB;
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
+  background: var(--surface-alt);
 }
 
 /* The small caps label above each value, shared the same way. */
@@ -483,11 +481,11 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 /* ----------------------------------------------------------------------------
-   Card header furniture — the numbered index chip.
+   Card header furniture - the numbered index chip.
    -------------------------------------------------------------------------- */
 .attendance-col .card-idx {
   flex: none;
@@ -495,12 +493,12 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
   white-space: nowrap;
 }
 
 /* ----------------------------------------------------------------------------
-   Today's Attendance — timer left, status pill right, then the key/value strip.
+   Today's Attendance - timer left, status pill right, then the key/value strip.
    -------------------------------------------------------------------------- */
 .today-live-row {
   display: flex;
@@ -530,7 +528,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .today-kv {
@@ -543,7 +541,7 @@
 .attendance-col .kv .kv-v {
   font-size: 17px;
   font-weight: 700;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -558,7 +556,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   OJT Hours Progress — a labelled percentage line above the existing bar.
+   OJT Hours Progress - a labelled percentage line above the existing bar.
    -------------------------------------------------------------------------- */
 .progress-line {
   display: flex;
@@ -570,18 +568,18 @@
 
 .attendance-col .progress-line .progress-line-label {
   font-size: 12px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .attendance-col .progress-line .progress-line-value {
   font-size: 14px;
   font-weight: 700;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
   font-variant-numeric: tabular-nums;
 }
 
 /* ----------------------------------------------------------------------------
-   OJT Progress — a 2x2 stat block rather than four loose columns.
+   OJT Progress - a 2x2 stat block rather than four loose columns.
    -------------------------------------------------------------------------- */
 .attendance-summary-card .attendance-summary-grid {
   display: grid;
@@ -592,7 +590,7 @@
 .attendance-summary-card .summary-value {
   font-size: 20px;
   font-weight: 700;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -601,11 +599,11 @@
   margin: 12px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 /* ----------------------------------------------------------------------------
-   Recent activity — the DTR rows re-expressed as a short log.
+   Recent activity - the DTR rows re-expressed as a short log.
    -------------------------------------------------------------------------- */
 .attendance-activity-card .activity-list {
   margin: 0;
@@ -620,7 +618,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 11px 0;
-  border-top: 1px solid var(--border, #E5E7EB);
+  border-top: 1px solid var(--border, var(--border));
 }
 
 .attendance-activity-card .activity-list > .activity-row:first-child {
@@ -630,7 +628,7 @@
 
 .attendance-activity-card .activity-date {
   font-size: 13.5px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -662,9 +660,9 @@
 .attendance-stepper {
   margin-bottom: 20px;
   padding: 16px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #F9FAFB;
+  background: var(--surface-alt);
 }
 
 .attendance-stepper-steps {
@@ -693,7 +691,7 @@
   left: 34px;
   right: 6px;
   height: 2px;
-  background: #E5E7EB;
+  background: var(--border);
 }
 
 .attendance-stepper-marker {
@@ -708,8 +706,8 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  background: #E5E7EB;
-  color: #6B7280;
+  background: var(--border);
+  color: var(--muted-text);
 }
 
 .attendance-stepper-step.done .attendance-stepper-marker {
@@ -718,7 +716,7 @@
 }
 
 .attendance-stepper-step.current .attendance-stepper-marker {
-  background: linear-gradient(135deg, #B8441F 0%, #A83F27 100%);
+  background: linear-gradient(135deg, var(--accent-text) 0%, #A83F27 100%);
   color: #fff;
   box-shadow: 0 0 0 4px rgba(213, 113, 86, 0.15);
 }
@@ -746,7 +744,7 @@
   gap: 7px;
   margin: 14px 0 0;
   padding-top: 12px;
-  border-top: 1px solid #EEF2F7;
+  border-top: 1px solid var(--border);
   font-size: 13px;
   color: var(--muted-text);
 }

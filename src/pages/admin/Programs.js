@@ -21,14 +21,13 @@ import './Admin.css';
 /**
  * Programmes ARE the Dream Academy units.
  *
- * `data/dreamAcademy.js` already holds the academy's real offering — the eight
+ * `data/dreamAcademy.js` already holds the academy's real offering - the eight
  * units and the duties each one performs, which is exactly what the Home page
  * renders under "Unit Assignments".  Rather than duplicating that list in the
  * database, the add form reads it: picking a unit fills in the title and seeds
  * the description from the unit's duties, which the admin may then edit.
  *
- * There is deliberately no required-hours field — programmes do not carry one —
- * and slots are entered by hand.
+ * There is deliberately no required-hours field - programmes do not carry one - * and slots are entered by hand.
  */
 const UNIT_OPTIONS = DA_UNITS.map((unit) => ({ value: unit.name, label: unit.name }));
 

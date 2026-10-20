@@ -157,8 +157,7 @@ export function getInitials(name) {
  * First name, for greetings and labels.
  *
  * Prefers the first word of `fullName` because that is what the portal layouts
- * render (see StudentLayout's avatar initial).  `firstName` is only a fallback —
- * a row that carries `fullName` but no `firstName` used to greet the user with
+ * render (see StudentLayout's avatar initial).  `firstName` is only a fallback - * a row that carries `fullName` but no `firstName` used to greet the user with
  * "Welcome back, !".
  */
 export function getFirstName(user, fallback = 'there') {
@@ -238,14 +237,14 @@ export const HYT_BRANDING = {
  * `Date.prototype.toISOString()` is UTC, so a Date sitting at local midnight in
  * GMT+8 serialises to 16:00 the *previous* day.  `formatScheduleRange` slices
  * the first 10 characters off its input, so handing it a `toISOString()` value
- * renders every date one day early — silently, and only in positive-offset
+ * renders every date one day early - silently, and only in positive-offset
  * timezones, which is the worst way for a date bug to behave.
  *
  * Pass the result of this instead.  Returns '' for junk so the caller's
  * existing `--` fallback still applies.
  */
 export function toLocalISODate(value) {
-  // `new Date(null)` is 1970-01-01, not an invalid date — null coerces to 0 and
+  // `new Date(null)` is 1970-01-01, not an invalid date - null coerces to 0 and
   // 0 is a perfectly good epoch timestamp.  So a missing date would have
   // rendered as "Jan 1, 1970" rather than falling back to "--".  Reject the
   // empty-ish values before handing them to the Date constructor.
@@ -263,7 +262,7 @@ export function toLocalISODate(value) {
  *
  * The sibling of `toLocalISODate` and the same GMT+8 trap.  Handing
  * `'2026-10-20T09:00'` straight to Postgres lets POSTGRES pick the zone, and
- * Supabase's session runs in UTC — so 09:00 Manila would be stored as 09:00Z
+ * Supabase's session runs in UTC - so 09:00 Manila would be stored as 09:00Z
  * and read back as 17:00.  `new Date()` treats a date-TIME string with no
  * offset as LOCAL (only a date-ONLY string is UTC), so `.toISOString()` yields
  * the correct instant.

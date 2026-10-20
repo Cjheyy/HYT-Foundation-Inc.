@@ -6,8 +6,7 @@
   max-width: 68ch;
   /* Was `-8px`, a pull-up written when `.page-title` had no bottom margin of
      its own. Now that the shared portal rhythm gives the title 6px, a negative
-     top margin here collapsed against it to -2px and overlapped the heading —
-     the one portal page still doing that. `0` leaves the standard 6px gap. */
+     top margin here collapsed against it to -2px and overlapped the heading - the one portal page still doing that. `0` leaves the standard 6px gap. */
   margin: 0 0 28px;
   font-size: 15px;
   line-height: 1.6;
@@ -47,7 +46,7 @@
   border-radius: 999px;
   background: rgba(22, 105, 122, 0.1);
   border: 1px solid rgba(22, 105, 122, 0.22);
-  color: #0F5566;
+  color: var(--info-text);
   font-size: 13px;
   font-weight: 700;
 }
@@ -81,7 +80,7 @@
   justify-content: space-between;
   align-items: start;
   gap: 12px;
-  /* No trailing gap when the header is the whole card — the accepted/declined
+  /* No trailing gap when the header is the whole card - the accepted/declined
      notice boxes add their own top margin when they are present. */
   margin-bottom: 0;
 }
@@ -115,17 +114,17 @@
 
 .application-accepted-notice {
   padding: 12px;
-  background: #D1FAE5;
+  background: var(--success-surface);
   border-radius: 8px;
   margin-top: 12px;
 }
 
 .application-accepted-notice strong {
-  color: #065F46;
+  color: var(--success-text);
 }
 
 .application-accepted-notice p {
-  color: #065F46;
+  color: var(--success-text);
   font-size: 14px;
   margin-top: 4px;
 }
@@ -135,18 +134,70 @@
    in the same green success box as an approval. */
 .application-declined-notice {
   padding: 12px;
-  background: #FEE2E2;
+  background: var(--danger-surface);
   border-left: 3px solid #DC2626;
   border-radius: 8px;
   margin-top: 12px;
 }
 
 .application-declined-notice strong {
-  color: #991B1B;
+  color: var(--danger-text);
 }
 
 .application-declined-notice p {
-  color: #991B1B;
+  color: var(--danger-text);
   font-size: 14px;
   margin-top: 4px;
+}
+
+/* Facts block: schedule, hours, remaining, finished.
+   A definition list, not a table, because each card is an independent record
+   and the rows differ by experience type (an event has no hours). */
+.application-facts {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.application-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.application-fact:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.application-fact dt {
+  color: var(--muted-text);
+  flex: 0 0 auto;
+}
+
+.application-fact dd {
+  margin: 0;
+  color: var(--dark-text);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* A finished experience is a record, not a success banner, so it drops the
+   green approval colour for the neutral one. */
+.application-accepted-notice.is-done {
+  background: var(--neutral-surface);
+}
+
+.application-accepted-notice.is-done strong,
+.application-accepted-notice.is-done p {
+  color: var(--neutral-text);
+}
+
+.applications-group-hint {
+  margin: -4px 0 12px;
+  font-size: 14px;
+  color: var(--muted-text);
 }

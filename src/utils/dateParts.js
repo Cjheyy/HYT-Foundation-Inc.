@@ -1,7 +1,7 @@
 /**
  * Pure date plumbing for the custom `DateField` picker.
  *
- * Everything here works on PARTS — `{ year, month, day, hour, minute }` — and
+ * Everything here works on PARTS - `{ year, month, day, hour, minute }` - and
  * never on `Date` objects for anything a human reads back.  The reason is the
  * same trap that has bitten this project before: `new Date('2026-10-14')` is
  * parsed as UTC midnight, so in a negative-offset timezone it formats as
@@ -20,7 +20,7 @@ export const MONTH_NAMES = [
 /** Sunday-first, matching how a Philippine wall calendar is printed. */
 export const WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-/** Minute choices in the time dropdown — 5-minute steps keep the list short. */
+/** Minute choices in the time dropdown - 5-minute steps keep the list short. */
 export const MINUTE_STEP = 5;
 
 export function pad2(value) {
@@ -34,8 +34,8 @@ export function daysInMonth(year, month) {
 
 /**
  * `'YYYY-MM-DD'` or `'YYYY-MM-DDTHH:mm'` (also tolerating a space separator and
- * trailing seconds) into parts.  Anything unparseable — including a value whose
- * day does not exist, such as `2026-02-31` — returns `null` rather than a
+ * trailing seconds) into parts.  Anything unparseable - including a value whose
+ * day does not exist, such as `2026-02-31` - returns `null` rather than a
  * half-built object, so callers can branch once.
  */
 export function parseValue(value) {
@@ -67,7 +67,7 @@ export function toDateValue(parts) {
   return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
 }
 
-/** `'YYYY-MM-DDTHH:mm'` from parts — the exact shape `datetime-local` emits. */
+/** `'YYYY-MM-DDTHH:mm'` from parts - the exact shape `datetime-local` emits. */
 export function toDateTimeValue(parts) {
   return `${toDateValue(parts)}T${pad2(parts.hour)}:${pad2(parts.minute)}`;
 }
@@ -77,7 +77,7 @@ export function toValue(parts, withTime) {
   return withTime ? toDateTimeValue(parts) : toDateValue(parts);
 }
 
-/** Just the `YYYY-MM-DD` half of any value — for `min`/`max` comparisons. */
+/** Just the `YYYY-MM-DD` half of any value - for `min`/`max` comparisons. */
 export function dayKeyOf(value) {
   const parts = parseValue(value);
   return parts ? toDateValue(parts) : '';
@@ -95,7 +95,7 @@ export function todayParts(now = new Date()) {
 }
 
 /**
- * Local "today" as `'YYYY-MM-DD'` — the value to use for a `min` bound.
+ * Local "today" as `'YYYY-MM-DD'` - the value to use for a `min` bound.
  *
  * NOT `new Date().toISOString().split('T')[0]`, which is what the admin forms
  * used to pass: `toISOString` is UTC, so between midnight and 08:00 in Manila
@@ -157,7 +157,7 @@ export function formatClock(hour, minute) {
 
 /**
  * `October 14, 2026`, or `October 14, 2026 · 9:05 AM` with a time.  Built from
- * parts via a LOCAL Date, never from `new Date(string)` — see the file header.
+ * parts via a LOCAL Date, never from `new Date(string)` - see the file header.
  */
 export function formatDisplay(value, withTime) {
   const parts = typeof value === 'object' && value !== null ? value : parseValue(value);
@@ -167,7 +167,7 @@ export function formatDisplay(value, withTime) {
   return withTime ? `${base} · ${formatClock(parts.hour, parts.minute)}` : base;
 }
 
-/** `October 2026` — the popover's month heading. */
+/** `October 2026` - the popover's month heading. */
 export function formatMonthLabel(year, month) {
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }

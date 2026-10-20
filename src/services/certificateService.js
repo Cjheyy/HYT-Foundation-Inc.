@@ -46,14 +46,14 @@ export function buildCertificatePayload({ student, email, certificateType, hours
   const normalizedEmail = String(email || student?.email || '').trim();
   const hours = Number(hoursCompleted);
   const title = certificateType === 'OJT Completion with Hours'
-    ? `OJT Completion Certificate — ${Number.isFinite(hours) && hours > 0 ? `${hours} Hours` : 'Verified Hours'}`
+    ? `OJT Completion Certificate - ${Number.isFinite(hours) && hours > 0 ? `${hours} Hours` : 'Verified Hours'}`
     : 'Trainee Skills Completion Certificate';
   const description = [
     `Recipient: ${name} <${normalizedEmail}>`,
     school ? `School: ${school}` : null,
     `Type: ${certificateType}`,
     Number.isFinite(hours) && hours > 0 ? `Verified hours: ${hours}` : null,
-    `Issued by ${HYT_BRANDING.organization} — ${HYT_BRANDING.founder}, ${HYT_BRANDING.founderTitle}.`
+    `Issued by ${HYT_BRANDING.organization} - ${HYT_BRANDING.founder}, ${HYT_BRANDING.founderTitle}.`
   ].filter(Boolean).join(' | ');
   return {
     studentId: student?.id || null,
@@ -104,7 +104,7 @@ export function buildCertificateHtml({ studentName, schoolName, recipientEmail, 
       .hyt-cert{max-width:none;margin:0;border-width:8px;box-shadow:none;padding:40px 36px;}
     }
   </style></head><body><div class="hyt-cert">
-    <div class="hyt-cert-org">${escapeHtml(HYT_BRANDING.organization)} — ${escapeHtml(HYT_BRANDING.tagline)}</div>
+    <div class="hyt-cert-org">${escapeHtml(HYT_BRANDING.organization)} - ${escapeHtml(HYT_BRANDING.tagline)}</div>
     <div class="hyt-cert-title">Certificate of Completion</div>
     <div class="hyt-cert-sub">${escapeHtml(certificateType || 'Program Completion')} · No. ${escapeHtml(certificateNumber || '')}</div>
     <div class="hyt-cert-name">${escapeHtml(studentName || '')}</div>

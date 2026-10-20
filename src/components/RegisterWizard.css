@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Register wizard — a stepped dialog instead of one long scrolling page.
+   Register wizard - a stepped dialog instead of one long scrolling page.
    Palette follows the HYT Foundation logo: teal (#279EB6), terracotta
    (#D57156) and yellow (#F3DB6E).
    ========================================================================== */
@@ -32,7 +32,7 @@
      standard 900px-tall laptop window without any internal scrolling. */
   max-height: min(92vh, 860px);
   overflow: hidden;
-  background: #fff;
+  background: var(--surface);
   border-radius: 24px;
   box-shadow:
     0 32px 70px rgba(15, 42, 50, 0.32),
@@ -50,7 +50,7 @@
   position: relative;
   flex: 0 0 auto;
   padding: 24px 28px 18px;
-  border-bottom: 1px solid var(--border, #E5E7EB);
+  border-bottom: 1px solid var(--border, var(--border));
   background-image:
     radial-gradient(circle at 96% 0%, rgba(39, 158, 182, 0.10) 0%, transparent 58%),
     radial-gradient(circle at 4% 100%, rgba(213, 113, 86, 0.08) 0%, transparent 55%);
@@ -81,28 +81,28 @@
   margin: -6px -8px -6px 0;
   font-size: 24px;
   line-height: 1;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
   background: transparent;
   border-radius: 10px;
   transition: background 160ms ease, color 160ms ease;
 }
 
 .rw-close:hover {
-  background: #F1F5F7;
-  color: var(--dark-text, #1F2937);
+  background: var(--surface-sunken);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-title {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-subtitle {
   margin-top: 6px;
   font-size: 14px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 /* --- Stepper ------------------------------------------------------------ */
@@ -132,8 +132,8 @@
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--muted-text, #6B7280);
-  background: #F1F5F7;
+  color: var(--muted-text, var(--muted-text));
+  background: var(--surface-sunken);
   border-radius: 50%;
   transition: background 220ms ease, color 220ms ease, box-shadow 220ms ease;
 }
@@ -141,7 +141,7 @@
 .rw-step-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -155,7 +155,7 @@
 }
 
 .rw-step.is-active .rw-step-label {
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-step.is-done .rw-step-dot {
@@ -164,7 +164,7 @@
 }
 
 .rw-step.is-done .rw-step-label {
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 /* --- Body --------------------------------------------------------------- */
@@ -202,8 +202,8 @@
   gap: 6px;
   padding: 20px 18px;
   text-align: left;
-  background: #fff;
-  border: 1.5px solid var(--border, #E5E7EB);
+  background: var(--surface);
+  border: 1.5px solid var(--border, var(--border));
   border-radius: 16px;
   transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
@@ -252,13 +252,13 @@
 .rw-role-title {
   font-size: 17px;
   font-weight: 700;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-role-desc {
   font-size: 13px;
   line-height: 1.5;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .rw-role-arrow {
@@ -283,7 +283,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  background: #F7FAFB;
+  background: var(--surface-alt);
   border-radius: 14px;
 }
 
@@ -304,13 +304,13 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .rw-guidance-role {
   font-size: 17px;
   font-weight: 700;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-requirements {
@@ -324,7 +324,7 @@
   padding-left: 24px;
   font-size: 13.5px;
   line-height: 1.55;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-requirements li::before {
@@ -358,7 +358,7 @@
   margin-top: 4px;
   font-size: 13.5px;
   line-height: 1.55;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .rw-notice {
@@ -400,7 +400,7 @@
   max-width: 44ch;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .rw-success-note {
@@ -418,13 +418,13 @@
   gap: 12px;
   flex: 0 0 auto;
   padding: 18px 28px;
-  border-top: 1px solid var(--border, #E5E7EB);
-  background: #FCFDFE;
+  border-top: 1px solid var(--border, var(--border));
+  background: var(--surface-alt);
 }
 
 .rw-foot-note {
   font-size: 14px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 /* --- Responsive --------------------------------------------------------- */

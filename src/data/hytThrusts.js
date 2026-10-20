@@ -1,5 +1,5 @@
 /**
- * The 8 HYT Thrusts — single source of truth.
+ * The 8 HYT Thrusts - single source of truth.
  *
  * Shared by:
  *  - the Home page grid (`icon` + `color` render the circular emblems)

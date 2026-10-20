@@ -161,7 +161,7 @@ describe('getAttendanceLogs re-attaches the profile after the relation fallback'
 
   test('re-attaches profiles when the relation select SUCCEEDS but returns no user', async () => {
     // The relation select is accepted, so there is no `result.error` to trigger
-    // the fallback — but PostgREST still hands back rows with no joined `user`
+    // the fallback - but PostgREST still hands back rows with no joined `user`
     // (an unresolved FK, or RLS hiding the joined row). This is the second half
     // of the "Unknown" bug, and the one the error-only fallback missed.
     supabase.from.mockImplementation(

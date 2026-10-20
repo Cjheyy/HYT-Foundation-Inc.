@@ -7,7 +7,7 @@ import './MarqueeRibbon.css';
  * makes the loop seamless: at -50% the second copy sits precisely where the
  * first one started.
  *
- * Purely decorative, so it is hidden from assistive tech — the same wording
+ * Purely decorative, so it is hidden from assistive tech - the same wording
  * already exists in real headings elsewhere on the page.
  */
 export function MarqueeRibbon({

@@ -247,7 +247,7 @@ export function ReportApprovals() {
                 <div className="accomplishments-box" style={{ 
                   marginTop: '8px', 
                   padding: '12px', 
-                  background: '#F3F4F6', 
+                  background: 'var(--surface-sunken)', 
                   borderRadius: '6px',
                   maxHeight: '200px',
                   overflowY: 'auto'

@@ -1,5 +1,5 @@
 /**
- * DTR row building — the JOIN between attendance and daily reports.
+ * DTR row building - the JOIN between attendance and daily reports.
  *
  * The paper/Sheet DTR has six columns:
  *   Date · Time In · Time Out · Hours Rendered · Building / Office · Link
@@ -7,13 +7,13 @@
  * The first four live in `attendance_logs`.  The station lives on the OJT
  * posting and is resolved per person by `resolveWorkplace()` below.  The
  * trainee's own daily reports are still merged in (`description`), because the
- * CSV export keeps them — they are simply not reproduced on the printed sheet,
+ * CSV export keeps them - they are simply not reproduced on the printed sheet,
  * which prints the station instead.
  *
  * The first four are keyed by (user_id, date) and the reports by the same key,
  * so producing one DTR line per day is a merge, not a query.
  *
- * This is a pure function so the merge can be tested without a database — and
+ * This is a pure function so the merge can be tested without a database - and
  * because the "same day, same person" key is exactly the kind of thing that is
  * easy to get subtly wrong (`2026-09-08` vs `2026-09-08T00:00:00+08:00` are the
  * same day in Manila but different strings).
@@ -45,7 +45,7 @@ export function rowUserId(row) {
 /**
  * Index daily reports by `${userId}|${dayKey}` so the merge is O(n) rather than
  * O(n·m).  When a person somehow has two reports for one day, the LAST one
- * wins — matching `getDailyReports()`, which orders by `created_at desc`, so
+ * wins - matching `getDailyReports()`, which orders by `created_at desc`, so
  * the newest report is the one a human would consider current.
  */
 export function indexDailyReports(reports) {
@@ -73,7 +73,7 @@ export function reportDescription(report) {
  * The link column is filled from `report.accomplishmentLink` when a future
  * migration adds it.  Today no such column exists on `daily_reports` (verified
  * against the live project: `42703 column does not exist`), so this resolves to
- * '' — which is what the Sheet shows anyway, since the column is a place to
+ * '' - which is what the Sheet shows anyway, since the column is a place to
  * paste a Drive URL by hand.
  */
 export function reportLink(report) {
@@ -88,7 +88,7 @@ export function reportLink(report) {
 /**
  * The trainee's own note off a MANUAL attendance row.
  *
- * `request_manual_attendance()` writes `admin_note = 'MANUAL — <note>'`, or the
+ * `request_manual_attendance()` writes `admin_note = 'MANUAL - <note>'`, or the
  * bare string `'MANUAL'` when no note was given, so the tag and its separator
  * have to come off before the text can be printed as prose on the sheet.
  *
@@ -110,11 +110,11 @@ export function attendanceNote(row) {
   // Strip the tag, then the em/en dash or hyphen the RPC wrote after it.  Only
   // the LEADING separator is removed, so a note like "Day 1 - orientation"
   // keeps its own hyphen.
-  return raw.slice('MANUAL'.length).replace(/^[\s—–-]+/, '').trim();
+  return raw.slice('MANUAL'.length).replace(/^[\s -  - -]+/, '').trim();
 }
 
 /**
- * Which building / office a trainee is stationed in — the value printed in the
+ * Which building / office a trainee is stationed in - the value printed in the
  * DTR's "Building / Office" column.
  *
  * The chain is
@@ -127,8 +127,8 @@ export function attendanceNote(row) {
  *
  * `ojt_records.workplace` is the fallback: the column exists and carries the
  * same idea, so a record created before the posting had a location still
- * prints something rather than a blank.  A record that matches nothing — or a
- * trainee with no OJT record at all — resolves to `''`, and the sheet prints
+ * prints something rather than a blank.  A record that matches nothing - or a
+ * trainee with no OJT record at all - resolves to `''`, and the sheet prints
  * its dash.
  */
 export function resolveWorkplace(ojtRecords, opportunities, userId) {
@@ -138,7 +138,7 @@ export function resolveWorkplace(ojtRecords, opportunities, userId) {
   const postings = Array.isArray(opportunities) ? opportunities : [];
 
   // `getOjtRecords()` orders by `created_at desc`, so `find` yields the newest
-  // record — and a trainee is only allowed one active OJT anyway.
+  // record - and a trainee is only allowed one active OJT anyway.
   const record = records.find((item) => (item?.studentId || item?.student_id) === userId);
   if (!record) return '';
 
@@ -169,7 +169,7 @@ export function mergeDtrRows(attendanceRows, dailyReports) {
         ...row,
         // A daily report is the richer, deliberate record and always wins.  A
         // backfilled day usually has none, so the trainee's own manual note
-        // stands in — otherwise the Description column prints blank for every
+        // stands in - otherwise the Description column prints blank for every
         // day that was entered by hand, which is most of the sheet.
         description: reportDescription(report) || attendanceNote(row),
         accomplishmentLink: reportLink(report)
@@ -190,7 +190,7 @@ export function mergeDtrRows(attendanceRows, dailyReports) {
  *
  * `timeIn`/`timeOut` may be a full timestamp or a `time` value; `formatTimeOnly`
  * handles both.  `renderedHours` is NUMERIC(8,4) in the DB, so it is trimmed to
- * 2 decimals for the Sheet — 8.0000 reads as noise on paper.
+ * 2 decimals for the Sheet - 8.0000 reads as noise on paper.
  */
 export function dtrColumns(formatDateOnly, formatTimeOnly) {
   return [

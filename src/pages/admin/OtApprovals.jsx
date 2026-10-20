@@ -285,7 +285,7 @@ export function OtApprovals() {
             </div>
 
             {modalAction === 'approve' && (
-              <div className="approval-note" style={{ marginTop: '16px', padding: '12px', background: '#E0F2FE', borderRadius: '6px', color: '#075985' }}>
+              <div className="approval-note" style={{ marginTop: '16px', padding: '12px', background: 'var(--info-surface)', borderRadius: '6px', color: '#075985' }}>
                 <strong>Note:</strong> Approving will automatically add {selectedRequest.requestedHours} hours to the student's rendered hours.
               </div>
             )}

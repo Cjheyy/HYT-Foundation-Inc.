@@ -258,14 +258,14 @@ export function appReducer(state, action) {
       // The five world-readable collections, and ONLY those.
       //
       // `loadPublicData` used to dispatch LOAD_DATA, whose payload never carries
-      // the user's own rows — so every realtime posting/announcement broadcast
+      // the user's own rows - so every realtime posting/announcement broadcast
       // reset `applications`, `attendance`, `requirements`, `certificates`,
       // `dailyReports`, `ojtRecords` and `otRequests` to `[]`, and a signed-in
       // user watched their dashboard empty itself until the next full load.
       // Merging is safe here precisely because none of these five keys is
       // user-scoped; LOAD_DATA keeps its replace-everything semantics.
       //
-      // An absent key means "the fetch failed" — keep what is already on screen
+      // An absent key means "the fetch failed" - keep what is already on screen
       // rather than blanking a list over one transient error.
       return {
         ...state,
@@ -774,7 +774,7 @@ export function AppProvider({ children }) {
   // student OJT/Events, trainee Programs/Events, dashboard) reads
   // `state.programs` / `state.events` / `state.opportunities`.  Re-running the
   // public load on that broadcast keeps all of them in step the moment an admin
-  // publishes — silently, so nothing flashes a skeleton.
+  // publishes - silently, so nothing flashes a skeleton.
   //
   // `announcements` rides the same broadcast because posting an event now
   // auto-publishes one: the Announcements page and the header bell's unread

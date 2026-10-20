@@ -53,7 +53,7 @@ export function ProtectedRoute({ children, requiredRole }) {
             margin: '0 16px',
             padding: '24px',
             borderRadius: '16px',
-            background: '#fff',
+            background: 'var(--surface)',
             boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
             textAlign: 'center'
           }}

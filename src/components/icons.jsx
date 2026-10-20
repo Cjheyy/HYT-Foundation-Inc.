@@ -3,13 +3,12 @@
  *
  * Every screen draws icons through `<Icon name="..." />`, so swapping the
  * artwork underneath is a change to this one file rather than 33 call sites.
- * The glyphs now come from `lucide-react` — the same stroke width, cap and
+ * The glyphs now come from `lucide-react` - the same stroke width, cap and
  * join as the hand-rolled paths this replaces, but a real, maintained set.
  *
  * The public API is deliberately unchanged: `name`, `size`, `color`, `style`
  * and any extra prop still behave exactly as before, so no caller needed
- * editing.  Unknown names fall back to `Info` rather than rendering nothing —
- * and `icons.test.jsx` walks the source tree to prove no name is actually
+ * editing.  Unknown names fall back to `Info` rather than rendering nothing - * and `icons.test.jsx` walks the source tree to prove no name is actually
  * unknown.
  */
 import {
@@ -29,7 +28,9 @@ import {
   LogOut,
   MapPin,
   Menu,
+  Moon,
   Search,
+  Sun,
   Target,
   User,
   Users,
@@ -56,8 +57,10 @@ export const ICON_COMPONENTS = {
   info: Info,
   logout: LogOut,
   menu: Menu,
+  moon: Moon,
   pin: MapPin,
   search: Search,
+  sun: Sun,
   target: Target,
   user: User,
   users: Users,

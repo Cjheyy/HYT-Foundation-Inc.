@@ -19,7 +19,7 @@ export function Register() {
         <AuthBrandRail
           description="Create your account to apply for OJT postings, join trainee programs, and track your rendered hours."
           points={[
-            'Free to register — approval is only needed to apply',
+            'Free to register - approval is only needed to apply',
             'One account for programs, attendance and certificates',
             'Gmail address required for verification'
           ]}

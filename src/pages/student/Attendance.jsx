@@ -25,7 +25,7 @@ import {
   getAttendanceStage,
   normalizeStatus
 } from '../../services/supabaseService';
-import { checkGeofence, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED } from '../../utils/geofence';
+import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED } from '../../utils/geofence';
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
@@ -39,7 +39,7 @@ const POLL_INTERVAL_MS = 60_000;
 export const describeGeolocationError = describeLocationError;
 
 // Enforcing the geofence needs a precise fix, so accept the slow two-tier
-// lookup.  With enforcement off we only need *some* coordinates — and waiting
+// lookup.  With enforcement off we only need *some* coordinates - and waiting
 // up to 15 s for a high-accuracy fix is what made Clock In feel slow.
 const getCoordinates = () => (GEOFENCE_ENFORCEMENT_ENABLED
   ? getCoordinatesWithFallback()
@@ -56,7 +56,7 @@ export const hasApprovedOjtPosting = (applications = [], userId = null) => (appl
 // Two SEPARATE clock windows, defined once.
 //   In : 09:00 -> 09:10   (9 AM, with a 10-minute grace)
 //   Out: 18:00 -> 18:10   (6 PM, with a 10-minute grace)
-// These are not one continuous span — a clock-in at 3 PM is refused.
+// These are not one continuous span - a clock-in at 3 PM is refused.
 // The database enforces the same two windows in request_clock_in and
 // request_clock_out, so this is the friendly half of the rule and not the
 // authority: changing it here alone will not open a window.
@@ -238,7 +238,7 @@ export function AttendanceNew() {
 
   /**
    * Days already attended, counted as distinct calendar days with an approved
-   * log — a rejected or still-pending day must not inflate the figure.
+   * log - a rejected or still-pending day must not inflate the figure.
    */
   const daysAttended = useMemo(() => {
     const approvedDates = new Set();
@@ -294,19 +294,27 @@ export function AttendanceNew() {
       // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
       const coordinates = await getCoordinates();
 
-      if (coordinates.source !== 'ip' && coordinates.accuracy > 50) {
+      if (coordinates.source !== 'ip' && coordinates.accuracy > GEOFENCE_MAX_ACCURACY_METERS) {
         toast.warning(`Location accuracy is ${Math.round(coordinates.accuracy)} meters.`);
       }
-      const geofence = checkGeofence(coordinates.latitude, coordinates.longitude, GEOFENCE_RADIUS_METERS);
+      // An IP lookup is a city-level guess (kilometres, not metres). It can
+      // never satisfy a 20 m fence honestly, so it is refused outright instead
+      // of being run through the distance check and passing by luck.
+      if (GEOFENCE_ENFORCEMENT_ENABLED && coordinates.source === 'ip') {
+        throw new Error(
+          'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
+        );
+      }
+      const geofence = checkGeofence(
+        coordinates.latitude,
+        coordinates.longitude,
+        GEOFENCE_RADIUS_METERS,
+        coordinates.accuracy
+      );
       // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
       // Re-enable by flipping the flag in src/utils/geofence.js before production.
       if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
-        const away = geofence.distance != null ? Math.round(geofence.distance) : null;
-        throw new Error(
-          away != null
-            ? `You are currently ${away} meters away from the nearest approved office.`
-            : 'You must be within 100 meters of an approved HYT location to clock in.'
-        );
+        throw new Error(describeGeofenceFailure(geofence, { action: 'clock in' }));
       }
       const result = await clockIn(currentUser.id, coordinates.latitude, coordinates.longitude);
       setTodayAttendance(result);
@@ -340,14 +348,19 @@ export function AttendanceNew() {
     try {
       // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
       const frozenCoordinates = await getCoordinates();
-      const geofence = checkGeofence(frozenCoordinates.latitude, frozenCoordinates.longitude, GEOFENCE_RADIUS_METERS);
-      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
-        const away = geofence.distance != null ? Math.round(geofence.distance) : null;
+      if (GEOFENCE_ENFORCEMENT_ENABLED && frozenCoordinates.source === 'ip') {
         throw new Error(
-          away != null
-            ? `You are currently ${away} meters away from the nearest approved office.`
-            : 'You must be within 100 meters of an approved HYT location to clock in.'
+          'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
         );
+      }
+      const geofence = checkGeofence(
+        frozenCoordinates.latitude,
+        frozenCoordinates.longitude,
+        GEOFENCE_RADIUS_METERS,
+        frozenCoordinates.accuracy
+      );
+      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
+        throw new Error(describeGeofenceFailure(geofence, { action: 'clock out' }));
       }
       const result = await clockOut(currentUser.id);
       setTodayAttendance(result);
@@ -512,7 +525,7 @@ export function AttendanceNew() {
         )}
 
         {/* ------------------------------------------------------------------
-            Dashboard layout — the trainee's own summary rail.
+            Dashboard layout - the trainee's own summary rail.
 
             Ordering is chosen so the reading order stays: TODAY'S ATTENDANCE,
             the OT-progress card, OJT PROGRESS, the absence card, the OT
@@ -560,7 +573,7 @@ export function AttendanceNew() {
                     <span className="kv-v">
                       {todayAttendance.timeIn
                         ? formatTime(todayAttendance.timeIn)
-                        : pendingClockIn ? 'Not started yet' : '—'}
+                        : pendingClockIn ? 'Not started yet' : '-'}
                     </span>
                   </div>
                   <div className="kv">
@@ -648,7 +661,7 @@ export function AttendanceNew() {
               <span className="card-idx">02</span>
             </div>
             {/* A Trainee is measured by the hours they have banked, not by a
-                contractual target — so the Required / Remaining breakdown is
+                contractual target - so the Required / Remaining breakdown is
                 hidden for that portal and only the approved milestone (plus
                 the bar below) is shown.  The OJT/Intern portal still needs all
                 three, so this stays role-aware rather than deleting them. */}
@@ -733,7 +746,7 @@ export function AttendanceNew() {
             </div>
             <p className="absence-intro">
               Tell the administrator in advance that you cannot attend, and why. This is for
-              their awareness only — they will reply <strong>Noted</strong> once they have seen it,
+              their awareness only - they will reply <strong>Noted</strong> once they have seen it,
               and nothing is deducted from your hours.
             </p>
 
@@ -859,7 +872,7 @@ export function AttendanceNew() {
  * Presentation-only digest of the attendance history.
  *
  * Reads the SAME `attendanceHistory` rows the DTR table already renders and
- * re-expresses them as a short log — it derives nothing new and touches no
+ * re-expresses them as a short log - it derives nothing new and touches no
  * request flow.  The label is the stored status verbatim, so no copy that the
  * submission/approval path produces is invented here.
  */

@@ -59,14 +59,14 @@ export class ErrorBoundary extends React.Component {
             <h1 style={{ 
               fontSize: '24px', 
               fontWeight: '700',
-              color: '#1F2937',
+              color: 'var(--dark-text)',
               marginBottom: '16px'
             }}>
               Oops! Something went wrong
             </h1>
             <p style={{ 
               fontSize: '15px',
-              color: '#6B7280',
+              color: 'var(--muted-text)',
               lineHeight: '1.6',
               marginBottom: '24px'
             }}>
@@ -78,12 +78,12 @@ export class ErrorBoundary extends React.Component {
               <div style={{
                 marginTop: '20px',
                 padding: '16px',
-                background: '#FEE2E2',
-                border: '1px solid #FECACA',
+                background: 'var(--danger-surface)',
+                border: '1px solid var(--danger-border)',
                 borderRadius: '8px',
                 textAlign: 'left',
                 fontSize: '13px',
-                color: '#991B1B',
+                color: 'var(--danger-text)',
                 overflowX: 'auto'
               }}>
                 <strong>Error Details (Dev Only):</strong>

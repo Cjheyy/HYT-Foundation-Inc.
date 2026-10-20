@@ -13,6 +13,7 @@ import {
   mergeSlotEntry,
   normalizeEntry,
   readSlotEntries,
+  reviewStateOf,
   rowDay,
   rowUserId,
   slotByKey,
@@ -21,7 +22,7 @@ import {
   summariseForAccomplishments
 } from './dailyReportSlots';
 
-/** A fixed clock: 14 October 2026, 11:30 local — inside the 11:00 window. */
+/** A fixed clock: 14 October 2026, 11:30 local - inside the 11:00 window. */
 const at = (hour, minute = 0) => new Date(2026, 9, 14, hour, minute);
 const DAY = '2026-10-14';
 
@@ -137,7 +138,7 @@ describe('entryIsFilled', () => {
 
 describe('slotStatus', () => {
   test('a filed entry always reads as submitted, even late', () => {
-    // 20:00 — the window closed hours ago, but the filing exists.
+    // 20:00 - the window closed hours ago, but the filing exists.
     expect(slotStatus(slot('11:00'), { '11:00': entry() }, DAY, at(20))).toBe('submitted');
   });
 
@@ -337,3 +338,62 @@ describe('groupReportsByDay', () => {
     expect(groupReportsByDay(undefined)).toEqual([]);
   });
 });
+
+/**
+ * The admin screen approves a WHOLE day, once, and only after the 5 PM filing.
+ * These two things are the contract behind that: what "ready" means, and what
+ * the trainee is told about the outcome.
+ */
+describe('the day is approved as a whole, once the 5 PM report is in', () => {
+  test('a day missing its 5 PM filing is not ready, even with the other two filed', () => {
+    const partial = row({ slotEntries: { '11:00': entry(), '15:00': entry() } });
+    expect(dayHasSummary(partial)).toBe(false);
+    expect(dayHasAnyEntry(partial)).toBe(true); // filed - so it is listed, just not approvable
+  });
+
+  test('the 5 PM filing alone is what makes the day ready', () => {
+    expect(dayHasSummary(row({ slotEntries: { '17:00': entry() } }))).toBe(true);
+  });
+
+  test('an empty 5 PM slot is a form that was opened, not a filing', () => {
+    const openedThenClosed = row({
+      slotEntries: { '17:00': { accomplished: '', inProgress: '', pending: '' } }
+    });
+    expect(dayHasSummary(openedThenClosed)).toBe(false);
+  });
+});
+
+describe('reviewStateOf', () => {
+  test('reports approval, with the mentor note when there is one', () => {
+    const state = reviewStateOf(row({ status: 'APPROVED', adminNote: 'Good work.' }));
+    expect(state).toEqual({ tone: 'approved', label: 'Approved', note: 'Good work.' });
+  });
+
+  test('treats a returned day as returned, not approved', () => {
+    const state = reviewStateOf(row({ status: 'REJECTED', adminNote: 'Add the times.' }));
+    expect(state.tone).toBe('returned');
+    expect(state.note).toBe('Add the times.');
+  });
+
+  test('normalises the casing and spacing Postgres may hand back', () => {
+    expect(reviewStateOf(row({ status: 'approved' })).tone).toBe('approved');
+    expect(reviewStateOf(row({ status: ' Approved ' })).tone).toBe('approved');
+    expect(reviewStateOf(row({ status: 'Reviewed' })).tone).toBe('approved');
+  });
+
+  test('"under review" is not yet a decision, so it stays silent', () => {
+    expect(reviewStateOf(row({ status: 'Under-Review' }))).toBeNull();
+  });
+
+  test('a day nobody has looked at reports nothing, so it cannot read as approved', () => {
+    expect(reviewStateOf(row({ status: 'PENDING' }))).toBeNull();
+    expect(reviewStateOf(row({}))).toBeNull();
+    expect(reviewStateOf(null)).toBeNull();
+  });
+
+  test('survives the snake_case spelling of the note column', () => {
+    expect(reviewStateOf(row({ status: 'APPROVED', admin_note: 'From SQL.' })).note)
+      .toBe('From SQL.');
+  });
+});
+

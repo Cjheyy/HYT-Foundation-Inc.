@@ -6,8 +6,7 @@ import { DA_ACCENTS, DA_UNITS } from '../../data/dreamAcademy';
 
 // Swiper is stubbed globally through `jest.moduleNameMapper` in package.json
 // (see src/__mocks__/swiper-react.jsx). Jest 27 cannot read swiper v14's
-// `exports` map, and the real carousel needs ResizeObserver plus real layout —
-// neither of which jsdom provides. None of these tests exercise the slider.
+// `exports` map, and the real carousel needs ResizeObserver plus real layout - // neither of which jsdom provides. None of these tests exercise the slider.
 
 jest.mock('../../context/AppContext', () => ({
   useApp: () => ({ state: { opportunities: [], programs: [] } }),
@@ -29,8 +28,7 @@ const h2Texts = () => screen
   .getAllByRole('heading', { level: 2 })
   .map((node) => node.textContent.trim());
 
-// A handful of assertions are about markup that carries no accessible role —
-// the presence of a modifier class, or the absence of a legacy one. Testing
+// A handful of assertions are about markup that carries no accessible role - // the presence of a modifier class, or the absence of a legacy one. Testing
 // Library deliberately has no query for those, so they are made against the
 // serialised document instead.
 const markup = () => document.body.innerHTML;
@@ -44,7 +42,7 @@ const countClass = (name) => (markup().match(new RegExp(`class="${name}"`, 'g'))
 const accentValues = () => (markup().match(/--da-accent:\s*([^;"']+)/g) || [])
   .map((declaration) => declaration.split(':')[1].trim().toUpperCase());
 
-describe('Home — section order', () => {
+describe('Home - section order', () => {
   test('puts Our Accomplishments above What We Do', () => {
     // The gallery is the highlight, so it must not sit at the bottom of the
     // page underneath every other section.
@@ -78,7 +76,7 @@ describe('Home — section order', () => {
 
   test('folds the band copy into the one heading it kept', () => {
     // M2 merges the two stacked Thrusts sections into one, so "See how each
-    // thrust shapes our work" is no longer its own h2 — the words survive as the
+    // thrust shapes our work" is no longer its own h2 - the words survive as the
     // sub-line under the single heading, joined to the band's second sentence.
     renderHome();
     expect(
@@ -90,11 +88,11 @@ describe('Home — section order', () => {
   });
 });
 
-describe('Home — the 8 HYT Thrusts (M2 "Seam")', () => {
+describe('Home - the 8 HYT Thrusts (M2 "Seam")', () => {
   test('drops the rail and the detail pane entirely', () => {
     renderHome();
     // The pane carried each thrust's explanation, and that now lives on the
-    // About page — which left the rail as a second, static copy of the same
+    // About page - which left the rail as a second, static copy of the same
     // eight names the marquees already run. So both are gone.
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('tab')).toBeNull();
@@ -128,7 +126,7 @@ describe('Home — the 8 HYT Thrusts (M2 "Seam")', () => {
   });
 });
 
-describe('Home — impact figures bento (B3)', () => {
+describe('Home - impact figures bento (B3)', () => {
   const LABELS = [
     'Youth Empowered',
     'Partner Organizations',
@@ -145,7 +143,7 @@ describe('Home — impact figures bento (B3)', () => {
     renderHome();
 
     // getByText matches an element's *direct* text nodes only, so these find
-    // the span holding the digits — the "+"/"%" lives in a nested <em>, which
+    // the span holding the digits - the "+"/"%" lives in a nested <em>, which
     // is why the assertion is made on textContent.
     expect(screen.getByText('500', { exact: true }).textContent).toBe('500+');
     expect(screen.getByText('50', { exact: true }).textContent).toBe('50+');
@@ -179,11 +177,11 @@ describe('Home — impact figures bento (B3)', () => {
   });
 });
 
-describe('Home — the Thrusts section is merged (M2 "Seam")', () => {
+describe('Home - the Thrusts section is merged (M2 "Seam")', () => {
   test('renders one section instead of two stacked ones', () => {
     renderHome();
     expect(countClass('thrusts-seam')).toBe(1);
-    // The old standalone ribbon band is gone — and so is the emblem ring it was
+    // The old standalone ribbon band is gone - and so is the emblem ring it was
     // briefly replaced with.
     expect(markup()).not.toContain('rib-band');
     expect(markup()).not.toContain('emblem-stage');
@@ -247,7 +245,7 @@ describe('Home — the Thrusts section is merged (M2 "Seam")', () => {
     renderHome();
     // The ribbons are aria-hidden: the names they carry are a visual echo of the
     // heading, and the real explanation is one link away on the About page.
-    // Asserted on the serialised opening tags rather than by role — an
+    // Asserted on the serialised opening tags rather than by role - an
     // aria-hidden element is by definition absent from the accessibility tree,
     // so no query reaches it. Matching the tags keeps this independent of the
     // order React writes the attributes in.
@@ -262,7 +260,7 @@ describe('Home — the Thrusts section is merged (M2 "Seam")', () => {
 // scoped with `within()` rather than reaching into the DOM by hand.
 const dreamAcademy = () => screen.getByRole('region', { name: 'Dream Academy' });
 
-describe('Home — Dream Academy', () => {
+describe('Home - Dream Academy', () => {
   test('names the academy in a real, navigable heading', () => {
     renderHome();
     expect(screen.getByRole('heading', { name: 'Dream Academy', level: 2 })).toBeInTheDocument();
@@ -309,7 +307,7 @@ describe('Home — Dream Academy', () => {
     });
   });
 
-  test('renders every duty of every unit — nothing lost in transcription', () => {
+  test('renders every duty of every unit - nothing lost in transcription', () => {
     renderHome();
     const expected = DA_UNITS.reduce((total, unit) => total + unit.duties.length, 0);
     // Guards the assertion itself: 9 + 4 + 5 + 4 + 5 + 3 + 5 + 7.
@@ -323,7 +321,7 @@ describe('Home — Dream Academy', () => {
 
     expect(accents).toHaveLength(8);
     // Each unit label is white ON its accent, and the vivid palette fails 4.5:1
-    // against white — yellow #F3DB6E manages only 1.38:1. So none may appear.
+    // against white - yellow #F3DB6E manages only 1.38:1. So none may appear.
     const VIVID = ['#D57156', '#E8763B', '#F3DB6E', '#279EB6', '#5BC0C8', '#B4E5F1', '#8DD0DE'];
     accents.forEach((accent) => expect(VIVID).not.toContain(accent));
   });

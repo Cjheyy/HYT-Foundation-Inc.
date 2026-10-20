@@ -1,4 +1,4 @@
-/* Reports & Analytics — stat cards.
+/* Reports & Analytics - stat cards.
  *
  * The cards are WHITE, so the number reads the card's dark text token and the
  * accent lives on a thin rule above it.  The earlier version painted the NUMBER
@@ -41,13 +41,12 @@
   color: var(--muted-text);
 }
 
-/* Accent rules are decorative, so they are exempt from the text-contrast bar —
-   but they still have to be SEEN, and on a white card the old pale tones
+/* Accent rules are decorative, so they are exempt from the text-contrast bar - but they still have to be SEEN, and on a white card the old pale tones
    (#8DD0DE, #F3DB6E, #C4B5FD, #FCA5A5) washed out.  Deepened to the brand's
    siblings so the 4px rule reads against white. */
 .report-stat-card.tone-teal { --report-accent: #16697A; }
-.report-stat-card.tone-orange { --report-accent: #B8441F; }
+.report-stat-card.tone-orange { --report-accent: var(--accent-text); }
 .report-stat-card.tone-green { --report-accent: #047857; }
 .report-stat-card.tone-amber { --report-accent: #B45309; }
-.report-stat-card.tone-violet { --report-accent: #5B21B6; }
-.report-stat-card.tone-red { --report-accent: #B42318; }
+.report-stat-card.tone-violet { --report-accent: var(--purple-text); }
+.report-stat-card.tone-red { --report-accent: var(--danger-text); }

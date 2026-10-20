@@ -20,7 +20,7 @@
 .onboarding-description {
   font-size: 18px;
   font-weight: 600;
-  color: #374151;
+  color: var(--dark-text);
   margin: 0;
 }
 
@@ -35,15 +35,15 @@
   display: flex;
   gap: 16px;
   padding: 20px;
-  background: #F9FAFB;
+  background: var(--surface-alt);
   border-radius: 12px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   transition: all 0.2s;
 }
 
 .requirement-item:hover {
-  background: #F3F4F6;
-  border-color: #D1D5DB;
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -60,29 +60,29 @@
 .requirement-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--dark-text);
   margin: 0 0 8px 0;
 }
 
 .requirement-description {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   line-height: 1.5;
   margin: 0;
 }
 
 .onboarding-footer {
   padding-top: 24px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
 }
 
 .onboarding-notice {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--muted-text);
   line-height: 1.6;
   margin: 0 0 24px 0;
   padding: 16px;
-  background: #FEF3C7;
+  background: var(--warning-surface);
   border-radius: 8px;
   border-left: 4px solid #F59E0B;
 }

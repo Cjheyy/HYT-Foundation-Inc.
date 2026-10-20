@@ -70,10 +70,10 @@
 .admin-search-input {
   width: 100%;
   padding: 13px 42px;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 10px;
-  background: #F9FAFB;
-  color: #1F2937;
+  background: var(--surface-alt);
+  color: var(--dark-text);
   font: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -91,7 +91,7 @@
   transform: translateY(-50%);
   border: 0;
   background: transparent;
-  color: #6B7280;
+  color: var(--muted-text);
   cursor: pointer;
   font-size: 24px;
   line-height: 1;
@@ -109,10 +109,10 @@
   gap: 10px;
   width: 100%;
   padding: 10px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
-  color: #1F2937;
+  background: var(--surface);
+  color: var(--dark-text);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -122,7 +122,7 @@
 .admin-search-result:hover,
 .admin-search-result:focus-visible {
   border-color: #4F46E5;
-  background: #EEF2FF;
+  background: var(--info-surface);
   outline: none;
 }
 
@@ -148,13 +148,13 @@
 
 .admin-search-result-copy small {
   overflow: hidden;
-  color: #6B7280;
+  color: var(--muted-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* These sit inside a card, so they take the card text token instead of the
-   original #667eea, which is 3.66:1 on white — under the 4.5:1 a 12px label
+   original #667eea, which is 3.66:1 on white - under the 4.5:1 a 12px label
    needs.  Going through the token also means they follow any surface change. */
 .admin-search-result-action,
 .text-link-button,
@@ -211,7 +211,7 @@
 }
 
 .admin-item:hover {
-  background: white;
+  background: var(--surface);
   box-shadow: var(--shadow-md);
 }
 

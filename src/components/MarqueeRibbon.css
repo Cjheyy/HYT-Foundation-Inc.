@@ -1,4 +1,4 @@
-/* Diagonal marquee ribbon — decorative section separator.
+/* Diagonal marquee ribbon - decorative section separator.
    Used by <MarqueeRibbon /> on the Home page. */
 
 .ribbon-zone {
@@ -17,7 +17,7 @@
 }
 
 .ribbon-ink {
-  background: #0E1726;
+  background: var(--dark-text);
 }
 
 .ribbon-brand {
@@ -27,12 +27,12 @@
   margin-top: -18px;
 }
 
-/* The HYT logo ramp — orange -> yellow -> teal, the order the wordmark reads.
+/* The HYT logo ramp - orange -> yellow -> teal, the order the wordmark reads.
    Deepened from the vivid brand stops so white text clears 4.5:1: the vivid
    version only manages 1.9:1 on its yellow stop. Same lean and tuck as
    .ribbon-brand so the two ribbons still read as a pair. */
 .ribbon-tri {
-  background: linear-gradient(90deg, #B8441F 0%, #8A6E12 52%, #16697A 100%);
+  background: linear-gradient(90deg, var(--accent-text) 0%, #8A6E12 52%, #16697A 100%);
   transform: rotate(1.8deg) scale(1.06);
   margin-top: -18px;
 }

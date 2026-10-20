@@ -1,22 +1,22 @@
 /* ============================================================================
-   HomeMotion.css — motion layer for the public Home page.
+   HomeMotion.css - motion layer for the public Home page.
 
    Kept separate from Home.css (which is already ~930 lines of layout) so this
    whole feature is one reviewable, revertible file. Imported AFTER Home.css in
    Home.jsx, so these rules win ties on equal specificity.
 
    Contents:
-     0. Design tokens — easing + ink scale
-     1. Hero — aurora blobs, cursor spotlight, word mask-reveal, the rotating
+     0. Design tokens - easing + ink scale
+     1. Hero - aurora blobs, cursor spotlight, word mask-reveal, the rotating
         accent word, four added light layers, magnetic buttons
-     2. "What We Do" — pinned horizontal scroll
-     3. Scroll reveal — the page-wide [data-reveal] system
-     4. 8 HYT Thrusts — the floor's CTA (the rail's motion is gone with it)
-     5. Impact figures — bento motion
-     6. Ribbon band — link + caption motion
-     7. Your Journey — self-drawing SVG path
+     2. "What We Do" - pinned horizontal scroll
+     3. Scroll reveal - the page-wide [data-reveal] system
+     4. 8 HYT Thrusts - the floor's CTA (the rail's motion is gone with it)
+     5. Impact figures - bento motion
+     6. Ribbon band - link + caption motion
+     7. Your Journey - self-drawing SVG path
      8. (removed) the old CTA's rotating conic-glow button
-     9. Featured cards — clip-path circle reveal
+     9. Featured cards - clip-path circle reveal
     10. Reduced-motion overrides
 
    Dream Academy, the section the page now closes on, keeps its layout AND its
@@ -33,7 +33,7 @@
    One motion vocabulary for the whole page. The old thrust tiles mixed an
    overshoot curve (.175,.885,.32,1.275) with plain `ease`, which is the single
    biggest reason the page read playful rather than deliberate.
-   `--e-back` is RESERVED for the icon pop — never for layout.
+   `--e-back` is RESERVED for the icon pop - never for layout.
    ========================================================================== */
 
 :root {
@@ -41,9 +41,9 @@
   --e-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --e-back: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Ink scale. #0E1726 already exists as the ribbon ink in MarqueeRibbon.css;
+  /* Ink scale. var(--dark-text) already exists as the ribbon ink in MarqueeRibbon.css;
      these give the Home page a consistent dark family to build on. */
-  --ink-900: #0E1726;
+  --ink-900: var(--dark-text);
   --ink-800: #16233A;
   --ink-700: #1E2E4A;
 }
@@ -112,7 +112,7 @@
   50% { transform: translate3d(6%, -12%, 0) scale(1.16); }
 }
 
-/* Cursor spotlight — a soft white pool that follows the pointer. */
+/* Cursor spotlight - a soft white pool that follows the pointer. */
 .hero-spot {
   position: absolute;
   inset: 0;
@@ -178,8 +178,7 @@
    also clip .hero-rings, which is a sibling of the clip precisely so it escapes.
 
    The accent colour has to be re-declared here. The rotating words are NOT
-   .hero-word-inner, so `.hero-word-inner.is-accent` above never reaches them —
-   without the rule below they silently render white and the gold accent that
+   .hero-word-inner, so `.hero-word-inner.is-accent` above never reaches them - without the rule below they silently render white and the gold accent that
    the whole headline hangs on just disappears. */
 
 .hero-rot {
@@ -195,7 +194,7 @@
    `vertical-align: bottom` is load-bearing, not cosmetic: an inline-block with
    `overflow: hidden` uses its BOTTOM MARGIN EDGE as its baseline, so with the
    default `baseline` alignment the outer .hero-rot line box also reserved the
-   56px strut's descender space below it — measured, that made the H1 11.19px
+   56px strut's descender space below it - measured, that made the H1 11.19px
    taller than the same slot built from a single .hero-word. */
 .hero-rot-clip {
   display: inline-block;
@@ -215,7 +214,7 @@
 }
 
 /* `:not(.hero-rot-sizer)` is load-bearing. Without it the sizer is absolutely
-   positioned too, contributes no width, and the slot collapses to 0 — which
+   positioned too, contributes no width, and the slot collapses to 0 - which
    quietly pulls the H1 from two lines onto one. */
 .hero-rot-inner > span:not(.hero-rot-sizer) {
   position: absolute;
@@ -277,12 +276,12 @@
    stack up fast, and an early pass at .55 / .34 / .50-.95 blew the hero out to
    a pale warm wash that lost the teal -> terracotta diagonal entirely. */
 
-/* A. Ring pulses — two rings expand from behind the accent word on each flip,
+/* A. Ring pulses - two rings expand from behind the accent word on each flip,
       so the word change reads as a drop in water. Border only, no blur.
 
       The origin is the SLOT's centre, because .hero-rings is a child of
       .hero-rot and .hero-rot's box IS the accent word's box. That is exact on
-      both axes at every width — which neither alternative is:
+      both axes at every width - which neither alternative is:
         - a percentage of the hero box drifts from 26% to 43%, because the hero's
           height comes from its padding and the headline;
         - a percentage of the H1 is only right when the accent word ends a line
@@ -327,7 +326,7 @@
   100% { opacity: 0; transform: scale(2.5); }
 }
 
-/* B. Rotating stage-light — a huge conic wedge layer spinning one full turn
+/* B. Rotating stage-light - a huge conic wedge layer spinning one full turn
       every 28s, so light pans across the hero instead of only drifting.
       Deliberately NOT blurred: the conic stops are already soft, and blurring a
       ~2300px rotating layer buys the same look at several times the cost. */
@@ -361,7 +360,7 @@
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* C. Aurora ribbons — two wide light bands flowing horizontally at different
+/* C. Aurora ribbons - two wide light bands flowing horizontally at different
       speeds. The existing blobs drift radially, which leaves the hero with no
       horizontal flow at all; this is the layer that supplies it. */
 .hero-ribbons {
@@ -417,7 +416,7 @@
   50%      { transform: translate3d(-6%, -1%, 0) scaleY(0.9); }
 }
 
-/* D. Horizon glow — a soft warm band along the bottom edge that breathes on a
+/* D. Horizon glow - a soft warm band along the bottom edge that breathes on a
       14s cycle. It is anchored BELOW the subtitle's band, so it lights the CTA
       row without lifting the field behind the copy. */
 .hero-horizon {
@@ -454,7 +453,7 @@
 }
 
 /* The added layers, on the same 768px breakpoint Home.css uses for the hero.
-   Only the ring SIZE needs an override — the origin is anchored in `em` to the
+   Only the ring SIZE needs an override - the origin is anchored in `em` to the
    H1's last line, so it follows the accent word on its own. The rings shrink so
    they still read as ripples rather than as hard edges against a 390px hero. */
 @media (max-width: 768px) {
@@ -470,7 +469,7 @@
 }
 
 /* ==========================================================================
-   2. "WHAT WE DO" — pinned horizontal scroll
+   2. "WHAT WE DO" - pinned horizontal scroll
    Only active when JS confirms `overflow: clip` is supported, the viewport is
    wide, and motion is allowed. Otherwise `.wwd-track` stays a normal grid.
    ========================================================================== */
@@ -540,7 +539,7 @@
   justify-content: center;
 }
 
-/* Scroll affordance — only meaningful in pinned mode. */
+/* Scroll affordance - only meaningful in pinned mode. */
 .wwd-progress {
   margin: 36px auto 0;
   height: 4px;
@@ -560,7 +559,7 @@
 }
 
 /* ==========================================================================
-   3. SCROLL REVEAL — page-wide
+   3. SCROLL REVEAL - page-wide
    `has-reveal` is added by useRevealOnScroll only once the observer is live,
    so if JS never runs nothing is ever hidden.
    ========================================================================== */
@@ -572,7 +571,7 @@
 }
 
 /* The revealed state is an ATTRIBUTE, not a class, on purpose. Several reveal
-   targets — .journey-step above all — carry a className that React rewrites on
+   targets - .journey-step above all - carry a className that React rewrites on
    re-render, and React sets the whole attribute, silently wiping any class
    added imperatively and dropping the element back to opacity 0. React never
    manages `data-reveal-in`, so the state survives. */
@@ -592,7 +591,7 @@
 }
 
 /* ==========================================================================
-   4. 8 HYT THRUSTS — the floor's CTA
+   4. 8 HYT THRUSTS - the floor's CTA
    The rail + detail pane that used to animate here were removed along with the
    rail itself (see the note in Home.css). The only interactive thing left in
    the section is the button out to the About page.
@@ -604,13 +603,13 @@
 }
 
 .seam-cta-link:hover {
-  background: #fff;
+  background: var(--surface);
   transform: translateY(-2px);
   box-shadow: 0 24px 48px -22px rgba(0, 0, 0, 0.9);
 }
 
 /* ==========================================================================
-   5. IMPACT FIGURES — bento motion
+   5. IMPACT FIGURES - bento motion
    ========================================================================== */
 
 .bento-cell {
@@ -620,7 +619,7 @@
 
 .bento-cell:not(.bento-hero):hover {
   transform: translateY(-4px);
-  border-color: #CBD5E1;
+  border-color: var(--border-strong);
   box-shadow: 0 20px 44px -24px rgba(16, 24, 40, 0.34);
 }
 
@@ -648,14 +647,14 @@
 }
 
 /* ==========================================================================
-   6. THE SEAM — deliberately static
+   6. THE SEAM - deliberately static
    The seam is the logo ramp itself, so it does not animate: it is a divider,
    and a moving divider would compete with the heading above it. Only the two
    ribbons move, and their motion belongs to MarqueeRibbon.css.
    ========================================================================== */
 
 /* ==========================================================================
-   7. REMAINING SECTIONS — brought onto the same easing vocabulary
+   7. REMAINING SECTIONS - brought onto the same easing vocabulary
    These override the overshoot curves declared in Home.css. Same specificity,
    later stylesheet, so they win.
    ========================================================================== */
@@ -669,7 +668,7 @@
   transform: translateY(-6px);
 }
 
-/* Was scale(1.15) rotate(5deg) — the rotation was the playful tell. */
+/* Was scale(1.15) rotate(5deg) - the rotation was the playful tell. */
 .feature-card:hover .feature-icon {
   transform: scale(1.08);
 }
@@ -685,7 +684,7 @@
 }
 
 /* ==========================================================================
-   4. YOUR JOURNEY — self-drawing SVG path
+   4. YOUR JOURNEY - self-drawing SVG path
    The path uses `pathLength="1"` so the dash maths is normalised: set
    `stroke-dashoffset` from 1 → 0 and it draws. No getTotalLength() needed.
    ========================================================================== */
@@ -705,9 +704,9 @@
 }
 
 /* --- Pre-existing collision, fixed here -----------------------------------
-   Auth.css declares a generic `.step-number` (40px, flat grey #E5E7EB) for the
+   Auth.css declares a generic `.step-number` (40px, flat grey var(--border)) for the
    registration wizard's stepper. Every route is bundled into one stylesheet,
-   so that rule also lands on these journey circles — shrinking them from the
+   so that rule also lands on these journey circles - shrinking them from the
    intended 80px and replacing the brand gradient with grey. Scoping to
    `.journey-timeline` raises specificity to (0,2,0), which beats Auth.css's
    (0,1,0) regardless of stylesheet order. Auth.css itself is left untouched.
@@ -789,7 +788,7 @@
 }
 
 /* ==========================================================================
-   5. CTA — the rotating conic-glow button
+   5. CTA - the rotating conic-glow button
    REMOVED with the "Ready to Start Your Journey?" section it belonged to. Its
    rules (.glow-wrap, .glow-ring, glowRingSpin) went with it: nothing else on the
    site used them. The page now closes on Dream Academy, whose motion lives in
@@ -797,13 +796,13 @@
    ========================================================================== */
 
 /* ==========================================================================
-   6. FEATURED CARDS — clip-path circle reveal
+   6. FEATURED CARDS - clip-path circle reveal
 
    MOVED.  The reveal is no longer a Home-only effect: all five browsable
    posting surfaces (Home rails, public Programs, public Opportunities,
    student Opportunities) now share it, so the definition lives with the
    shared card CSS in src/index.css alongside `.card.reveal-card:hover`.
-   Keeping a second copy here meant the two drifted — this file still held the
+   Keeping a second copy here meant the two drifted - this file still held the
    saturated gradient long after the shared rule had moved to a light wash.
    ========================================================================== */
 
@@ -821,7 +820,7 @@
      place where "this must not move, whatever else says so" is the requirement.
 
      `.hero::before` is the hero's own 15s glow, declared in Home.css. It was
-     already animating under reduced motion before any of this — it is listed
+     already animating under reduced motion before any of this - it is listed
      here because a pulsing glow is exactly what the preference asks to stop. */
   .hero::before,
   .hero-aurora .blob,

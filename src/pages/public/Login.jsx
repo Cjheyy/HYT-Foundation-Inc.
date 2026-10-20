@@ -28,7 +28,7 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
-    // 'trainee' | 'ojt-student' | '' — optional on the form: an admin never
+    // 'trainee' | 'ojt-student' | '' - optional on the form: an admin never
     // picks one, and authService requires it only once it knows the role.
     accountType: '',
     email: '',
@@ -58,7 +58,7 @@ export function Login() {
   };
 
   /* The account type is deliberately NOT validated here.  An admin signs in
-     through this same form and never picks a type — the role on their profile is
+     through this same form and never picks a type - the role on their profile is
      authoritative, and `login()` returns before the account-type gate for them.
      OJT and Trainee must still declare theirs, but that gate can only run once
      the role is known, which is *after* authentication.  So a Trainee who leaves
@@ -106,7 +106,7 @@ export function Login() {
       console.error('Login error:', error);
       const message = describeAuthError(error);
       /* The two account-type failures belong UNDER the picker, not in the
-         top-of-form alert — that is where the user has to act.  Both are thrown
+         top-of-form alert - that is where the user has to act.  Both are thrown
          by authService only after it has read the profile, which is why the
          form itself cannot pre-empt them. */
       if (error?.code === 'ACCOUNT_TYPE_REQUIRED' || error?.code === 'ROLE_MISMATCH') {
@@ -122,9 +122,9 @@ export function Login() {
   return (
     <div className="auth-page">
       <div className="auth-shell">
-        {/* Brand rail — carries the HYT identity into the sign-in experience */}
+        {/* Brand rail - carries the HYT identity into the sign-in experience */}
         <AuthBrandRail
-          description="Your portal for OJT placements, trainee programs, verified attendance and certificates — all in one place."
+          description="Your portal for OJT placements, trainee programs, verified attendance and certificates - all in one place."
           points={BRAND_POINTS}
         />
 

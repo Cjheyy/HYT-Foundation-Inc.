@@ -32,8 +32,8 @@ describe('toLocalISODate', () => {
 
 describe('toIsoInstant', () => {
   // A `datetime-local` value is the admin's WALL-CLOCK time.  Handed raw to a
-  // timestamptz column, POSTGRES picks the zone — and Supabase's session is UTC
-  // — so 09:00 Manila would come back as 17:00 Manila.  These assertions are
+  // timestamptz column, POSTGRES picks the zone - and Supabase's session is UTC
+  // - so 09:00 Manila would come back as 17:00 Manila.  These assertions are
   // deliberately round-trip rather than string-equality: the whole point is
   // that the value means the same LOCAL time, whatever zone the test box is in.
   test('a datetime-local value means the same local time on the way back', () => {

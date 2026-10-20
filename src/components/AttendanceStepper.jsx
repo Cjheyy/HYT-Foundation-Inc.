@@ -15,9 +15,9 @@ const TICK_MS = 30_000;
  * the submission time and how long they have been waiting.
  *
  * Props:
- *   submittedAt — ISO timestamp of the request (see the call site for which
+ *   submittedAt - ISO timestamp of the request (see the call site for which
  *                 column is authoritative for clock-in vs clock-out).
- *   stage       — 'CLOCK_IN' | 'CLOCK_OUT'.
+ *   stage - 'CLOCK_IN' | 'CLOCK_OUT'.
  */
 export function AttendanceStepper({ submittedAt, stage = 'CLOCK_IN' }) {
   const [now, setNow] = useState(() => new Date());

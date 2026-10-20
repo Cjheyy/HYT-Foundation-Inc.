@@ -7,7 +7,8 @@ export function Skeleton({ width = '100%', height = 16, radius = 8, style = {} }
         width,
         height,
         borderRadius: radius,
-        background: 'linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%)',
+        background:
+          'linear-gradient(90deg, var(--surface-sunken) 25%, var(--border) 37%, var(--surface-sunken) 63%)',
         backgroundSize: '400% 100%',
         animation: 'hyt-skeleton-shimmer 1.2s ease-in-out infinite',
         ...style
@@ -34,10 +35,10 @@ export function ListItemSkeleton({ rows = 3 }) {
         <div
           key={index}
           style={{
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             padding: 16,
-            background: '#fff'
+            background: 'var(--surface)'
           }}
         >
           <Skeleton width="45%" height={16} style={{ marginBottom: 10 }} />

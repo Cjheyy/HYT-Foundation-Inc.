@@ -54,7 +54,7 @@ describe('resolveActiveNavPath', () => {
 
 describe('nav models', () => {
   test('student sidebar reaches Requirements', () => {
-    // Requirements existed as a route but had no sidebar entry — the page was
+    // Requirements existed as a route but had no sidebar entry - the page was
     // reachable only from a dashboard button.
     expect(STUDENT_NAV.some((item) => item.path === '/student/requirements')).toBe(true);
   });
@@ -77,7 +77,7 @@ describe('the two portals show different catalogues', () => {
     const paths = STUDENT_NAV.map((item) => item.path);
     expect(paths).toContain('/student/opportunities');
     expect(paths).toContain('/student/events');
-    // Programmes belong to the Trainee portal — the OJT sidebar must not link
+    // Programmes belong to the Trainee portal - the OJT sidebar must not link
     // there, or the role split is only half done.
     expect(paths).not.toContain('/student/programs');
   });

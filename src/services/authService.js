@@ -47,7 +47,7 @@ export const isAccountApproved = (user) => {
 
   // Direct login flow: newly registered Trainees and OJT applicants may sign
   // in immediately. Admin approval is enforced when applying for an OJT
-  // Posting or Program, and when clocking in — not at login.
+  // Posting or Program, and when clocking in - not at login.
   const status = normalizeStatus(user.applicationStatus ?? user.application_status);
   if (['PENDING', 'PENDING_APPROVAL', 'PENDING_APPLICATION', 'SUBMITTED', 'APPLIED'].includes(status)) {
     return true;
@@ -283,7 +283,7 @@ export async function login(email, password, selectedAccountType = null) {
 
     // The account type is required for everyone except admins (handled above).
     // It is the student's declaration of which portal they belong to, and it
-    // must match the role stored on their profile — otherwise a Trainee could
+    // must match the role stored on their profile - otherwise a Trainee could
     // sign into the OJT portal, or vice versa.
     if (!selectedAccountType) {
       await endSession(client);

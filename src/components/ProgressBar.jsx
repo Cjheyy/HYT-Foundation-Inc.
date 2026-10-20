@@ -26,7 +26,7 @@ export function ProgressBar({
         <div className="flex justify-between mb-2">
           <span className="text-small text-muted">Progress</span>
           <span className="text-small font-semibold">
-            {hasData ? `${percentage.toFixed(1)}%` : '—'}
+            {hasData ? `${percentage.toFixed(1)}%` : '-'}
           </span>
         </div>
       )}

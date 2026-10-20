@@ -1,3 +1,16 @@
+/* Inter, self-hosted.
+   The font-family list below always named Inter, but nothing ever loaded it, so
+   every browser silently fell back to Segoe UI / Roboto. One variable file
+   covers weights 100-900, so the whole scale comes from a single 48 kB request.
+   `swap` keeps text visible during the fetch instead of blocking paint. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,7 +18,8 @@
 }
 
 :root {
-  /* Colors from HYT Logo */
+  /* Brand colours, taken from the HYT logo.  These do not change between
+     themes: they are the identity, not the surface. */
   --primary-orange: #D57156;
   --strong-orange: #E8763B;
   --yellow: #F3DB6E;
@@ -13,18 +27,137 @@
   --light-cyan: #5BC0C8;
   --very-light-cyan: #B4E5F1;
   --white: #FFFFFF;
+
+  /* Surfaces and text.  Every value below is the single source of truth: the
+     component stylesheets reference these tokens instead of repeating hex
+     literals, which is what lets [data-theme="dark"] repaint the whole app
+     from one block. */
   --background: #F9FBFC;
+  --surface: #FFFFFF;
+  /* Surface variants.  The public pages stack three depths (page, raised card,
+     sunken well) and used to hardcode #ffffff / #f8f9fa / #f3f4f6 inside
+     gradients, which the token pass could not see.  They live here now so the
+     dark block can repaint them like everything else. */
+  --surface-alt: #F8F9FA;
+  --surface-sunken: #F3F4F6;
+  --surface-frosted: rgba(255, 255, 255, 0.98);
   --dark-text: #1F2937;
   --muted-text: #6B7280;
+  --muted-text-strong: #4B5563;
   --border: #E5E7EB;
+  --border-strong: #CBD5E1;
+  /* The footer is intentionally ink in both themes.  It cannot use
+     --dark-text, because that flips to near-white in dark mode and would make
+     the footer gradient run light-to-dark. */
+  --footer-ink: #1F2937;
+
+  /* Brand tints used as image placeholders and soft section washes. */
+  --tint-cool: #E6F7F9;
+  --tint-warm: #FFF5F0;
+  --tint-info: #F0F9FF;
+  --border-info: #BAE6FD;
+
+  /* Banner surfaces.  Paired with the --*-text tokens below; a status colour is
+     never used as a background on its own. */
+  --danger-surface: #FEE2E2;
+  --danger-border: #FECACA;
+  --warning-surface: #FEF3C7;
+  --warning-border: #FDE68A;
+  --success-surface: #D1FAE5;
+  --success-border: #A7F3D0;
+  --success-surface-soft: #F0FDF4;
+  --success-border-soft: #86EFAC;
+  --info-surface: #DBEAFE;
+  --info-border: #BFDBFE;
+  --purple-surface: #EDE9FE;
+  --purple-border: #DDD6FE;
+
   /* Brand accent for secondary labels (organisation names, thrust chips).  The
      vivid --primary-orange is only 3.32:1 on white; this deepened sibling is
      5.41:1.  It exists as its own token because the posting cards flip it to
      white on hover, alongside --dark-text/--muted-text. */
   --accent-text: #B8441F;
+  --accent-strong: #C2410C;
+  --accent-border: #F8D8C6;
+  --accent-surface: #FFEDD5;
+
+  /* Status text.  Deep enough to pass contrast on the pale tint each one sits
+     on, and restated lighter in dark mode where the tint itself goes dark. */
+  --danger-text: #991B1B;
+  --warning-text: #92400E;
+  --success-text: #065F46;
+  --info-text: #0F5566;
+  --link-text: #1E40AF;
+  --purple-text: #5B21B6;
+
+  /* Neutral surface/text pair for finished records (a completed experience is
+     a record, not a success banner). */
+  --neutral-surface: #F1EFE8;
+  --neutral-text: #5F5E5A;
+
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.16);
+
+  color-scheme: light;
+}
+
+/* Dark theme.
+   Applied by setting data-theme="dark" on <html>.  The default is whatever the
+   operating system reports (see ThemeProvider), so a user who has dark mode on
+   gets this without touching anything.  Only tokens are restated here: no
+   component needs to know a theme exists. */
+[data-theme='dark'] {
+  --background: #0E1218;
+  --surface: #161C24;
+  --surface-alt: #131922;
+  --surface-sunken: #10161D;
+  --surface-frosted: rgba(22, 28, 36, 0.98);
+  --dark-text: #E7EAEE;
+  --muted-text: #9AA4B2;
+  --muted-text-strong: #C2C9D2;
+  --border: #2A313C;
+  --border-strong: #3A4351;
+  --footer-ink: #070A0E;
+
+  --tint-cool: #10242A;
+  --tint-warm: #2A1B16;
+  --tint-info: #0F2027;
+  --border-info: #244A57;
+
+  --danger-surface: #3A1D1D;
+  --danger-border: #6B2B2B;
+  --warning-surface: #3A2C12;
+  --warning-border: #6B5220;
+  --success-surface: #123028;
+  --success-border: #1F5A46;
+  --success-surface-soft: #10251F;
+  --success-border-soft: #1F5A46;
+  --info-surface: #14243A;
+  --info-border: #26466E;
+  --purple-surface: #241E3A;
+  --purple-border: #40356B;
+
+  --accent-text: #F0A183;
+  --accent-strong: #FB923C;
+  --accent-border: #5A3A2C;
+  --accent-surface: #33241C;
+
+  --danger-text: #FCA5A5;
+  --warning-text: #FCD34D;
+  --success-text: #6EE7B7;
+  --info-text: #7DD3E0;
+  --link-text: #93C5FD;
+  --purple-text: #C4B5FD;
+
+  --neutral-surface: #232830;
+  --neutral-text: #B4B2A9;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.65);
+
+  color-scheme: dark;
 }
 
 body {
@@ -111,11 +244,11 @@ input, textarea, select {
 }
 
 /* The brand orange was #D57156 -> #E8763B, which carries white text at only
-   3.32:1 -> 2.96:1 — a failure on every button in the product.  The deepened
+   3.32:1 -> 2.96:1 - a failure on every button in the product.  The deepened
    stops below are the same hue family and clear 5.41:1 -> 6.17:1, so the
    primary action is legible on white cards AND on the brand gradient. */
 .btn-primary {
-  background: linear-gradient(135deg, #B8441F 0%, #A83F27 100%);
+  background: linear-gradient(135deg, var(--accent-text) 0%, #A83F27 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(184, 68, 31, 0.32);
 }
@@ -128,7 +261,7 @@ input, textarea, select {
 /* #279EB6 -> #5BC0C8 gave white text 3.16:1 -> 1.72:1.  Deepened to the same
    teal family: 6.30:1 -> 8.36:1. */
 .btn-secondary {
-  background: linear-gradient(135deg, #16697A 0%, #0F5566 100%);
+  background: linear-gradient(135deg, #16697A 0%, var(--info-text) 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(22, 105, 122, 0.32);
 }
@@ -139,10 +272,10 @@ input, textarea, select {
 }
 
 .btn-outline {
-  background: white;
-  border: 2px solid #B8441F;
-  /* Was var(--primary-orange) #D57156 — 3.32:1 on its own white fill. */
-  color: #B8441F;
+  background: var(--surface);
+  border: 2px solid var(--accent-text);
+  /* Was var(--primary-orange) #D57156 - 3.32:1 on its own white fill. */
+  color: var(--accent-text);
 }
 
 .btn-outline:hover {
@@ -161,7 +294,7 @@ input, textarea, select {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+  background: linear-gradient(135deg, #047857 0%, var(--success-text) 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -172,7 +305,7 @@ input, textarea, select {
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #B42318 0%, #991B1B 100%);
+  background: linear-gradient(135deg, var(--danger-text) 0%, var(--danger-text) 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
@@ -205,11 +338,11 @@ input, textarea, select {
 }
 
 /* ==========================================================================
-   Cards — light surface (reverted).
+   Cards - light surface (reverted).
 
    Cards are WHITE again.  The brand ramp (teal → orange) is no longer the
    default card surface; it is now a HOVER affordance reserved for the five
-   browsable POSTING surfaces — OJT postings and trainee programs/events
+   browsable POSTING surfaces - OJT postings and trainee programs/events
    (`.program-card`, `.opportunity-card`, `.reveal-card`, `.card--posting`).
 
    The token remap is what makes the hover safe: because every descendant
@@ -217,12 +350,8 @@ input, textarea, select {
    recolours the whole subtree at once instead of needing per-page overrides.
    ========================================================================== */
 .card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  --border: #E5E7EB;
-  --accent-text: #B8441F;
 
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 24px;
   box-shadow: var(--shadow);
@@ -240,14 +369,14 @@ input, textarea, select {
 }
 
 /* --------------------------------------------------------------------------
-   Listing cards — one CTA row, pinned to the bottom.
+   Listing cards - one CTA row, pinned to the bottom.
 
    A grid stretches every card in a row to the same HEIGHT, but nothing lines
    their CONTENT up: a card with a two-line title and a card with a one-line
    title both end wherever their text ends, so their buttons sat at different
    heights and the row read as broken.
 
-   Making the card a flex column fixes it — the body takes the slack
+   Making the card a flex column fixes it - the body takes the slack
    (`flex: 1`) and the button is pushed to the foot (`margin-top: auto`), so
    every button in a row shares one baseline no matter how long the text is.
 
@@ -275,7 +404,7 @@ input, textarea, select {
   flex: 1 1 auto;
 }
 
-/* The CTA is the last child, and it is not always a button — a card whose
+/* The CTA is the last child, and it is not always a button - a card whose
    action is unavailable ends in a Badge instead (e.g. "Already Applied"). Auto
    margin keeps whichever one it is flush with the card's bottom edge, and the
    :not() guards the reveal wipe, which the DOM also places last. */
@@ -295,7 +424,7 @@ input, textarea, select {
    inline `line-height: 16px` would otherwise leave a 3px residue.
 
    The Badge component writes its padding and line-height as INLINE styles,
-   which outrank a plain class rule — hence !important. This is the one place
+   which outrank a plain class rule - hence !important. This is the one place
    that is legitimate: inline values are the badge's identity as a small status
    lozenge, and here it is being used as a full-width action instead. */
 .card--posting > .badge:last-child,
@@ -316,7 +445,7 @@ input, textarea, select {
 }
 
 /* --------------------------------------------------------------------------
-   Posting cards — a LIGHT brand wash sweeps in on HOVER, using the same
+   Posting cards - a LIGHT brand wash sweeps in on HOVER, using the same
    clip-path circle reveal as the Home "featured" rails.
 
    Scoped to the FIVE browsable posting surfaces the request named:
@@ -324,14 +453,14 @@ input, textarea, select {
      .opportunity-card  public  /opportunities     (OJT posting)
      .reveal-card       Home    featured rails     (both of the above)
      .card--posting     student /student/opportunities
-   Nothing else in the system takes the wash — every other card, including the
+   Nothing else in the system takes the wash - every other card, including the
    admin postings MANAGEMENT list (`.posting-card`), stays plain white.
 
    WHY THE WASH IS LIGHT, NOT THE SATURATED BRAND RAMP:
    a card carries a three-level text hierarchy (--dark-text / --muted-text /
    --accent-text).  On a saturated ramp every one of them has to be forced to
    white, which flattens the hierarchy and still only reaches 3.16:1.  A light
-   wash keeps the card's own dark text, so nothing has to flip at all — and the
+   wash keeps the card's own dark text, so nothing has to flip at all - and the
    two tokens that are a shade too pale on a tint (--muted-text, --accent-text)
    are nudged one step deeper for the duration of the hover.
    -------------------------------------------------------------------------- */
@@ -346,15 +475,15 @@ input, textarea, select {
   z-index: 0;
   pointer-events: none;
   /* A soft teal -> peach wash, ~80% white.  Worst stop (#F8E5DF) still carries
-     #1F2937 at 12.1:1, #4B5563 at 6.2:1, #8A2F13 at 6.9:1 and #0F5566 at 6.9:1. */
-  background: linear-gradient(150deg, #D8EEF2 0%, #F8E5DF 100%);
+     var(--dark-text) at 12.1:1, var(--muted-text-strong) at 6.2:1, #8A2F13 at 6.9:1 and var(--info-text) at 6.9:1. */
+  background: linear-gradient(150deg, var(--tint-cool) 0%, var(--tint-warm) 100%);
   clip-path: circle(0% at 100% 0%);
   transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 .reveal-card:hover .reveal-wipe,
 .reveal-card:focus-within .reveal-wipe {
-  /* 140%, not 100% — a circle of exactly 100% does not reach the far corner. */
+  /* 140%, not 100% - a circle of exactly 100% does not reach the far corner. */
   clip-path: circle(140% at 100% 0%);
 }
 
@@ -364,10 +493,10 @@ input, textarea, select {
   z-index: 1;
 }
 
-/* The wash is light, so the card keeps its dark text — only the two palest
+/* The wash is light, so the card keeps its dark text - only the two palest
    tokens step one shade deeper while the tint is behind them. */
 .card.reveal-card:hover {
-  --muted-text: #4B5563;
+  --muted-text: var(--muted-text-strong);
   --accent-text: #8A2F13;
 }
 
@@ -378,20 +507,16 @@ input, textarea, select {
    themed at all; and table zebra striping has no meaning on a gradient.
    Token remap pinned so descendants keep the dark text in both states.
 
-   The `:has()` selector makes this AUTOMATIC — any card that contains a control
+   The `:has()` selector makes this AUTOMATIC - any card that contains a control
    is pinned without every call site having to remember a class, which is the
    only way this stays correct as new pages are added. The explicit
    `.card--surface` class remains for cases `:has()` cannot see (a custom-styled
    control that is not a native element). */
 .card:has(input, select, textarea, table),
 .card--surface {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  --border: #E5E7EB;
-  --accent-text: #B8441F;
 
-  background: #FFFFFF;
-  color: #1F2937;
+  background: var(--surface);
+  color: var(--dark-text);
   border: 1px solid rgba(229, 231, 235, 0.5);
   box-shadow: var(--shadow);
 }
@@ -404,13 +529,9 @@ input, textarea, select {
    carve-out an actual guarantee rather than a comment. */
 .card:has(input, select, textarea, table):hover,
 .card--surface:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  --border: #E5E7EB;
-  --accent-text: #B8441F;
 
-  background: #FFFFFF;
-  color: #1F2937;
+  background: var(--surface);
+  color: var(--dark-text);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
   filter: none;
@@ -430,11 +551,7 @@ input, textarea, select {
 .card.gallery-card,
 .card.auth-card,
 .card.confirmation-modal-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  --border: #E5E7EB;
-  --accent-text: #B8441F;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* Form Elements */
@@ -452,7 +569,7 @@ input, textarea, select {
 
 /* Required-field marker.
    Was an inline `style={{ color: 'red' }}` repeated across Input, Select,
-   Textarea and two admin forms — #FF0000 measures 4.00:1 on white, just under
+   Textarea and two admin forms - #FF0000 measures 4.00:1 on white, just under
    the 4.5:1 floor for a 14px label.  A single class also means the marker can
    follow the surface it sits on instead of being pinned to one red. */
 .required-marker,
@@ -461,9 +578,9 @@ input, textarea, select {
      rule (`.card :is(span)`, specificity 0,1,1) sets `color` on this span and
      would otherwise win over a single-class `color` here.  Re-pointing the
      tokens the rule consumes gives the marker its own colour on every surface. */
-  --dark-text: #B42318;
-  --muted-text: #B42318;
-  color: #B42318;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
   font-weight: 700;
 }
 
@@ -476,7 +593,7 @@ input, textarea, select {
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s;
-  background: white;
+  background: var(--surface);
 }
 
 .form-input:focus,
@@ -515,8 +632,8 @@ input, textarea, select {
 /* Two badges must never fuse into one pill.
    The Programs card rendered "Published" and "5 slots remaining" as a single
    blob because they were adjacent inline-blocks in a container with no gap.
-   Fixing that one container is not enough — the same shape appears on the
-   opportunities, announcements and admin tables — so the separation is
+   Fixing that one container is not enough - the same shape appears on the
+   opportunities, announcements and admin tables - so the separation is
    guaranteed at the badge itself.  Where the parent already sets a flex `gap`
    the two simply add up, which still reads as deliberate spacing. */
 .badge + .badge {
@@ -524,57 +641,57 @@ input, textarea, select {
 }
 
 .badge-blue {
-  background: #DBEAFE;
-  color: #1E40AF;
+  background: var(--info-surface);
+  color: var(--link-text);
 }
 
 .badge-green {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-surface);
+  color: var(--success-text);
 }
 
 .badge-yellow {
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--warning-surface);
+  color: var(--warning-text);
 }
 
 .badge-red {
-  background: #FEE2E2;
-  color: #991B1B;
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 
 .badge-gray {
-  background: #F3F4F6;
-  color: #4B5563;
+  background: var(--surface-sunken);
+  color: var(--muted-text-strong);
 }
 
 .badge-purple {
-  background: #EDE9FE;
-  color: #5B21B6;
+  background: var(--purple-surface);
+  color: var(--purple-text);
 }
 
 .badge-orange {
-  background: #FFEDD5;
-  color: #9A3412;
+  background: var(--accent-surface);
+  color: var(--warning-text);
 }
 
 /* "Ongoing" on the OJT/Experience card.  The other seven badge colours carry no
    teal, and this one has to sit next to a teal progress ring, so the ring and
    the pill agree on what colour "in progress" is.  --teal #279EB6 is a display
    colour (white on it is 3.16:1), so the text is the deepened sibling:
-   #0F5566 on #DDF0F4 measures 7.10:1.  Opt in explicitly with
-   `<Badge status="Ongoing" color="teal">` — getStatusColor() still maps
+   var(--info-text) on #DDF0F4 measures 7.10:1.  Opt in explicitly with
+   `<Badge status="Ongoing" color="teal">` - getStatusColor() still maps
    "Ongoing" to blue everywhere else, so no existing screen changes. */
 .badge-teal {
-  background: #DDF0F4;
-  color: #0F5566;
+  background: var(--tint-cool);
+  color: var(--info-text);
 }
 
 /* Progress Bar */
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #E5E7EB;
+  background: var(--border);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -616,7 +733,7 @@ input, textarea, select {
 }
 
 .modal {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
@@ -686,7 +803,7 @@ input, textarea, select {
 }
 
 .modal-close:hover {
-  background: #F3F4F6;
+  background: var(--surface-sunken);
 }
 
 .modal-body {
@@ -848,13 +965,13 @@ input, textarea, select {
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .table th {
-  background: #F9FAFB;
+  background: var(--surface-alt);
   padding: 12px 16px;
   text-align: left;
   font-weight: 600;
@@ -870,7 +987,7 @@ input, textarea, select {
 }
 
 .table tr:hover {
-  background: #F9FAFB;
+  background: var(--surface-alt);
 }
 
 /* Responsive */
@@ -912,7 +1029,7 @@ input, textarea, select {
   padding: 9px 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--surface);
   color: var(--dark-text);
   font-size: 13px;
   font-weight: 600;
@@ -966,18 +1083,32 @@ input, textarea, select {
 
 .schedule-preview {
   border: 1px dashed var(--border);
-  background: #F9FAFB;
+  background: var(--surface-alt);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
   color: var(--dark-text);
 }
 
+/* Shown when an event's span crosses midnight. It warns that the whole range is
+   blocked for applicants, and suggests one event per day for part-day sessions.
+   Deliberately not a validation error - the admin may well mean it. */
+.schedule-warning {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--warning-border);
+  background: var(--warning-surface);
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .certificate-preview-frame {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #fff;
+  background: var(--surface);
 }
 
 @media (max-width: 640px) {
@@ -990,12 +1121,12 @@ input, textarea, select {
    --------------------------------------------------------------------------
    `.page-title` / `.page-subtitle` are shared by every portal page, but the
    spacing between them and the blocks beneath was declared three separate
-   times — About.css (48px, white, centred, animated), Attendance.css (32px)
+   times - About.css (48px, white, centred, animated), Attendance.css (32px)
    and Admin.css (28px, `margin: 0`). CRA bundles every stylesheet into one
    file, so all three applied to every page at once and the last one in the
    bundle won. That was Admin.css, whose `margin: 0` left the header flush
    against whatever followed it: a page's notice card, filter bar or grid ended
-   up touching — and in one case overlapping — the text above it.
+   up touching - and in one case overlapping - the text above it.
 
    The rhythm is therefore declared once, here, and scoped to the portal shell
    (`.content-area`, rendered by StudentLayout / TraineeLayout / AdminLayout).
@@ -1004,7 +1135,7 @@ input, textarea, select {
 
    `> * >` keeps the rhythm on page-level blocks only: a `.card` nested deeper
    is never re-spaced, and grid/flex children keep their own `gap`. Because
-   adjacent vertical margins collapse, this rule is a pure fallback — where a
+   adjacent vertical margins collapse, this rule is a pure fallback - where a
    block already declares a top margin, or its sibling a bottom margin, the
    larger value still wins and nothing moves.
    ========================================================================== */
@@ -1020,7 +1151,7 @@ input, textarea, select {
 }
 
 /* Every page-level block after the first gets the same gap, so two blocks can
-   never touch — with or without a subtitle between them. */
+   never touch - with or without a subtitle between them. */
 .content-area > * > * + *,
 .content-area .page-container > * + * {
   margin-top: 24px;
@@ -1059,7 +1190,7 @@ video {
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--white);
+  background: var(--surface);
 }
 
 /* Below this width the columns stop shrinking and the wrapper scrolls. */
@@ -1073,7 +1204,7 @@ video {
 }
 
 .data-table thead {
-  background: #F9FAFB;
+  background: var(--surface-alt);
 }
 
 .data-table th {
@@ -1090,13 +1221,13 @@ video {
 .data-table td {
   padding: 14px 16px;
   font-size: 14px;
-  color: #374151;
+  color: var(--dark-text);
   border-top: 1px solid var(--border);
   vertical-align: middle;
 }
 
 .data-table tbody tr:hover {
-  background: #F9FAFB;
+  background: var(--surface-alt);
 }
 
 @media (max-width: 768px) {
@@ -1126,7 +1257,7 @@ video {
  * Card-descendant text re-pointed at the card's own tokens.
  *
  * Every page stylesheet in this project was written while .card was a WHITE
- * surface, so card text was set with hardcoded dark hex (#1a1a1a, #374151,
+ * surface, so card text was set with hardcoded dark hex (var(--dark-text), var(--dark-text),
  * #666, ...).  Those literals are correct on the plain white card and wrong on
  * any other surface the card can take.
  *
@@ -1138,7 +1269,7 @@ video {
  *
  * Specificity is the mechanism.  :is(h1..h6, strong, ...) contributes (0,0,1),
  * so .card :is(...) is (0,1,1) and outranks a single-class local rule such as
- * .card-title { color: #1a1a1a } (0,1,0) - exactly the accidental case.  A
+ * .card-title { color: var(--dark-text) } (0,1,0) - exactly the accidental case.  A
  * DELIBERATE accent is written with two classes (.stat-value.success,
  * .journey-stage.active .stage-name) and still wins at (0,2,0).  Backgrounds,
  * borders and layout are untouched.
@@ -1169,753 +1300,563 @@ video {
 
 /* components/AdminDashboardMetrics.css */
 .metrics-error {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 
 /* components/AttentionCenter.css */
 .attention-bell {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .attention-panel {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .attention-item:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .attention-item-icon {
-  --dark-text: #4B5563;
-  --muted-text: #4B5563;
-  color: #4B5563;
+  --dark-text: var(--muted-text-strong);
+  --muted-text: var(--muted-text-strong);
+  color: var(--muted-text-strong);
 }
 .attention-item.tone-warning .attention-item-icon {
-  --dark-text: #C2410C;
-  --muted-text: #C2410C;
-  color: #C2410C;
+  --dark-text: var(--accent-strong);
+  --muted-text: var(--accent-strong);
+  color: var(--accent-strong);
 }
 .attention-item.tone-danger .attention-item-icon {
-  --dark-text: #B91C1C;
-  --muted-text: #B91C1C;
-  color: #B91C1C;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .attention-item.tone-info .attention-item-icon {
-  --dark-text: #0E7490;
-  --muted-text: #0E7490;
-  color: #0E7490;
+  --dark-text: var(--info-text);
+  --muted-text: var(--info-text);
+  color: var(--info-text);
 }
 
 /* components/ConfirmationModal.css */
 .confirmation-modal-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* components/DreamAcademy.css */
 .da {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .da-fact:nth-child(2)::before {
-  --dark-text: #1F2937;
-  --muted-text: #4B5563;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .da-about {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .da-spec-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .da-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* components/GalleryCard.css */
 .gallery-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .gallery-card-image-container {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/GalleryModal.css */
 .gallery-modal-container {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .gallery-modal-close:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .gallery-modal-info::-webkit-scrollbar-track, .gallery-modal-container::-webkit-scrollbar-track {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/LiveTimeTracker.css */
 .live-time-tracker {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .live-time-tracker.is-paused {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .tracker-status {
-  --dark-text: #4B5563;
-  --muted-text: #4B5563;
-  color: #4B5563;
+  --dark-text: var(--muted-text-strong);
+  --muted-text: var(--muted-text-strong);
+  color: var(--muted-text-strong);
 }
 .is-live .tracker-status {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .is-paused .tracker-status {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .is-capped .tracker-status {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .tracker-note {
-  --dark-text: #4B5563;
-  --muted-text: #4B5563;
-  color: #4B5563;
+  --dark-text: var(--muted-text-strong);
+  --muted-text: var(--muted-text-strong);
+  color: var(--muted-text-strong);
 }
 .is-paused .tracker-note {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .is-capped .tracker-note {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/MarqueeRibbon.css */
 .ribbon-track span i {
-  --dark-text: #1F2937;
-  --muted-text: #4B5563;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/OnboardingModal.css */
 .requirement-item {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .requirement-item:hover {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .onboarding-notice {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/PublicHeader.css */
 @media (max-width: 768px) {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* components/RegisterWizard.css */
 .rw-dialog {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .rw-close:hover {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .rw-step-dot {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .rw-role {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .rw-guidance-head {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .rw-foot {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* components/TermsModal.css */
 .terms-intro {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .terms-content::-webkit-scrollbar-track {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* components/VideoModal.css */
 .video-modal-container {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .video-modal-close:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .video-error-button {
-  --dark-text: #1a1a1a;
-  --muted-text: #1a1a1a;
-  color: #1a1a1a;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .video-error-button:hover {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* index.css */
 body {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .btn-outline {
-  --dark-text: #B8441F;
-  --muted-text: #B8441F;
-  color: #B8441F;
+  --dark-text: var(--accent-text);
+  --muted-text: var(--accent-text);
+  color: var(--accent-text);
 }
 .form-input, .form-select, .form-textarea {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .badge-blue {
-  --dark-text: #1E40AF;
-  --muted-text: #1E40AF;
-  color: #1E40AF;
+  --dark-text: var(--link-text);
+  --muted-text: var(--link-text);
+  color: var(--link-text);
 }
 .badge-green {
-  --dark-text: #065F46;
-  --muted-text: #065F46;
-  color: #065F46;
+  --dark-text: var(--success-text);
+  --muted-text: var(--success-text);
+  color: var(--success-text);
 }
 .badge-yellow {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .badge-red {
-  --dark-text: #991B1B;
-  --muted-text: #991B1B;
-  color: #991B1B;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .badge-gray {
-  --dark-text: #4B5563;
-  --muted-text: #4B5563;
-  color: #4B5563;
+  --dark-text: var(--muted-text-strong);
+  --muted-text: var(--muted-text-strong);
+  color: var(--muted-text-strong);
 }
 .badge-purple {
-  --dark-text: #5B21B6;
-  --muted-text: #5B21B6;
-  color: #5B21B6;
+  --dark-text: var(--purple-text);
+  --muted-text: var(--purple-text);
+  color: var(--purple-text);
 }
 .badge-orange {
-  --dark-text: #9A3412;
-  --muted-text: #9A3412;
-  color: #9A3412;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .badge-teal {
-  --dark-text: #0F5566;
-  --muted-text: #0F5566;
-  color: #0F5566;
+  --dark-text: var(--info-text);
+  --muted-text: var(--info-text);
+  color: var(--info-text);
 }
 .progress-bar {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .modal {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .modal-close:hover {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .table {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .table th {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .table tr:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .portal-header-btn {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .schedule-preview {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .certificate-preview-frame {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .table-responsive {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .data-table thead {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .data-table tbody tr:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* layouts/PortalLayout.css */
 .portal-layout {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .sidebar {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .sidebar-header {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .sidebar-user {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .sidebar-footer {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .logout-btn {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .logout-btn:hover {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/admin/Admin.css */
 .admin-page {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .admin-page-header {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .admin-stat-box {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .admin-filters {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .action-button.secondary {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .admin-table {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .hours-badge {
-  --dark-text: #1E40AF;
-  --muted-text: #1E40AF;
-  color: #1E40AF;
+  --dark-text: var(--link-text);
+  --muted-text: var(--link-text);
+  color: var(--link-text);
 }
 .hours-badge.highlight {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .modal-info {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .reason-box, .accomplishments-box {
-  --dark-text: #1F2937;
-  --muted-text: #1F2937;
-  color: #1F2937;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .tab:hover {
-  --dark-text: #374151;
-  --muted-text: #374151;
-  color: #374151;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .approval-confirmation {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .filter-notice {
-  --dark-text: #1D4ED8;
-  --muted-text: #1D4ED8;
-  color: #1D4ED8;
+  --dark-text: var(--link-text);
+  --muted-text: var(--link-text);
+  color: var(--link-text);
 }
 .requested-row {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .attendance-review-summary {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .ojt-stat {
-  --dark-text: #1F2937;
-  --muted-text: #1F2937;
-  color: #1F2937;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 
 /* pages/admin/AttendanceReview.css */
 .pending-summary-card {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .data-table tbody tr:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .approval-details {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .rejection-details {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/admin/Dashboard.css */
 .admin-search-input {
-  --dark-text: #1F2937;
-  --muted-text: #1F2937;
-  color: #1F2937;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .admin-search-result {
-  --dark-text: #1F2937;
-  --muted-text: #1F2937;
-  color: #1F2937;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .admin-search-result:hover, .admin-search-result:focus-visible {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .admin-item {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .admin-item:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/admin/Students.css */
 .progress-track {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/public/About.css */
 .section.bg-white {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .info-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .thrust-item {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .thrust-item:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .partner-chip {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .partner-chip:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .about-stat-box {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .team-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/public/Auth.css */
 .auth-page {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .auth-shell {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .auth-brand-logo-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .auth-panel {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .auth-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .alert-error {
-  --dark-text: #991B1B;
-  --muted-text: #991B1B;
-  color: #991B1B;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .alert-success {
-  --dark-text: #065F46;
-  --muted-text: #065F46;
-  color: #065F46;
+  --dark-text: var(--success-text);
+  --muted-text: var(--success-text);
+  color: var(--success-text);
 }
 .alert-warning {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .account-type-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .account-type-icon {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .success-message {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .password-requirements {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .step-number {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .step-line {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .otp-info {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .strength-track {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .pending-approval-note {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/public/Home.css */
 .section.bg-white {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .feature-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .bento-cell {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .thrusts-seam {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .seam-cta-link {
-  --dark-text: #0E1726;
-  --muted-text: #0E1726;
-  color: #0E1726;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .stats-section {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .gallery-item {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .gallery-image {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .gallery-placeholder {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .accomplishments-swiper .view-details-btn {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/public/HomeMotion.css */
 .hero-aurora .blob-1 {
-  --dark-text: #1F2937;
-  --muted-text: #4B5563;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .hero-aurora .blob-2 {
-  --dark-text: #1F2937;
-  --muted-text: #4B5563;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .hero-aurora .blob-3 {
-  --dark-text: #1F2937;
-  --muted-text: #374151;
-  color: #1F2937;
+  --muted-text: var(--dark-text);
+  color: var(--dark-text);
 }
 .seam-cta-link:hover {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 /* pages/public/Impact.css */
-/* The avatar is a DEEP teal chip, so it needs white tokens — the generator
-   originally emitted #0F5566 here because the chip used to be a pale
-   teal/cyan gradient.  #0F5566 initials on the chip's own #0F5566 end measured
+/* The avatar is a DEEP teal chip, so it needs white tokens - the generator
+   originally emitted var(--info-text) here because the chip used to be a pale
+   teal/cyan gradient.  var(--info-text) initials on the chip's own var(--info-text) end measured
    1.00:1. */
 .author-avatar {
   --dark-text: #FFFFFF;
@@ -1925,215 +1866,171 @@ body {
 
 /* pages/public/Login.css */
 .auth-page {
-  --dark-text: #1F2937;
-  --muted-text: #4B5563;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .auth-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .auth-divider span {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .alert-error {
-  --dark-text: #991B1B;
-  --muted-text: #991B1B;
-  color: #991B1B;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .account-type-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/public/Register.css */
 .auth-page {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .auth-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .alert-error {
-  --dark-text: #991B1B;
-  --muted-text: #991B1B;
-  color: #991B1B;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .id-format-info {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .account-type-card {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/student/Announcements.css */
 .announcements-page .announcements-search-input {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .announcements-page .announcements-tab {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .announcements-page .announcement-mark-read {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 
 /* pages/student/Applications.css */
 .application-accepted-notice {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .application-declined-notice {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/student/Attendance.css */
 .pending-notice {
-  --dark-text: #92400e;
-  --muted-text: #92400e;
-  color: #92400e;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .active-notice {
-  --dark-text: #1e40af;
-  --muted-text: #1e40af;
-  color: #1e40af;
+  --dark-text: var(--link-text);
+  --muted-text: var(--link-text);
+  color: var(--link-text);
 }
 .approved-notice {
-  --dark-text: #065f46;
-  --muted-text: #065f46;
-  color: #065f46;
+  --dark-text: var(--success-text);
+  --muted-text: var(--success-text);
+  color: var(--success-text);
 }
 .rejected-notice {
-  --dark-text: #991b1b;
-  --muted-text: #991b1b;
-  color: #991b1b;
+  --dark-text: var(--danger-text);
+  --muted-text: var(--danger-text);
+  color: var(--danger-text);
 }
 .attendance-locked-message {
-  --dark-text: #92400e;
-  --muted-text: #92400e;
-  color: #92400e;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .final-message {
-  --dark-text: #065f46;
-  --muted-text: #065f46;
-  color: #065f46;
+  --dark-text: var(--success-text);
+  --muted-text: var(--success-text);
+  color: var(--success-text);
 }
 .progress-bar-container {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .ot-form {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .data-table thead {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .data-table tr.rejected-row {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .attendance-stepper {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .attendance-stepper-step:not(:last-child)::after {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .attendance-stepper-marker {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/student/DailyReports.css */
 .daily-reports-page .report-item {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .daily-reports-page .report-item.rejected {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .daily-reports-page .admin-note.approved {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 .daily-reports-page .admin-note.rejected {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/student/Dashboard.css */
 .requirement-alert {
-  --dark-text: #92400E;
-  --muted-text: #92400E;
-  color: #92400E;
+  --dark-text: var(--warning-text);
+  --muted-text: var(--warning-text);
+  color: var(--warning-text);
 }
 .requirement-success {
-  --dark-text: #065F46;
-  --muted-text: #065F46;
-  color: #065F46;
+  --dark-text: var(--success-text);
+  --muted-text: var(--success-text);
+  color: var(--success-text);
 }
 
 /* pages/student/OJT.css */
 .ojt-hour-stat {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .ojt-completion-notice {
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 /* pages/student/Requirements.css */
 .requirement-dropzone {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .requirement-file-chip {
-  --dark-text: #1F2937;
-  --muted-text: #6B7280;
-  color: #1F2937;
+  color: var(--dark-text);
 }
 .requirement-file-chip-icon {
-  --dark-text: #C2410C;
-  --muted-text: #C2410C;
-  color: #C2410C;
+  --dark-text: var(--accent-strong);
+  --muted-text: var(--accent-strong);
+  color: var(--accent-strong);
 }
 
 /* ==== GENERATED: dark hardcoded text re-pointed to the card tokens ==== */
@@ -2214,27 +2111,27 @@ body {
 /* index.css */
 /* `.card .btn-outline` deliberately NOT re-pointed at the card tokens: an
    outline button is a white lozenge with its own brand-orange label, so
-   `color: var(--muted-text)` would have turned it near-white — invisible on its
-   own white fill — the moment a posting card's hover gradient flipped the
+   `color: var(--muted-text)` would have turned it near-white - invisible on its
+   own white fill - the moment a posting card's hover gradient flipped the
    tokens.  The base `.btn-outline` rule is correct in both states. */
 /* Badges carry LITERAL colours, not var(--dark-text).  A badge is a light pill
    with its own tone, so it must keep that tone in both card states; routing it
    through the card token would turn every badge label white the moment a
    posting card's hover gradient flipped the tokens.  These literals match the
    `.badge-*` base rules and are what lets the badge-protection rule be dropped. */
-.card .badge-blue { color: #1E40AF; }
-.card .badge-green { color: #065F46; }
-.card .badge-yellow { color: #92400E; }
-.card .badge-red { color: #991B1B; }
-.card .badge-gray { color: #4B5563; }
-.card .badge-purple { color: #5B21B6; }
-.card .badge-orange { color: #9A3412; }
+.card .badge-blue { color: var(--link-text); }
+.card .badge-green { color: var(--success-text); }
+.card .badge-yellow { color: var(--warning-text); }
+.card .badge-red { color: var(--danger-text); }
+.card .badge-gray { color: var(--muted-text-strong); }
+.card .badge-purple { color: var(--purple-text); }
+.card .badge-orange { color: var(--warning-text); }
 /* Without this line `.badge-teal` loses to `.card :is(p, span, li, ...)` at
-   (0,1,1) — the badge is a <span>, so the generic rule re-coloured it
-   var(--muted-text) #6B7280 on #DDF0F4 and measured 4.11:1.  This is (0,2,0)
+   (0,1,1) - the badge is a <span>, so the generic rule re-coloured it
+   var(--muted-text) var(--muted-text) on #DDF0F4 and measured 4.11:1.  This is (0,2,0)
    and wins, exactly like its seven siblings above.  Measured after the fix:
    7.10:1. */
-.card .badge-teal { color: #0F5566; }
+.card .badge-teal { color: var(--info-text); }
 .card .data-table td { color: var(--dark-text); }
 .card .attention-bell { color: var(--dark-text); }
 .card .attention-panel { color: var(--dark-text); }

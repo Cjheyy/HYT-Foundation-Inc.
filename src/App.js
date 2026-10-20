@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { PublicHeader } from './components/PublicHeader';
 import { PublicFooter } from './components/PublicFooter';
@@ -86,9 +87,10 @@ function SmartFallback() {
 function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <BrowserRouter>
-          <ScrollToTop />
+      <ThemeProvider>
+        <AppProvider>
+          <BrowserRouter>
+            <ScrollToTop />
           <Routes>
           {/* Public Routes */}
           <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
@@ -123,7 +125,7 @@ function App() {
               <StudentLayout><StudentProfile /></StudentLayout>
             </ProtectedRoute>
           } />
-          {/* OJT/Interns see the OJT postings and the events — never the Dream
+          {/* OJT/Interns see the OJT postings and the events - never the Dream
               Academy programmes, which belong to the Trainee portal. */}
           <Route path="/student/events" element={
             <ProtectedRoute requiredRole="OJT/Intern">
@@ -317,7 +319,7 @@ function App() {
               <AdminLayout><AttendanceVerification /></AdminLayout>
             </ProtectedRoute>
           } />
-          {/* Underscore alias used by older specs/bookmarks — same verification page. */}
+          {/* Underscore alias used by older specs/bookmarks - same verification page. */}
           <Route path="/admin/attendance_verification" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><AttendanceVerification /></AdminLayout>
@@ -338,7 +340,7 @@ function App() {
               <AdminLayout><ApplicationReview /></AdminLayout>
             </ProtectedRoute>
           } />
-          {/* Underscore alias used by older specs/bookmarks — same review page. */}
+          {/* Underscore alias used by older specs/bookmarks - same review page. */}
           <Route path="/admin/application_review" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><ApplicationReview /></AdminLayout>
@@ -368,7 +370,8 @@ function App() {
           theme="colored"
         />
       </BrowserRouter>
-    </AppProvider>
+        </AppProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

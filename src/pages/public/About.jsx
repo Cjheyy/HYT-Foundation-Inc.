@@ -32,7 +32,7 @@ export function About() {
   /** True while the pointer is still resting on a tile whose dialog just closed. */
   const suppressHoverRef = useRef(false);
 
-  /** Cancel an open that has not fired yet — never closes an open dialog. */
+  /** Cancel an open that has not fired yet - never closes an open dialog. */
   const cancelPendingOpen = useCallback(() => {
     if (openTimerRef.current) {
       clearTimeout(openTimerRef.current);
@@ -44,14 +44,14 @@ export function About() {
    * Closing deliberately does NOT happen on mouse-leave.
    *
    * The dialog renders a full-viewport backdrop, so the moment it opens the
-   * pointer is no longer over the tile — a mouse-leave close would fire
+   * pointer is no longer over the tile - a mouse-leave close would fire
    * immediately, the dialog would close, the tile would be hovered again, and
    * the two would flicker forever.  The dialog is dismissed the way a modal
    * should be: backdrop click, the close control, or Escape.
    *
    * `suppressHoverRef` guards the mirror-image trap: when the overlay unmounts
    * the pointer is usually still over the tile, so the browser fires a fresh
-   * `mouseenter` and the dialog would re-open instantly — making the close look
+   * `mouseenter` and the dialog would re-open instantly - making the close look
    * broken.  The flag is cleared the next time the pointer actually leaves.
    */
   const closePartner = useCallback(() => {
@@ -169,7 +169,7 @@ export function About() {
           </div>
 
           {/*
-            Tiles open their dialog on hover — there is no click-to-open step for
+            Tiles open their dialog on hover - there is no click-to-open step for
             a pointer.  `onClick` is kept only as the touch and keyboard path:
             a tap has no hover, and a real <button> fires click on Enter/Space,
             which is how a keyboard user opens the dialog.  It is not the

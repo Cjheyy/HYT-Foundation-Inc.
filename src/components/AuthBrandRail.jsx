@@ -15,7 +15,7 @@ export function AuthBrandRail({ description, points = [], footnote = 'HYT Founda
 
       <div className="auth-brand-inner">
         <div className="auth-brand-logo-card">
-          <img src={hytLogo} alt="HYT Foundation — Helping Youth Transcend" />
+          <img src={hytLogo} alt="HYT Foundation - Helping Youth Transcend" />
         </div>
 
         <h1 className="auth-brand-title">

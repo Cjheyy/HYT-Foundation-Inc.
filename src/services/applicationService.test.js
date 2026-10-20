@@ -4,7 +4,7 @@ import { toCamelCase } from '../config/supabase';
 /**
  * Regression guard for the owner-lookup bug.
  *
- * The deployed `applications` table has `user_id` — there is NO `student_id`
+ * The deployed `applications` table has `user_id` - there is NO `student_id`
  * column (verified against the live database: selecting it returns
  * `42703 column applications.student_id does not exist`).  `getApplicationsByStudent`
  * used to filter on `app.studentId`, so it compared `undefined` against a real id

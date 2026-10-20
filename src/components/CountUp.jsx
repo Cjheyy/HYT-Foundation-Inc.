@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
  * Three deliberate details:
  *
  * 1. `display` starts at the REAL value, not 0. If JavaScript never runs, or
- *    IntersectionObserver is unavailable, the figure is simply correct — the
+ *    IntersectionObserver is unavailable, the figure is simply correct - the
  *    animation is an enhancement, never a prerequisite.
  *
  * 2. The observer uses a POSITIVE bottom rootMargin, so it fires while the
@@ -44,7 +44,7 @@ export function CountUp({
           setStarted(true);
         });
       },
-      // Fire early — see note 2 above.
+      // Fire early - see note 2 above.
       { rootMargin: '0px 0px 320px 0px', threshold: 0 }
     );
 
@@ -70,7 +70,7 @@ export function CountUp({
 
     const tick = (now) => {
       const progress = Math.min(1, (now - start) / duration);
-      // Ease-out cubic — matches the page's --e-out feel.
+      // Ease-out cubic - matches the page's --e-out feel.
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplay(Math.round(value * eased));
       if (progress < 1) raf = requestAnimationFrame(tick);

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { normalizeRole } from '../services/supabaseService';
 import { Icon } from './icons';
+import { ThemeToggle } from './ThemeToggle';
 import hytLogo from '../assets/HYT.png';
 import './PublicHeader.css';
 import './Logo.css';
@@ -34,7 +35,7 @@ export function PublicHeader() {
             <Link to="/" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Home</Link>
             <Link to="/about" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>About</Link>
             {/* Programs and Events are two separate listings, so they get two
-                separate entries — the combined "Programs & Events" link is
+                separate entries - the combined "Programs & Events" link is
                 gone.  The order matches the sidebar of both portals, where
                 Programmes come before Events. */}
             <Link to="/programs" className="nav-link" onClick={() => { setMobileMenuOpen(false); window.scrollTo(0, 0); }}>Programs</Link>
@@ -45,6 +46,7 @@ export function PublicHeader() {
           </nav>
 
           <div className={`header-actions ${mobileMenuOpen ? 'open' : ''}`}>
+            <ThemeToggle />
             {currentUser ? (
               <>
                 <Link
@@ -76,7 +78,7 @@ export function PublicHeader() {
               </>
             ) : (
               /* A single <Link> styled as a button. The previous markup was a
-                 <button> nested inside a <Link> — two interactive elements one
+                 <button> nested inside a <Link> - two interactive elements one
                  inside the other, which is invalid and gives the control two
                  conflicting roles. It was also btn-sm, which made the primary
                  call to action the smallest thing in the header. */

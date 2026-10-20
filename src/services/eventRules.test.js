@@ -96,7 +96,7 @@ describe('eventWindowsOverlap', () => {
 
   test('a back-to-back pair DOES clash (inclusive by design)', () => {
     // 09:00-12:00 and 12:00-14:00 touch at exactly 12:00.  Treating that as a
-    // clash is the conservative reading — the youth would have to travel.
+    // clash is the conservative reading - the youth would have to travel.
     expect(eventWindowsOverlap(morning, {
       starts_at: '2026-10-20T12:00:00Z', ends_at: '2026-10-20T14:00:00Z'
     })).toBe(true);

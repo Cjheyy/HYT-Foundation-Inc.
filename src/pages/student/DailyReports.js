@@ -85,7 +85,7 @@ export function StudentDailyReports() {
               <div style={{ fontSize: '14px', color: 'var(--muted-text)' }}>
                 <div><strong>Tasks:</strong> {report.tasksCompleted}</div>
                 {report.adminRemarks && (
-                  <div style={{ marginTop: '8px', padding: '8px', background: '#FEF3C7', borderRadius: '4px', color: '#92400E' }}>
+                  <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-surface)', borderRadius: '4px', color: '#92400E' }}>
                     <strong>Admin:</strong> {report.adminRemarks}
                   </div>
                 )}

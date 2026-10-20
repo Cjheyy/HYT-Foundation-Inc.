@@ -26,7 +26,7 @@
   position: relative;
   width: 100%;
   max-width: 1280px;
-  background: white;
+  background: var(--surface);
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.4s ease-out;
@@ -53,10 +53,10 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-frosted);
   border: none;
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--dark-text);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -67,7 +67,7 @@
 }
 
 .gallery-modal-close:hover {
-  background: white;
+  background: var(--surface);
   transform: scale(1.1) rotate(90deg);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
@@ -133,7 +133,7 @@
 
 .gallery-modal-description {
   font-size: 18px;
-  color: #666;
+  color: var(--muted-text);
   line-height: 1.7;
   margin: 0 0 32px 0;
 }
@@ -149,13 +149,13 @@
 .gallery-modal-details h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin: 0 0 16px 0;
 }
 
 .gallery-modal-details p {
   font-size: 15px;
-  color: #444;
+  color: var(--muted-text-strong);
   line-height: 1.7;
   margin: 0 0 12px 0;
 }
@@ -176,7 +176,7 @@
 
 .gallery-modal-details li {
   font-size: 15px;
-  color: #444;
+  color: var(--muted-text-strong);
   line-height: 1.7;
   margin-bottom: 8px;
 }
@@ -195,7 +195,7 @@
 .gallery-modal-images h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin: 0 0 16px 0;
 }
 
@@ -314,7 +314,7 @@
 
 .gallery-modal-info::-webkit-scrollbar-track,
 .gallery-modal-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--surface-sunken);
   border-radius: 4px;
 }
 

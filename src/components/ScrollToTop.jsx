@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
- * Scrolls to the top on a route change — but when the URL carries a hash
+ * Scrolls to the top on a route change - but when the URL carries a hash
  * (e.g. Home's thrust tiles linking to /about#thrusts) it scrolls to that
  * element instead, so a deep link lands on the right section.
  *

@@ -83,7 +83,7 @@ export function Programs() {
                     <span className="reveal-wipe" aria-hidden="true" />
                     <div className="program-header">
                       {/* The slots pill beside this one is green (red when full), so the
-                          status pill must never ALSO be green — two same-coloured pills
+                          status pill must never ALSO be green - two same-coloured pills
                           side by side read as one malformed lozenge rather than two
                           badges. Anything that resolves to green is shown in blue, which
                           is the tone the reference card uses for its leading pill. */}

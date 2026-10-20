@@ -20,6 +20,7 @@ import { getRoleTerms } from '../../utils/roleTerms';
 import {
   deriveExperienceEntries,
   computeExperienceSchedule,
+  formatListingSchedule,
   getApplicationListingTitle,
   getApplicationListingTypeLabel,
   isApplicationActive
@@ -47,7 +48,7 @@ export function StudentDashboard() {
   const myApplications = getApplicationsByStudent(applications, currentUser?.id);
 
   /**
-   * Every application still in play — pending AND approved-but-unfinished.
+   * Every application still in play - pending AND approved-but-unfinished.
    * `activeApplication` (singular) is kept for the journey stages below.
    */
   const activeApplications = useMemo(
@@ -70,19 +71,24 @@ export function StudentDashboard() {
 
   /**
    * Approved applications become experiences.  A pending one must never appear
-   * here — it stays in My Applications until an administrator approves it.
+   * here - it stays in My Applications until an administrator approves it.
    */
   const experiences = useMemo(() => {
+    const requiredHours = Number(currentUser?.requiredHours || myOJT?.requiredHours || 0);
+    const renderedHours = Number(currentUser?.renderedHours || myOJT?.verifiedHours || 0);
+
+    // The hours go in so the Done/Ongoing split uses the same rule as My
+    // Applications. Deriving them here instead would let the two screens
+    // disagree about whether an experience has finished.
     const entries = deriveExperienceEntries({
       applications,
       programs,
       opportunities,
       events,
-      currentUser
+      currentUser,
+      requiredHours,
+      renderedHours
     });
-
-    const requiredHours = Number(currentUser?.requiredHours || myOJT?.requiredHours || 0);
-    const renderedHours = Number(currentUser?.renderedHours || myOJT?.verifiedHours || 0);
 
     return entries.map((entry) => ({
       ...entry,
@@ -186,7 +192,7 @@ export function StudentDashboard() {
           )}
         </Card>
 
-        {/* Events — the published events this portal can still join. Reuses the
+        {/* Events - the published events this portal can still join. Reuses the
             Active Application card's list markup so no new design is added. */}
         <Card className="dashboard-card">
           <div className="card-header">
@@ -234,7 +240,7 @@ export function StudentDashboard() {
               <div className="empty-card-content">
                 <p className="empty-text">No events posted yet</p>
                 <p className="empty-hint">
-                  Only published events appear here — a draft stays hidden until an
+                  Only published events appear here - a draft stays hidden until an
                   administrator publishes it
                 </p>
                 <Button size="sm" onClick={() => navigate('/student/events')}>
@@ -245,7 +251,7 @@ export function StudentDashboard() {
           </div>
         </Card>
 
-        {/* Experience — every approved application lands here */}
+        {/* Experience - every approved application lands here */}
         <Card className="dashboard-card experience-card">
           <div className="card-header">
             <h3 className="card-title">{terms.experienceLabel}</h3>
@@ -275,18 +281,24 @@ export function StudentDashboard() {
                     <div className="experience-item-meta">
                       <span className="experience-item-org">{entry.organization}</span>
                       <span className="experience-item-dates">
-                        {formatScheduleRange(
-                          toLocalISODate(entry.schedule.startDate),
-                          toLocalISODate(entry.schedule.endDate)
-                        ) || '--'}
+                        {entry.type === 'event'
+                          ? formatListingSchedule(entry.listing, { isEvent: true }) || '--'
+                          : formatScheduleRange(
+                              toLocalISODate(entry.schedule.startDate),
+                              toLocalISODate(entry.schedule.endDate)
+                            ) || '--'}
                       </span>
                     </div>
                   </li>
                 ))}
               </ul>
-              <p className="experience-note">
-                End dates are projected from the hours still to be rendered.
-              </p>
+              {/* Only true for the engagements whose end is projected. An event
+                  prints its own diary date, so the note would be a lie. */}
+              {experiences.some((entry) => entry.type !== 'event') && (
+                <p className="experience-note">
+                  End dates are projected from the hours still to be rendered.
+                </p>
+              )}
 
               {progress.required > 0 && (
                 <>

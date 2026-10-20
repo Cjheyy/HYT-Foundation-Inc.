@@ -36,7 +36,7 @@ export function updateApplicationStatus(application, newStatus, note = '') {
 
 /**
  * Rows loaded from Supabase are camelCased straight from the `applications`
- * table, which has `user_id` — there is no `student_id` column.  Matching on
+ * table, which has `user_id` - there is no `student_id` column.  Matching on
  * `app.studentId` therefore compared `undefined` against a real id and returned
  * an empty list for every user, which silently blanked both the dashboard
  * "Active Application" card and the whole My Applications page.

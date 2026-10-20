@@ -1,4 +1,4 @@
-/* Attention center — bell + count in the portal header.
+/* Attention center - bell + count in the portal header.
    Scoped under .attention-* so nothing here can collide with the other
    globally-bundled stylesheets. */
 
@@ -18,8 +18,8 @@
   padding: 0;
   border-radius: 11px;
   border: 1px solid rgba(229, 231, 235, 0.9);
-  background: #fff;
-  color: var(--muted-text, #6B7280);
+  background: var(--surface);
+  color: var(--muted-text, var(--muted-text));
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -64,7 +64,7 @@
   right: 0;
   width: 340px;
   max-width: calc(100vw - 32px);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid rgba(229, 231, 235, 0.9);
   border-radius: 14px;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
@@ -84,10 +84,10 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid #F1F4F6;
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
   font-weight: 700;
-  color: var(--dark-text, #111827);
+  color: var(--dark-text, var(--dark-text));
 }
 
 .attention-mark-all {
@@ -124,7 +124,7 @@
 }
 
 .attention-item:hover {
-  background: #F9FAFB;
+  background: var(--surface-alt);
 }
 
 .attention-item-icon {
@@ -135,23 +135,23 @@
   width: 28px;
   height: 28px;
   border-radius: 9px;
-  background: #F3F4F6;
-  color: #4B5563;
+  background: var(--surface-sunken);
+  color: var(--muted-text-strong);
 }
 
 .attention-item.tone-warning .attention-item-icon {
-  background: #FDF0EA;
-  color: #C2410C;
+  background: var(--tint-warm);
+  color: var(--accent-strong);
 }
 
 .attention-item.tone-danger .attention-item-icon {
-  background: #FEE9E9;
-  color: #B91C1C;
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 
 .attention-item.tone-info .attention-item-icon {
-  background: #EAF6F8;
-  color: #0E7490;
+  background: var(--tint-cool);
+  color: var(--info-text);
 }
 
 .attention-item-body {
@@ -163,13 +163,13 @@
 .attention-item-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--dark-text, #111827);
+  color: var(--dark-text, var(--dark-text));
   line-height: 1.35;
 }
 
 .attention-item-detail {
   font-size: 12px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
   line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
@@ -183,7 +183,7 @@
   gap: 10px;
   padding: 20px 16px;
   font-size: 13px;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 @media (max-width: 480px) {

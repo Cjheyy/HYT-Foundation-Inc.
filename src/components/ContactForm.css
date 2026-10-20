@@ -12,13 +12,13 @@
 .contact-form-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1F2937;
+  color: var(--dark-text);
   margin-bottom: 8px;
 }
 
 .contact-form-subtitle {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   line-height: 1.6;
 }
 
@@ -32,12 +32,12 @@
   text-align: center;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
 }
 
 .contact-alternative p {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   margin-bottom: 8px;
 }
 

@@ -35,7 +35,7 @@ export function validateRequirementFile(file) {
   if (!extensionOk && !typeOk) return 'Only PDF, JPG or PNG files are accepted.';
   if (file.size === 0) return 'That file is empty.';
   if (file.size > MAX_FILE_BYTES) {
-    return `That file is ${formatFileSize(file.size)} — the limit is 10 MB.`;
+    return `That file is ${formatFileSize(file.size)} - the limit is 10 MB.`;
   }
   return '';
 }

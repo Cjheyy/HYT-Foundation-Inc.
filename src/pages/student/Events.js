@@ -8,8 +8,8 @@ import { Badge } from '../../components/Badge';
 import { Modal } from '../../components/Modal';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons';
-import { formatDateTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
+import { formatListingSchedule } from '../../utils/experience';
 import { showToast } from '../../utils/notifications';
 import {
   applyToEventPosting,
@@ -22,7 +22,7 @@ import {
 import './Events.css';
 
 /**
- * Events — the third listing kind, shared by BOTH portals.
+ * Events - the third listing kind, shared by BOTH portals.
  *
  * An OJT/Intern sees "Events Postings"; a Trainee sees "Events".  The page is
  * the same component for both (the label comes from getRoleTerms), exactly the
@@ -39,16 +39,18 @@ import './Events.css';
  * so opening this page costs no extra query per card.
  */
 
-/** The event's occupied window, in words. */
-export const formatEventWindow = (event) => {
-  const start = event?.startsAt || event?.starts_at;
-  const end = event?.endsAt || event?.ends_at;
-  if (!start) return event?.schedule || 'Schedule to be announced';
-  const from = formatDateTime(start);
-  if (!end) return from;
-  const sameDay = String(start).slice(0, 10) === String(end).slice(0, 10);
-  return sameDay ? from : `${from} – ${formatDateTime(end)}`;
-};
+/**
+ * The event's occupied window, in words.
+ *
+ * Delegates to the shared formatter so the listing page, My Applications, the
+ * dashboard and the landing page cannot word the same event differently. A
+ * whole-day event reads "October 20, 2026 · Whole day" instead of the
+ * meaningless "12:00 AM - 11:59 PM".
+ */
+export const formatEventWindow = (event) =>
+  formatListingSchedule(event, { isEvent: true }) ||
+  event?.schedule ||
+  'Schedule to be announced';
 
 export function StudentEvents() {
   const { state, dispatch, refreshData } = useApp();
@@ -85,7 +87,7 @@ export function StudentEvents() {
 
   /**
    * The events still holding a slot.  A rejected or withdrawn application frees
-   * both the count and its window — which is what lets a student apply again
+   * both the count and its window - which is what lets a student apply again
    * once one of their applications ends.
    */
   const heldEvents = useMemo(() => myEventApplications

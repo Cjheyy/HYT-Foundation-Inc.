@@ -9,7 +9,7 @@
  *
  * (see node_modules/@supabase/auth-js/dist/main/GoTrueClient.js lines 4165 and
  * 3657). AppContext's `schedule()` is a latest-wins debounce, so only one of
- * the two handlers actually runs — which one, and what it does, is what these
+ * the two handlers actually runs - which one, and what it does, is what these
  * tests pin down.
  */
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
@@ -145,7 +145,7 @@ afterEach(cleanup);
 
 /* ------------------------------------------------------------------ tests */
 
-describe('AppProvider — session restore on reload', () => {
+describe('AppProvider - session restore on reload', () => {
   test('a reload with a persisted session keeps the user signed in (SDK order: SIGNED_IN then INITIAL_SESSION)', async () => {
     mount();
     await waitFor(() => expect(emitterCount()).toBeGreaterThan(0));
@@ -180,7 +180,7 @@ describe('AppProvider — session restore on reload', () => {
   test('a reload whose session carries no readable user id must NOT sign the user out', async () => {
     // Mirrors auth-js's `userNotAvailableProxy()`: the stored session is intact
     // but `session.user.id` is not readable (GoTrueClient.js lines 4097-4111).
-    // Before the fix this ended on `anonymous|none` — a silent logout on
+    // Before the fix this ended on `anonymous|none` - a silent logout on
     // reload. The identity must be recovered from the stored token instead.
     const userlessSession = { ...SESSION, user: { email: 'intern@example.com' } };
     __setSession(userlessSession);

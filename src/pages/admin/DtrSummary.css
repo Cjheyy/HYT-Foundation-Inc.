@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Admin — Printable DTR page
+   Admin - Printable DTR page
    --------------------------------------------------------------------------
    Colours come from the index.css tokens only.
 
@@ -44,7 +44,7 @@
   overflow: hidden;
   /* Matches the sheet's own page background, so the "paper" reads as a sheet
      sitting on a surface rather than a white box on white. */
-  background: #f1f2f4;
+  background: var(--surface-sunken);
 }
 
 .dtr-frame {
@@ -54,7 +54,7 @@
      this is only the floor for the first paint. */
   min-height: 600px;
   border: 0;
-  background: #f1f2f4;
+  background: var(--surface-sunken);
 }
 
 /* --- States --------------------------------------------------------------- */
@@ -67,7 +67,7 @@
 
 /* Beats `.card :is(p, span, ...)` at (0,1,1). */
 .dtr-summary-page .dtr-error {
-  color: #B42318;
+  color: var(--danger-text);
   font-weight: 600;
 }
 

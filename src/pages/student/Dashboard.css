@@ -83,20 +83,20 @@
 }
 
 /* --------------------------------------------------------------------------
- * Active Application — one clickable row per live application.
+ * Active Application - one clickable row per live application.
  *
  * The card used to render a single entry with no way to open it.  Each row is
  * now a real <button>, so it is reachable by keyboard and exposes the dialog
  * through an accessible name.  Colour rules are written with two classes
  * because `.card :is(p, span, li, …)` is (0,1,1) and outranks a single-class
- * rule — the same reason `.card .badge-teal` exists further down index.css.
+ * rule - the same reason `.card .badge-teal` exists further down index.css.
  * -------------------------------------------------------------------------- */
 .card .active-app-count {
   font-size: 12px;
   font-weight: 700;
   color: var(--muted-text);
-  background: #F3F4F6;
-  border: 1px solid var(--border, #E5E7EB);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border, var(--border));
   border-radius: 999px;
   padding: 2px 9px;
 }
@@ -119,9 +119,9 @@
   gap: 12px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border, #E5E7EB);
+  border: 1px solid var(--border, var(--border));
   border-radius: 10px;
-  background: #FFFFFF;
+  background: var(--surface);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -130,7 +130,7 @@
 
 .active-app-row:hover {
   border-color: var(--primary-orange, #D57156);
-  background: #FFF8F5;
+  background: var(--tint-warm);
 }
 
 .active-app-row:focus-visible {
@@ -178,12 +178,12 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted-text, #6B7280);
+  color: var(--muted-text, var(--muted-text));
 }
 
 .application-detail .application-detail-value {
   font-size: 14px;
-  color: var(--dark-text, #1F2937);
+  color: var(--dark-text, var(--dark-text));
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -196,7 +196,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * Experience card — compact list, coloured tiles, labelled progress.
+ * Experience card - compact list, coloured tiles, labelled progress.
  *
  * The card used to spend four lines per entry on "START" / "END (EST.)" labels
  * for two dates that are usually identical on every row, and then drew the two
@@ -256,7 +256,7 @@
   /* A title is the one thing on this row that must never be shortened.
    *
    * This started life as `nowrap` + `ellipsis`, which is fine right up until
-   * the text does not fit — and then it silently lies.  "Backend Developer
+   * the text does not fit - and then it silently lies.  "Backend Developer
    * Intern" needs ~170px at 14.5px; the 1024px viewport (two grid columns)
    * hands this column 159px, so the ellipsis was rendering "Backend Developer
    * Int…" with nothing anywhere reporting it.  Measured: scrollWidth 188px
@@ -280,7 +280,7 @@
 /* Organisation on the left, the whole date range on the right.
  *
  * The dates are `flex: none` + `nowrap`, so the org is the only half that can
- * give — it ellipsises rather than pushing the range out of the card.
+ * give - it ellipsises rather than pushing the range out of the card.
  *
  * The narrowest card is 302px, not the 328px the 1024px viewport produces:
  * the 900px viewport packs the same two columns into less width.  Both were
@@ -293,7 +293,7 @@
   gap: 8px;
   min-width: 0;
   /* 11px, not 11.5px.  The narrowest card the grid actually produces is 302px
-   * (the 900px viewport — narrower than the 328px the 1024px one gives), and
+   * (the 900px viewport - narrower than the 328px the 1024px one gives), and
    * at 11.5px the org needed 104px against 102px available.  That 2px deficit
    * was enough to fire the ellipsis below, which is the worst possible reason
    * to shorten a partner organisation's name.  At 11px the pair fits with room
@@ -376,11 +376,11 @@
 }
 
 .experience-tile.is-remaining {
-  border-left: 3px solid #B8441F;
+  border-left: 3px solid var(--accent-text);
 }
 
 .experience-tile.is-remaining .experience-tile-value {
-  color: var(--accent-text, #B8441F);
+  color: var(--accent-text, var(--accent-text));
 }
 
 .experience-progress {
@@ -424,7 +424,7 @@
 /* --------------------------------------------------------------------------
  * Shared stat tiles.
  *
- * No longer used by the student Experience card — that card has its own
+ * No longer used by the student Experience card - that card has its own
  * .experience-tile now.  The trainee dashboard still renders these for its
  * application counts, so they must stay.
  * -------------------------------------------------------------------------- */
@@ -433,7 +433,7 @@
   text-align: center;
   padding: 16px;
   /* Pale chip on the white card.  var(--teal) #279EB6 for .stat-value would be
-     3.16:1 here — acceptable for 28px large text but thinner than the rest of
+     3.16:1 here - acceptable for 28px large text but thinner than the rest of
      the page, so the value uses the card's dark text token. */
   background: var(--background);
   border: 1px solid var(--border);
@@ -457,9 +457,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #FEF3C7;
+  background: var(--warning-surface);
   border-radius: 8px;
-  color: #92400E;
+  color: var(--warning-text);
   font-size: 14px;
 }
 
@@ -472,9 +472,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #D1FAE5;
+  background: var(--success-surface);
   border-radius: 8px;
-  color: #065F46;
+  color: var(--success-text);
   font-size: 14px;
 }
 
@@ -508,7 +508,7 @@
 }
 
 .action-button:hover {
-  background: white;
+  background: var(--surface);
   border-color: var(--primary-orange);
   transform: translateY(-2px);
 }
@@ -564,10 +564,10 @@
   height: 48px;
   border-radius: 50%;
   /* A pale grey step on the white card.  The numeral is deliberately darker
-     than --muted-text: #6B7280 on #E5E7EB measures 3.90:1, under the 4.5:1 an
-     18px/600 numeral needs.  #4B5563 on the same fill is 6.10:1. */
+     than --muted-text: var(--muted-text) on var(--border) measures 3.90:1, under the 4.5:1 an
+     18px/600 numeral needs.  var(--muted-text-strong) on the same fill is 6.10:1. */
   background: var(--border);
-  color: #4B5563;
+  color: var(--muted-text-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -579,12 +579,12 @@
 .journey-stage.active .stage-indicator {
   /* White on --primary-orange (#D57156) is 3.32:1, under the 4.5:1 an 18px
      numeral needs; the deepened sibling is 5.41:1. */
-  background: #B8441F;
+  background: var(--accent-text);
   color: white;
 }
 
 .journey-stage.completed .stage-indicator {
-  /* Was var(--teal) #279EB6 — white on it measures 3.16:1, under the 4.5:1 the
+  /* Was var(--teal) #279EB6 - white on it measures 3.16:1, under the 4.5:1 the
      18px numeral needs. Deepened teal is 6.30:1 and still reads as the brand. */
   background: #16697A;
   color: white;
@@ -598,8 +598,8 @@
 }
 
 .journey-stage.active .stage-name {
-  /* Was var(--primary-orange) #D57156 — 3.32:1 on the white card. */
-  color: var(--accent-text, #B8441F);
+  /* Was var(--primary-orange) #D57156 - 3.32:1 on the white card. */
+  color: var(--accent-text, var(--accent-text));
   font-weight: 600;
 }
 
@@ -621,7 +621,7 @@
 }
 
 .announcement-item:hover {
-  background: white;
+  background: var(--surface);
   border-color: var(--primary-orange);
 }
 

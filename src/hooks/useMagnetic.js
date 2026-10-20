@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 /**
  * Magnetic hover: the element leans toward the cursor and springs back on
- * leave. Pointer-only by construction — `mousemove` never fires on touch, so
+ * leave. Pointer-only by construction - `mousemove` never fires on touch, so
  * no device sniffing is needed.
  *
  * Returns handlers to spread onto the element. The transform is written

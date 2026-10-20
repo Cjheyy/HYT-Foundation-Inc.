@@ -1,17 +1,17 @@
 /* ============================================================================
-   Daily Reports — student / trainee portal
+   Daily Reports - student / trainee portal
 
    Everything below is scoped under `.daily-reports-page` on purpose.
 
    CRA bundles every route's CSS into a single stylesheet, so generic names such
    as `.report-header`, `.report-content`, `.report-meta` and `.section-text`
-   are already claimed elsewhere — Admin.css defines the first three for the
+   are already claimed elsewhere - Admin.css defines the first three for the
    admin Report Approvals page, Contact.css defines `.section-text`. This page
    was therefore being styled by accident from three unrelated stylesheets,
    while twelve of its own class names (`submit-report-card`,
    `reports-history-card`, `reports-list`, `report-item`, `report-date`,
    `report-section`, `section-label`, `admin-note`, `note-label`, `note-text`,
-   `report-footer`) matched nothing at all — and the ten selectors this file
+   `report-footer`) matched nothing at all - and the ten selectors this file
    used to contain matched no JSX anywhere.
 
    Scoping to (0,2,0) lets this page own its own look without editing
@@ -52,12 +52,12 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .daily-reports-page .report-item.rejected {
   border-color: #FCA5A5;
-  background: #FFFBFB;
+  background: var(--tint-warm);
 }
 
 .daily-reports-page .report-header {
@@ -108,12 +108,12 @@
 }
 
 .daily-reports-page .admin-note.approved {
-  background: #ECFDF5;
+  background: var(--success-surface-soft);
   border-color: #10B981;
 }
 
 .daily-reports-page .admin-note.rejected {
-  background: #FEF2F2;
+  background: var(--danger-surface);
   border-color: #DC2626;
 }
 
@@ -126,12 +126,12 @@
 
 .daily-reports-page .admin-note.approved .note-label,
 .daily-reports-page .admin-note.approved .note-text {
-  color: #065F46;
+  color: var(--success-text);
 }
 
 .daily-reports-page .admin-note.rejected .note-label,
 .daily-reports-page .admin-note.rejected .note-text {
-  color: #991B1B;
+  color: var(--danger-text);
 }
 
 .daily-reports-page .note-text {
@@ -160,7 +160,7 @@
 }
 
 /* ============================================================================
-   Three-slot daily report — 11:00 / 15:00 / 17:00
+   Three-slot daily report - 11:00 / 15:00 / 17:00
 
    A day is no longer one free-text report.  It is three updates, each with the
    same three boxes (Accomplished · In-Progress · Pending), and only the 17:00
@@ -174,7 +174,7 @@
 .daily-reports-page .report-slot-warning {
   margin-bottom: 24px;
   border-left: 3px solid var(--accent-text);
-  background: #FDF3F0;
+  background: var(--tint-warm);
 }
 
 .daily-reports-page .report-slot-warning code {
@@ -203,7 +203,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
-  background: #fff;
+  background: var(--surface);
 }
 
 /* A slot that is open now is the one thing the trainee has to act on, so it
@@ -214,12 +214,12 @@
 }
 
 .daily-reports-page .report-slot.is-missed {
-  background: #FAFAFA;
+  background: var(--surface-alt);
   border-style: dashed;
 }
 
 .daily-reports-page .report-slot.is-upcoming {
-  background: #FAFBFC;
+  background: var(--surface-alt);
 }
 
 .daily-reports-page .report-slot-head {
@@ -271,7 +271,7 @@
 }
 
 .daily-reports-page .report-slot-status.is-missed {
-  color: #B42318;
+  color: var(--danger-text);
   border-color: rgba(180, 35, 24, 0.30);
   background: rgba(180, 35, 24, 0.07);
 }
@@ -341,7 +341,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  background: #FAFBFC;
+  background: var(--surface-alt);
 }
 
 .daily-reports-page .report-day-cell-head {
@@ -376,6 +376,121 @@
 }
 
 .report-day-flag.is-partial {
-  color: #B42318;
+  color: var(--danger-text);
   background: rgba(180, 35, 24, 0.10);
 }
+
+/* ---- review outcome: what the mentor did with the day -------------------- */
+
+/* The pill row. Kept as a flex container with wrap so "Approved" and
+   "Complete" sit side by side on a wide screen and drop onto two lines on a
+   phone without ever overlapping. */
+.daily-reports-page .report-flags {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.report-review-flag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.report-review-flag.is-approved {
+  color: var(--success-text);
+  background: rgba(5, 150, 105, 0.12);
+}
+
+.report-review-flag.is-returned {
+  color: var(--danger-text);
+  background: rgba(220, 38, 38, 0.10);
+}
+
+.daily-reports-page .report-review-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent-text);
+  border-radius: 6px;
+  background: var(--tint-warm);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.daily-reports-page .report-review-note-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent-text);
+}
+
+/* ============================================================================
+   PHONE - the trainee screen
+
+   Everything here is one column already, so the only real problems are the
+   grids and the action rows:
+
+     - `.report-day-grid` asks for 220px minimums, so three cells need ~700px.
+       On a phone it must be a single column;
+     - `.report-slot-head` puts the label and the status pill on one line, which
+       they no longer fit on once the label wraps;
+     - the send button and its helper text sit in a row and end up fighting for
+       the same line.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .daily-reports-page .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* The header stacks, so the pills should read from the left rather than
+     staying pushed to a right edge that is now the full width. */
+  .daily-reports-page .report-flags {
+    justify-content: flex-start;
+  }
+
+  .daily-reports-page .report-day-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .daily-reports-page .report-slot-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  /* Full-width send button - the primary action on the page should be the
+     easiest thing to hit with a thumb. */
+  .daily-reports-page .report-slot-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .daily-reports-page .report-slot-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .daily-reports-page .report-slot-actions .form-help {
+    min-width: 0;
+  }
+
+  .daily-reports-page .report-slot,
+  .daily-reports-page .report-item {
+    padding: 14px;
+  }
+}
+

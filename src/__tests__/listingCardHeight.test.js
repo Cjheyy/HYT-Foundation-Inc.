@@ -13,7 +13,7 @@ import path from 'path';
  * This suite guards that contract against the real files, because it is exactly
  * the kind of thing that regresses silently: a new card is added, or an inline
  * `marginTop` is reintroduced at a call site, and the CSS still looks fine on
- * its own. A DOM test cannot see it either — jsdom does not lay out flex, so
+ * its own. A DOM test cannot see it either - jsdom does not lay out flex, so
  * every element reports zero height and the bug is invisible.
  */
 
@@ -63,7 +63,7 @@ const ruleFor = (cardClass) =>
 describe('listing cards line their CTA up', () => {
   test.each(CARD_CLASSES)('.%s is a flex column that fills its grid cell', (cardClass) => {
     // Each card class must appear in a shared rule that makes it a full-height
-    // flex column — that is what lets the grid stretch it and what gives the
+    // flex column - that is what lets the grid stretch it and what gives the
     // auto margin something to push against.
     const rule = ruleFor(cardClass);
     expect(rule).toBeDefined();

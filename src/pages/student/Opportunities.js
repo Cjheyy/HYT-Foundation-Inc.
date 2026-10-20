@@ -38,7 +38,7 @@ export function StudentOpportunities() {
     .map((app) => app.opportunityId || app.opportunity_id)
     .filter(Boolean), [applications, currentUser]);
 
-  // An OJT/Intern may hold only ONE OJT posting application at a time — they
+  // An OJT/Intern may hold only ONE OJT posting application at a time - they
   // cannot be placed at two companies at once. Rejected/withdrawn applications
   // release the hold. This mirrors applyToEvent()'s server-side guard so the UI
   // never dangles an action the server would reject.
@@ -72,7 +72,7 @@ export function StudentOpportunities() {
         <Card>
           <p className="no-data">
             You already have an active OJT application. Only one OJT posting application is allowed per
-            intern — withdraw or wait for a decision before applying to another posting.
+            intern - withdraw or wait for a decision before applying to another posting.
           </p>
         </Card>
       )}

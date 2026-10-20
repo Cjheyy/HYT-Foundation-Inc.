@@ -3,7 +3,7 @@
  *
  * Tier 1: precise browser fix `{ enableHighAccuracy: true, ... }`.
  * Tier 2: on TIMEOUT automatically retries coarse IP/Wi-Fi positioning
- * `{ enableHighAccuracy: false, timeout: 15000 }` — never a raw timeout.
+ * `{ enableHighAccuracy: false, timeout: 15000 }` - never a raw timeout.
  * Tier 3: IP-based lookup when GPS is unavailable entirely.
  * Permission denial (code 1) still surfaces its own message immediately.
  */
@@ -26,7 +26,7 @@ export const GEOLOCATION_FALLBACK_OPTIONS = {
  * Fast path, used when the geofence is not enforced.
  *
  * Clock In felt slow because a high-accuracy fix is attempted first (15 s
- * timeout), then a coarse retry (another 15 s), then an IP lookup (10 s) — up to
+ * timeout), then a coarse retry (another 15 s), then an IP lookup (10 s) - up to
  * ~40 s before the request is even sent.  When the server accepts any location,
  * precision buys nothing, so accept a recent cached fix and fail over quickly.
  */
@@ -59,7 +59,7 @@ export const describeGeolocationError = (error) => {
  *
  * Callers used to test `message.includes('permission')`, which also matched
  * database errors such as "permission denied for table attendance_logs" and
- * reported them as a browser location-permission problem — hiding the actual
+ * reported them as a browser location-permission problem - hiding the actual
  * fault.  Match on the geolocation error code (1/2/3, which both our own
  * errors and the native GeolocationPositionError carry) or on wording that only
  * a location failure uses.
@@ -118,7 +118,7 @@ export const fetchIpCoordinates = async (timeoutMs = IP_FETCH_TIMEOUT_MS) => {
   for (const url of IP_PROVIDERS) {
     try {
       const data = await fetchWithTimeout(url, timeoutMs);
-      // ipapi.co: { latitude, longitude } — ip-api.com: { lat, lon, status }
+      // ipapi.co: { latitude, longitude } - ip-api.com: { lat, lon, status }
       const latitude = Number(data.latitude ?? data.lat);
       const longitude = Number(data.longitude ?? data.lon);
       if (data.status === 'fail' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {

@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { ProgressBar } from './ProgressBar';
 
 /**
- * The fill element is a bare <div> with no text and no ARIA role — its width is
- * the only observable output — so a class lookup is the only way to reach it.
+ * The fill element is a bare <div> with no text and no ARIA role - its width is
+ * the only observable output - so a class lookup is the only way to reach it.
  * The exemption is confined to this one helper.
  */
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
@@ -33,7 +33,7 @@ describe('ProgressBar', () => {
     // an empty bar, because `width: NaN%` is invalid CSS.
     const { container } = render(<ProgressBar value={undefined} max={100} />);
     expect(screen.queryByText(/NaN/)).toBeNull();
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
     expect(fill(container)).toHaveStyle({ width: '0%' });
   });
 

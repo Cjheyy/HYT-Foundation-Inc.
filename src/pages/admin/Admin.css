@@ -1,7 +1,7 @@
 /* Common Admin Page Styles */
 .admin-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface-sunken) 100%);
   padding: 24px 0;
 }
 
@@ -11,7 +11,7 @@
   align-items: center;
   margin-bottom: 32px;
   padding: 24px 28px;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(229, 231, 235, 0.5);
@@ -20,7 +20,7 @@
 .page-title {
   font-size: 28px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--dark-text);
   margin: 0;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -96,7 +96,7 @@
 .admin-stat-box {
   text-align: center;
   padding: 28px 20px;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   border: 2px solid rgba(229, 231, 235, 0.5);
@@ -240,7 +240,7 @@
   gap: 12px;
   margin-bottom: 24px;
   padding: 20px;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   flex-wrap: wrap;
@@ -297,7 +297,7 @@
 }
 
 .action-button.secondary {
-  background: white;
+  background: var(--surface);
   border-color: var(--border);
   color: var(--dark-text);
 }
@@ -308,7 +308,7 @@
 }
 
 .action-button.danger {
-  background: linear-gradient(135deg, #B42318 0%, #991B1B 100%);
+  background: linear-gradient(135deg, var(--danger-text) 0%, var(--danger-text) 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(180, 35, 24, 0.3);
 }
@@ -320,7 +320,7 @@
 /* Table Styles */
 .admin-table {
   width: 100%;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
@@ -461,39 +461,39 @@
 .student-name {
   font-weight: 600;
   font-size: 16px;
-  color: #1F2937;
+  color: var(--dark-text);
   margin-bottom: 4px;
 }
 
 .student-email {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
 }
 
 .report-meta {
   display: flex;
   gap: 16px;
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   margin-bottom: 16px;
 }
 
 .report-content {
   margin: 16px 0;
   padding-top: 16px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
 }
 
 .content-label {
   font-weight: 600;
   font-size: 14px;
-  color: #374151;
+  color: var(--dark-text);
   margin-bottom: 8px;
 }
 
 .content-text {
   font-size: 14px;
-  color: #4B5563;
+  color: var(--muted-text-strong);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -503,7 +503,7 @@
   gap: 12px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
 }
 
 .reason-cell {
@@ -518,7 +518,7 @@
 
 .admin-note-cell {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
   max-width: 250px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -528,20 +528,20 @@
 .hours-badge {
   display: inline-block;
   padding: 4px 12px;
-  background: #DBEAFE;
-  color: #1E40AF;
+  background: var(--info-surface);
+  color: var(--link-text);
   border-radius: 12px;
   font-weight: 600;
   font-size: 14px;
 }
 
 .hours-badge.highlight {
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--warning-surface);
+  color: var(--warning-text);
 }
 
 .modal-info {
-  background: #F9FAFB;
+  background: var(--surface-alt);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -550,17 +550,17 @@
 .modal-info p {
   margin: 8px 0;
   font-size: 14px;
-  color: #374151;
+  color: var(--dark-text);
 }
 
 .reason-box,
 .accomplishments-box {
-  background: #F3F4F6;
+  background: var(--surface-sunken);
   padding: 12px;
   border-radius: 6px;
   margin-top: 8px;
   font-size: 14px;
-  color: #1F2937;
+  color: var(--dark-text);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -585,19 +585,19 @@
 .empty-state h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--dark-text);
   margin-bottom: 8px;
 }
 
 .empty-state p {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-text);
 }
 
 .empty-state-text {
   text-align: center;
   padding: 40px 20px;
-  color: #9CA3AF;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
@@ -620,7 +620,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 2px solid #E5E7EB;
+  border-bottom: 2px solid var(--border);
   padding-bottom: 2px;
 }
 
@@ -629,7 +629,7 @@
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  color: #6B7280;
+  color: var(--muted-text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -642,8 +642,8 @@
 }
 
 .tab:hover {
-  color: #374151;
-  background: #F9FAFB;
+  color: var(--dark-text);
+  background: var(--surface-alt);
 }
 
 .tab.active {
@@ -662,12 +662,12 @@
 }
 
 /* ==========================================================================
-   Applications Grid — applicant card, "Clean Card" treatment.
+   Applications Grid - applicant card, "Clean Card" treatment.
 
    The card is three stacked ZONES rather than one padded box:
-     header  — avatar + identity + status pill
-     details — label/value rows, hairline-separated
-     footer  — action band, edge-to-edge on a faint grey
+     header - avatar + identity + status pill
+     details - label/value rows, hairline-separated
+     footer - action band, edge-to-edge on a faint grey
 
    Two deliberate departures from the previous treatment:
 
@@ -701,13 +701,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #E4E7EC;
+  border: 1px solid var(--border);
   transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .card.application-card:hover {
   transform: translateY(-2px);
-  border-color: #D9DEE7;
+  border-color: var(--border-strong);
   box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.07), 0 12px 24px -6px rgba(16, 24, 40, 0.1);
 }
 
@@ -738,7 +738,7 @@
 
 /* The name/email wrapper.  min-width:0 is what lets the email's ellipsis
    engage instead of pushing the status pill off the card.  Targeted by its own
-   class — NOT `.applicant-info > div`, which also matches the avatar sibling
+   class - NOT `.applicant-info > div`, which also matches the avatar sibling
    and stretches the circle into an ellipse. */
 .applicant-identity {
   min-width: 0;
@@ -752,7 +752,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4F46E5 0%, #5B21B6 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, var(--purple-text) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -803,7 +803,7 @@
   /* Each row draws its own hairline, so the first one doubles as the header
      separator.  Baseline alignment keeps the label level with the first line
      when a long listing title wraps to two. */
-  border-top: 1px solid #EEF0F4;
+  border-top: 1px solid var(--border);
 }
 
 .detail-label {
@@ -824,8 +824,8 @@
   display: flex;
   gap: 9px;
   padding: 14px 18px 16px;
-  border-top: 1px solid #EEF0F4;
-  background: #FCFCFD;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
 }
 
 /* Equal halves, and a size that belongs to a card footer rather than a page
@@ -839,14 +839,14 @@
 
 /* Reject is the SECONDARY action: outline, no fill, no shadow. */
 .application-actions .application-reject {
-  background: #FFFFFF;
-  border: 1px solid #F0CFCF;
+  background: var(--surface);
+  border: 1px solid var(--danger-border);
   color: #C62828;
   box-shadow: none;
 }
 
 .application-actions .application-reject:hover {
-  background: #FDEEEE;
+  background: var(--danger-surface);
   border-color: #E7B9B9;
   color: #A81F1F;
   box-shadow: none;
@@ -854,7 +854,7 @@
 
 .approval-confirmation {
   padding: 20px;
-  background: #F0FDF4;
+  background: var(--success-surface-soft);
   border-radius: 8px;
   border-left: 4px solid #10B981;
   margin-top: 16px;
@@ -862,7 +862,7 @@
 
 .confirmation-text {
   font-size: 14px;
-  color: #065F46;
+  color: var(--success-text);
   line-height: 1.6;
   margin: 0;
 }
@@ -910,7 +910,7 @@
   flex: 1;
   min-width: 220px;
   padding: 10px 12px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font: inherit;
 }
@@ -924,32 +924,32 @@
 .filter-notice {
   margin-bottom: 18px;
   padding: 11px 14px;
-  border: 1px solid #BFDBFE;
+  border: 1px solid var(--info-border);
   border-radius: 8px;
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: var(--info-surface);
+  color: var(--link-text);
   font-size: 13px;
 }
 
 .card-subtitle {
   margin: 5px 0 0;
-  color: #4B5563;
+  color: var(--muted-text-strong);
   font-size: 13px;
   font-weight: 400;
 }
 
 .requested-row {
-  background: #EFF6FF;
+  background: var(--info-surface);
 }
 
 .muted-cell {
-  /* #6B7280 is only 4.44:1 on the #EFF6FF requested-row tint. */
-  color: #4B5563;
+  /* var(--muted-text) is only 4.44:1 on the #EFF6FF requested-row tint. */
+  color: var(--muted-text-strong);
   font-size: 12px;
 }
 
 .duration-display {
-  color: #374151;
+  color: var(--dark-text);
   font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
   font-weight: 600;
@@ -963,7 +963,7 @@
 .attendance-review-summary {
   padding: 12px;
   border-radius: 8px;
-  background: #F3F4F6;
+  background: var(--surface-sunken);
 }
 
 @media (max-width: 600px) {
@@ -979,7 +979,7 @@
    Both sections were previously written with raw inline styles.  Two things
    were wrong with that:
 
-   1. The stat chips painted var(--background) — a LIGHT surface — while their
+   1. The stat chips painted var(--background) - a LIGHT surface - while their
       text inherited the white card tokens, so "Required"/"Verified"/"Progress"
       rendered #EAF1F7 on #F9FBFC (1.10:1) and the progress value #FFFFFF on
       #F9FBFC (1.04:1).
@@ -1027,9 +1027,8 @@
   border-radius: 8px;
   /* Light chip: hand the subtree dark tokens AND a dark inherited colour. */
   background: var(--background);
-  --dark-text: #1F2937;
-  --muted-text: #5B6472;
-  color: #1F2937;
+  --muted-text: var(--muted-text-strong);
+  color: var(--dark-text);
 }
 
 .ojt-stat-value {
@@ -1038,14 +1037,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.ojt-stat-value.is-required { color: #0F5566; }
+.ojt-stat-value.is-required { color: var(--info-text); }
 .ojt-stat-value.is-verified { color: #047857; }
 .ojt-stat-value.is-remaining { color: #A83F27; }
-.ojt-stat-value.is-progress { color: #1F2937; }
+.ojt-stat-value.is-progress { color: var(--dark-text); }
 
 .ojt-stat-label {
   font-size: 12px;
-  color: #5B6472;
+  color: var(--muted-text-strong);
 }
 
 .ojt-record-footer {
@@ -1078,7 +1077,7 @@
 .posting-card-org {
   /* White card again: the deepened brand orange reads at 5.41:1 here, and the
      token flips to white under the posting card's hover gradient. */
-  color: var(--accent-text, #B8441F);
+  color: var(--accent-text, var(--accent-text));
   font-weight: 600;
   margin: 4px 0 0;
 }

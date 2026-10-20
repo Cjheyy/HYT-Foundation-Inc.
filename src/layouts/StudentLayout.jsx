@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Icon } from '../components/icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { ProfileModal } from '../components/ProfileModal';
 import { AttentionCenter } from '../components/AttentionCenter';
 import { STUDENT_NAV, groupNavItems, resolveActiveNavPath } from '../utils/portalNav';
@@ -156,6 +157,7 @@ export function StudentLayout({ children }) {
               <Icon name="dashboard" size={15} /><span>Dashboard</span>
             </Link>
             <AttentionCenter basePath="/student" />
+            <ThemeToggle />
           </div>
         </header>
 

@@ -15,6 +15,7 @@ import {
   emptyEntry,
   entryIsFilled,
   groupReportsByDay,
+  reviewStateOf,
   rowDay,
   rowUserId
 } from '../../utils/dailyReportSlots';
@@ -36,7 +37,7 @@ import './DailyReports.css';
  *
  * The **17:00 filing is what releases the day**: the administrator reads one
  * consolidated report for the day, and only once that filing exists. Nothing is
- * sent automatically and there is no scheduler — the trainee sends and the
+ * sent automatically and there is no scheduler - the trainee sends and the
  * administrator reads. A day whose 17:00 is missing shows up to the
  * administrator as "No 5 PM report" instead of quietly vanishing.
  */
@@ -145,7 +146,7 @@ export function DailyReportsNew() {
       setErrors((previous) => ({ ...previous, [slot.key]: '' }));
       showToast(
         slot.key === '17:00'
-          ? 'The 5:00 PM report is in — the admin can now see the whole day.'
+          ? 'The 5:00 PM report is in - the day is now complete and can be approved.'
           : `The ${slot.label} report is in.`,
         'success'
       );
@@ -179,7 +180,7 @@ export function DailyReportsNew() {
       <div className="page-header">
         <h1 className="page-title">Daily Accomplishment Reports</h1>
         <p className="page-subtitle">
-          Three updates a day — 11:00 AM, 3:00 PM and 5:00 PM. Each one carries
+          Three updates a day - 11:00 AM, 3:00 PM and 5:00 PM. Each one carries
           an Accomplished, an In-Progress and a Pending note.
         </p>
       </div>
@@ -195,7 +196,7 @@ export function DailyReportsNew() {
 
       <Card className="submit-report-card">
         <div className="card-header">
-          <h2 className="card-title">Today — {formatDate(todayIso)}</h2>
+          <h2 className="card-title">Today - {formatDate(todayIso)}</h2>
           {dayHasSummary(todayRow || {}) && (
             <span className="report-day-complete">Day complete</span>
           )}
@@ -223,7 +224,7 @@ export function DailyReportsNew() {
                     <div key={field.key} className="report-entry">
                       <span className="report-entry-label">{field.label}</span>
                       <p className="report-entry-text">
-                        {slot.entry?.[field.key] || <span className="muted-cell">—</span>}
+                        {slot.entry?.[field.key] || <span className="muted-cell"> - </span>}
                       </p>
                     </div>
                   ))}
@@ -265,8 +266,8 @@ export function DailyReportsNew() {
                     </Button>
                     <span className="form-help">
                       {slot.key === '17:00'
-                        ? 'This is the final update — it is what sends the whole day to the admin.'
-                        : 'This is only saved. The 5:00 PM report is what sends the whole day to the admin.'}
+                        ? 'This is the final update. It completes the day and sends it for approval.'
+                        : 'This is saved right away. The 5:00 PM report completes the day for approval.'}
                     </span>
                   </div>
                 </div>
@@ -297,16 +298,32 @@ export function DailyReportsNew() {
             {history.map((row) => {
               const slots = daySlots(row, now);
               const complete = dayHasSummary(row);
+              // What the mentor has done with this day, if anything yet.
+              const review = reviewStateOf(row);
               return (
                 <div key={`${rowUserId(row)}-${rowDay(row)}`} className="report-item">
                   <div className="report-header">
                     <div className="report-date">
                       <strong>{formatDate(rowDay(row))}</strong>
                     </div>
-                    <span className={`report-day-flag ${complete ? 'is-complete' : 'is-partial'}`}>
-                      {complete ? 'Complete' : 'No 5 PM report'}
-                    </span>
+                    <div className="report-flags">
+                      {review && (
+                        <span className={`report-review-flag is-${review.tone}`}>
+                          {review.label}
+                        </span>
+                      )}
+                      <span className={`report-day-flag ${complete ? 'is-complete' : 'is-partial'}`}>
+                        {complete ? 'Complete' : 'No 5 PM report'}
+                      </span>
+                    </div>
                   </div>
+
+                  {review?.note && (
+                    <p className="report-review-note">
+                      <span className="report-review-note-label">Mentor's note:</span>{' '}
+                      {review.note}
+                    </p>
+                  )}
 
                   <div className="report-day-grid">
                     {SLOT_KEYS.map((key) => {
@@ -321,7 +338,7 @@ export function DailyReportsNew() {
                             ENTRY_FIELDS.map((field) => (
                               <p key={field.key} className="report-day-line">
                                 <span className="report-entry-label">{field.label}:</span>{' '}
-                                {entry[field.key] || '—'}
+                                {entry[field.key] || '-'}
                               </p>
                             ))
                           ) : (

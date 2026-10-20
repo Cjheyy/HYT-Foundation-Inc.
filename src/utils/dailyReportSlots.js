@@ -2,14 +2,14 @@
  * The three daily-report slots and every question you can ask about them.
  *
  * A day is no longer a single free-text report. The trainee files three
- * updates — at 11:00, 15:00 and 17:00 — and each one carries the same three
+ * updates - at 11:00, 15:00 and 17:00 - and each one carries the same three
  * boxes:
  *
  *   Accomplished · In-Progress · Pending
  *
  * The **17:00 filing is the trigger**: the whole day (all three slots together)
  * reaches the administrator only once that filing exists. Nothing is sent
- * automatically and there is no scheduler — the trainee sends and the
+ * automatically and there is no scheduler - the trainee sends and the
  * administrator reads. A day whose 17:00 slot is missing is shown to the
  * administrator as "No 5 PM report" rather than silently disappearing.
  *
@@ -22,9 +22,9 @@ import { toDateValue, todayParts } from './dateParts';
 
 /** The windows, in order. `key` doubles as both the storage key and the sort key. */
 export const REPORT_SLOTS = [
-  { key: '11:00', hour: 11, label: '11:00 AM', window: '11:00 – 11:59 AM' },
-  { key: '15:00', hour: 15, label: '3:00 PM', window: '3:00 – 3:59 PM' },
-  { key: '17:00', hour: 17, label: '5:00 PM', window: '5:00 – 5:59 PM' }
+  { key: '11:00', hour: 11, label: '11:00 AM', window: '11:00 - 11:59 AM' },
+  { key: '15:00', hour: 15, label: '3:00 PM', window: '3:00 - 3:59 PM' },
+  { key: '17:00', hour: 17, label: '5:00 PM', window: '5:00 - 5:59 PM' }
 ];
 
 /** The slot whose filing releases the day's summary to the administrator. */
@@ -48,7 +48,7 @@ export function slotLabel(key) {
   return slotByKey(key)?.label || key;
 }
 
-/** A blank entry — also the shape every stored entry is normalised to. */
+/** A blank entry - also the shape every stored entry is normalised to. */
 export function emptyEntry() {
   return { accomplished: '', inProgress: '', pending: '', submittedAt: '' };
 }
@@ -76,7 +76,7 @@ export function normalizeEntry(value) {
  *
  * The column is `slot_entries` (jsonb). PostgREST returns jsonb as an object,
  * but a value that has passed through a text column or a CSV round-trip arrives
- * as a string, so both are accepted — and anything unparseable degrades to
+ * as a string, so both are accepted - and anything unparseable degrades to
  * "no slots filed" rather than throwing inside a render.
  */
 export function readSlotEntries(row) {
@@ -120,11 +120,11 @@ export function rowUserId(row) {
 /**
  * Where a slot stands right now.
  *
- *  - `submitted` — an entry is filed. Always wins, so a late filing still
+ *  - `submitted` - an entry is filed. Always wins, so a late filing still
  *                  counts instead of being reported as missed.
- *  - `upcoming`  — the window has not opened yet.
- *  - `open`      — the window is open this hour.
- *  - `missed`    — the window has closed with nothing filed.
+ *  - `upcoming` - the window has not opened yet.
+ *  - `open` - the window is open this hour.
+ *  - `missed` - the window has closed with nothing filed.
  *
  * `day` is the row's own date. A PAST day is decided without looking at the
  * clock at all: every window on it is closed, so a gap stays `missed` forever.
@@ -166,7 +166,7 @@ export function dayIsComplete(row) {
 
 /**
  * Has the 17:00 filing landed? This is the gate the administrator's list is
- * built on — without it there is no consolidated report, only a gap. An empty
+ * built on - without it there is no consolidated report, only a gap. An empty
  * 17:00 slot does not count: it is a form that was opened, not a filing.
  */
 export function dayHasSummary(row) {
@@ -191,6 +191,29 @@ export function dayHasAnyEntry(row) {
 }
 
 /**
+ * How a filed day has been reviewed, in the trainee's terms.
+ *
+ * The trainee only ever sees three outcomes, and `null` for "the mentor has not
+ * looked at it yet" - which is deliberately different from "approved", so a day
+ * nobody has opened does not read as if it had been signed off.
+ *
+ * `status` is the raw column value, so this normalises the same way the service
+ * does: "Approved", "approved" and "APPROVED" are one state.
+ */
+export function reviewStateOf(row) {
+  const status = String(row?.status ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const note = String(row?.adminNote ?? row?.admin_note ?? row?.remarks ?? '').trim();
+
+  if (status === 'APPROVED' || status === 'REVIEWED') {
+    return { tone: 'approved', label: 'Approved', note };
+  }
+  if (status === 'REJECTED' || status === 'RETURNED') {
+    return { tone: 'returned', label: 'Returned', note };
+  }
+  return null;
+}
+
+/**
  * Merge one slot into a day's slot map, leaving the other slots untouched.
  * Returns a NEW object: the caller writes this straight to the column, so it
  * must never mutate what the row already held.
@@ -209,7 +232,7 @@ export function mergeSlotEntry(entries, key, entry) {
  * That column is what every older reader still reads (the CSV export, the DTR
  * merge, the legacy admin screen), so leaving it blank would make a day look
  * empty everywhere except the new screen. It carries the LATEST slot that has
- * an entry — the most current statement of the day's work.
+ * an entry - the most current statement of the day's work.
  */
 export function summariseForAccomplishments(row) {
   const entries = readSlotEntries(row);
@@ -223,7 +246,7 @@ export function summariseForAccomplishments(row) {
  * One row per (person, day), newest day first and then by person.
  *
  * Both sides use this: the trainee sees their own history and the administrator
- * sees everyone's. Only days with at least one filing appear — an empty day is
+ * sees everyone's. Only days with at least one filing appear - an empty day is
  * not a report. Days whose 17:00 slot is missing stay in the list on purpose:
  * the whole point of the marker is to make that gap visible.
  */
@@ -239,7 +262,7 @@ export function groupReportsByDay(rows) {
     const id = `${userId}|${day}`;
     const existing = groups.get(id);
     if (existing) {
-      // Two rows for one day (a legacy row plus a new one) — the one with the
+      // Two rows for one day (a legacy row plus a new one) - the one with the
       // 17:00 filing wins, since that is the consolidated report.
       if (!dayHasSummary(existing) && dayHasSummary(row)) groups.set(id, row);
       return;
