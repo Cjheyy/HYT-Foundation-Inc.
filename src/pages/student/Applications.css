@@ -112,6 +112,35 @@
   gap: 12px;
 }
 
+/* What the applicant signed up for, read from the posting the administrator
+   wrote: the position they applied to ("Software Engineer", "Barista") and the
+   posting's own description. Both are optional - a posting created before the
+   Position field existed simply shows its description. */
+.application-card-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.application-card-position {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(213, 113, 86, 0.12);
+  border: 1px solid rgba(213, 113, 86, 0.3);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.application-card-description {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted-text);
+}
+
 .application-accepted-notice {
   padding: 12px;
   background: var(--success-surface);

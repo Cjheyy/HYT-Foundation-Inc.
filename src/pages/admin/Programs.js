@@ -40,6 +40,7 @@ const describeUnit = (unit) => (
 const emptyForm = {
   unit: '',
   title: '',
+  position: '',
   description: '',
   category: 'General',
   scheduleStart: '',
@@ -137,9 +138,14 @@ export function AdminPrograms() {
       const total = Math.max(1, Number(formData.totalSlots) || 0);
       const saved = await createProgram({
         title: formData.title.trim(),
+        position: formData.position.trim() || undefined,
         description: formData.description.trim(),
         category: formData.category,
         schedule,
+        // The dates, not just the preview string: these are what let a
+        // trainee's application turn Done on its own once the programme ends.
+        scheduleStart: formData.scheduleStart || undefined,
+        scheduleEnd: formData.scheduleEnd || undefined,
         location: formData.location.trim(),
         totalSlots: total,
         availableSlots: total,
@@ -223,6 +229,14 @@ export function AdminPrograms() {
             required
           />
           <Input label="Program Title" name="title" value={formData.title} onChange={handleChange} error={errors.title} required />
+          <Input
+            label="Position / Role"
+            name="position"
+            value={formData.position}
+            onChange={handleChange}
+            placeholder="e.g. Barista, Service Crew"
+            help="The role the trainee takes on. Shown on their application card."
+          />
           <Textarea label="Description" name="description" value={formData.description} onChange={handleChange} error={errors.description} rows={4} required />
           <Select label="Category" name="category" value={formData.category} onChange={handleChange} error={errors.category} options={PROGRAM_CATEGORIES} placeholder="Select a category" required />
           <div>

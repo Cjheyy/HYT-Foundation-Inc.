@@ -61,10 +61,33 @@ export const GEOFENCE_RADIUS_METERS = 20;
 /**
  * A fix worse than this cannot be judged against a 20 m fence.
  *
+ * This used to be 30 while the fence was 20, which cannot be right: a fix that
+ * is only good to +/-30 m cannot place someone inside a 20 m circle. The doubt
+ * was 1.5x wider than the thing being measured, and the comment claimed the
+ * opposite.
+ *
+ * The ceiling is now the radius itself - a fix can only prove you are inside a
+ * 20 m fence if its own uncertainty is smaller than 20 m. It must never exceed
+ * GEOFENCE_RADIUS_METERS; `geofence.test.js` asserts that.
+ *
  * Roughly: a phone outdoors gives 3-10 m, a city street 10-25 m, indoors
- * 20-100 m. 30 m is the point where the fence is still wider than the doubt.
+ * 20-100 m - so indoors the honest answer is "go somewhere with a view of the
+ * sky", which is what describeGeofenceFailure() already says.
  */
-export const GEOFENCE_MAX_ACCURACY_METERS = 30;
+export const GEOFENCE_MAX_ACCURACY_METERS = GEOFENCE_RADIUS_METERS;
+
+/**
+ * Opt-in stricter rule: require the WHOLE uncertainty circle to fit inside the
+ * fence (distance + accuracy <= radius) instead of judging the reported point
+ * alone (distance <= radius).
+ *
+ * Left off because at a 20 m radius it rejects people standing at the door -
+ * a 15 m indoor fix reading 12 m gives 27 m and fails. The reported point is
+ * accepted, and the accuracy is stored alongside it so an admin reviewing a
+ * disputed row can see how much doubt there was. Flip this to true if you ever
+ * need the conservative reading.
+ */
+export const GEOFENCE_REQUIRE_ACCURACY_INSIDE_RADIUS = false;
 
 /**
  * CLIENT-SIDE PRE-CHECK ONLY.
@@ -135,7 +158,9 @@ export function checkGeofence(
   if (!enforce) {
     return {
       allowed: true,
-      distance: 0,
+      // null, not 0. Returning 0 claimed the caller was standing on the pin,
+      // and any UI that rendered the number would have said "0 meters away".
+      distance: null,
       location: null,
       accuracy: accuracyMeters,
       reason: 'bypassed',
@@ -160,11 +185,18 @@ export function checkGeofence(
     return { ...base, allowed: false, reason: 'imprecise' };
   }
 
-  if (nearest.distance <= radiusMeters) {
-    return { ...base, allowed: true, reason: 'inside' };
+  if (nearest.distance > radiusMeters) {
+    return { ...base, allowed: false, reason: 'outside' };
   }
 
-  return { ...base, allowed: false, reason: 'outside' };
+  // Optional conservative reading: the reported point is inside, but is the
+  // whole uncertainty circle? Only meaningful when the fix carries an accuracy.
+  if (GEOFENCE_REQUIRE_ACCURACY_INSIDE_RADIUS && hasAccuracy
+      && nearest.distance + accuracy > radiusMeters) {
+    return { ...base, allowed: false, reason: 'imprecise' };
+  }
+
+  return { ...base, allowed: true, reason: 'inside' };
 }
 
 /**

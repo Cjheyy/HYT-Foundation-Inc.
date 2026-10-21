@@ -7,6 +7,8 @@ import {
   getApplicationExperienceState,
   getApplicationListingKind,
   getListingEndDate,
+  getListingPosition,
+  getListingSummary,
   formatListingSchedule,
   getListingWindow,
   isHoursAttributable,
@@ -14,6 +16,7 @@ import {
   groupApplications,
   isApplicationApproved,
   isApplicationCompleted,
+  isApplicationInPlay,
   isApplicationPending,
   isApplicationWindowFinished,
   isListingFinished,
@@ -275,6 +278,75 @@ describe('isListingFinished', () => {
   test('is false when the listing has no end date at all', () => {
     expect(isListingFinished({ title: 'No dates' }, today)).toBe(false);
     expect(isListingFinished(null, today)).toBe(false);
+  });
+
+  test('a timed event is Done once its clock time has passed, not at midnight', () => {
+    const event = { startsAt: '2026-10-20T08:00:00', endsAt: '2026-10-20T15:00:00' };
+    expect(isListingFinished(event, new Date('2026-10-20T14:59:00'), { isEvent: true })).toBe(false);
+    expect(isListingFinished(event, new Date('2026-10-20T15:01:00'), { isEvent: true })).toBe(true);
+  });
+
+  test('a whole-day event still runs to the end of its day', () => {
+    const event = { startsAt: '2026-10-20T00:00:00', endsAt: '2026-10-20T23:59:00' };
+    expect(isListingFinished(event, new Date('2026-10-20T21:00:00'), { isEvent: true })).toBe(false);
+    expect(isListingFinished(event, new Date('2026-10-21T00:01:00'), { isEvent: true })).toBe(true);
+  });
+
+  test('a posting end date closes at the end of that day, not at its midnight', () => {
+    // `schedule_end` is a DATE column, so it parses as 00:00 - the day itself
+    // is still running at 21:00 and the placement is only over the next day.
+    const posting = { scheduleStart: '2026-10-01', scheduleEnd: '2026-10-20' };
+    expect(isListingFinished(posting, new Date('2026-10-20T21:00:00'))).toBe(false);
+    expect(isListingFinished(posting, new Date('2026-10-21T09:00:00'))).toBe(true);
+  });
+});
+
+describe('isApplicationInPlay', () => {
+  const today = new Date('2026-10-20T12:00:00');
+
+  test('keeps a pending application, which has no experience state yet', () => {
+    expect(isApplicationInPlay({ status: 'PENDING' }, { today })).toBe(true);
+  });
+
+  test('drops an approved application whose listing has ended', () => {
+    const application = { status: 'APPROVED', eventId: 'e1' };
+    const listing = { startsAt: '2026-10-01T08:00:00', endsAt: '2026-10-01T17:00:00' };
+    expect(isApplicationInPlay(application, { listing, today })).toBe(false);
+  });
+
+  test('keeps an approved application on a listing that is still running', () => {
+    const application = { status: 'APPROVED', eventId: 'e1' };
+    const listing = { startsAt: '2026-10-20T08:00:00', endsAt: '2026-10-20T17:00:00' };
+    expect(isApplicationInPlay(application, { listing, today })).toBe(true);
+  });
+
+  test('drops a rejected application regardless of dates', () => {
+    expect(isApplicationInPlay({ status: 'REJECTED' }, { today })).toBe(false);
+  });
+});
+
+describe('listing position and summary', () => {
+  test('reads the position the admin typed on the posting', () => {
+    expect(getListingPosition({ position: 'Software Engineer' })).toBe('Software Engineer');
+    expect(getListingPosition({ position: '  Barista  ' })).toBe('Barista');
+  });
+
+  test('falls back to role / jobTitle, and is null when nothing is set', () => {
+    expect(getListingPosition({ role: 'Barista' })).toBe('Barista');
+    expect(getListingPosition({ job_title: 'Service Crew' })).toBe('Service Crew');
+    expect(getListingPosition({ title: 'OJT Posting' })).toBeNull();
+    expect(getListingPosition(null)).toBeNull();
+  });
+
+  test('collapses the posting description into one readable line', () => {
+    expect(getListingSummary({ description: 'Brew\n  coffee   and serve' })).toBe('Brew coffee and serve');
+    expect(getListingSummary({})).toBeNull();
+  });
+
+  test('cuts a long description with an ellipsis instead of stretching the tile', () => {
+    const summary = getListingSummary({ description: 'x'.repeat(400) }, 50);
+    expect(summary).toHaveLength(50);
+    expect(summary.endsWith('…')).toBe(true);
   });
 });
 

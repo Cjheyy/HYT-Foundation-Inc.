@@ -299,6 +299,12 @@ const normalizeEventForWrite = (event = {}, kind = 'program') => {
   if (kind === 'program') {
     raw.objectives = event.objectives;
     raw.requirements = event.requirements;
+    // Structured dates, so a programme can resolve its own end. The human
+    // `schedule` string above is a preview, not something a screen can compare
+    // against `new Date()` - without these two the tile stayed Ongoing forever.
+    raw.scheduleStart = event.scheduleStart ?? event.schedule_start;
+    raw.scheduleEnd = event.scheduleEnd ?? event.schedule_end;
+    raw.position = event.position;
   } else if (kind === 'event') {
     // An EVENT keeps the program-shaped columns (so isEventActive /
     // getEventSlotState / readEventSlots work unchanged) and adds the two
@@ -313,6 +319,11 @@ const normalizeEventForWrite = (event = {}, kind = 'program') => {
     raw.duration = event.duration;
     raw.requiredHours = event.requiredHours === undefined ? undefined : numericValue(event.requiredHours);
     raw.requirements = event.requirements;
+    raw.scheduleStart = event.scheduleStart ?? event.schedule_start;
+    raw.scheduleEnd = event.scheduleEnd ?? event.schedule_end;
+    // The role the applicant is applying for ("Software Engineer", "Barista"),
+    // typed by the administrator on the posting.
+    raw.position = event.position;
   }
 
   const payload = toSnakeCase(raw);
@@ -486,6 +497,16 @@ export const createProgram = async (programData) => {
     .select()
     .single();
 
+  // Same guard as createOpportunity: a deployment without
+  // PATCH_LISTING_DETAILS.sql must still be able to save a programme.
+  if (result.error && isMissingColumnError(result.error)) {
+    const withoutNewColumns = { ...payload };
+    delete withoutNewColumns.position;
+    delete withoutNewColumns.schedule_start;
+    delete withoutNewColumns.schedule_end;
+    result = await client.from('programs').insert([withoutNewColumns]).select().single();
+  }
+
   if (result.error && isMissingColumnError(result.error)) {
     // Retry with only core columns present in every deployment.
     const minimal = {
@@ -644,6 +665,18 @@ export const createOpportunity = async (opportunityData) => {
     .insert([payload])
     .select()
     .single();
+
+  // A deployment that has not run PATCH_LISTING_DETAILS.sql has no `position`
+  // or `schedule_*` columns. Retry WITHOUT those three only, so the posting
+  // still saves with its slots, hours and deadline instead of falling all the
+  // way back to the three-column minimum below.
+  if (result.error && isMissingColumnError(result.error)) {
+    const withoutNewColumns = { ...payload };
+    delete withoutNewColumns.position;
+    delete withoutNewColumns.schedule_start;
+    delete withoutNewColumns.schedule_end;
+    result = await client.from('opportunities').insert([withoutNewColumns]).select().single();
+  }
 
   if (result.error && isMissingColumnError(result.error)) {
     const minimal = {
@@ -1682,7 +1715,7 @@ export const updateAttendanceLog = async (attendanceId, updates) => {
  * settings.geofence_enforcement_enabled - so the testing bypass no longer needs
  * (and must not use) a client-side write path.
  */
-export const clockIn = async (userId, latitude, longitude) => {
+export const clockIn = async (userId, latitude, longitude, accuracy = null, source = null) => {
   const client = requireSupabase();
   const lat = Number(latitude);
   const lon = Number(longitude);
@@ -1718,8 +1751,25 @@ export const clockIn = async (userId, latitude, longitude) => {
     p_latitude: lat,
     p_longitude: lon
   };
+  // Accuracy and source travel with the fix so the server can apply the same
+  // "is this fix good enough to judge" rule the client applies, and so a
+  // disputed row can be told apart from a real GPS fix later. A database that
+  // has not been patched yet rejects the extra arguments as an unknown
+  // function, so fall back to the three-argument call rather than break
+  // clock-in until the migration is run.
+  const accuracyValue = Number.isFinite(Number(accuracy)) && Number(accuracy) > 0
+    ? Number(accuracy)
+    : null;
+  const detailedParams = {
+    ...params,
+    p_accuracy: accuracyValue,
+    p_source: source || null
+  };
 
-  const { data, error } = await client.rpc('request_clock_in', params);
+  let { data, error } = await client.rpc('request_clock_in', detailedParams);
+  if (error && isMissingFunctionError(error, 'request_clock_in')) {
+    ({ data, error } = await client.rpc('request_clock_in', params));
+  }
   if (!error) {
     if (!data?.success) throw new Error(data?.message || data?.error || 'Clock-in request failed');
     const fallback = { status: data.status || 'PENDING_CLOCK_IN', locationName: data.location || data.location_name || null };
@@ -1798,8 +1848,13 @@ const writePendingClockInDirect = async (client, userId, lat, lon) => {
 /**
  * Submit a clock-out request and freeze the elapsed duration immediately.
  * No hours are credited until an administrator approves the request.
+ *
+ * Clock-out is geofenced by the same rule as clock-in: the coordinates go to
+ * request_clock_out, which re-checks the fence server-side. Omitting them is
+ * only tolerated by a database whose enforcement switch is off - with
+ * enforcement on, the RPC refuses a request with no coordinates.
  */
-export const clockOut = async (userId) => {
+export const clockOut = async (userId, latitude = null, longitude = null, accuracy = null, source = null) => {
   const client = requireSupabase();
   const today = todayISODate();
   const existingResult = await client
@@ -1816,9 +1871,29 @@ export const clockOut = async (userId) => {
 
   // Prefer the database transaction so the frozen timestamp and duration
   // are generated by the same clock as the approval.
-  const { data: rpcData, error: rpcError } = await client.rpc('request_clock_out', {
-    p_user_id: userId
-  });
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lon);
+  const accuracyValue = Number.isFinite(Number(accuracy)) && Number(accuracy) > 0
+    ? Number(accuracy)
+    : null;
+
+  let { data: rpcData, error: rpcError } = await client.rpc('request_clock_out', hasCoordinates
+    ? {
+        p_user_id: userId,
+        p_latitude: lat,
+        p_longitude: lon,
+        p_accuracy: accuracyValue,
+        p_source: source || null
+      }
+    : { p_user_id: userId });
+
+  // Unpatched database: no p_latitude parameter on request_clock_out yet.
+  // Retry the old one-argument shape instead of failing the clock-out.
+  if (rpcError && hasCoordinates && isMissingFunctionError(rpcError, 'request_clock_out')) {
+    ({ data: rpcData, error: rpcError } = await client.rpc('request_clock_out', { p_user_id: userId }));
+  }
+
   if (!rpcError) {
     if (!rpcData?.success) throw new Error(rpcData?.message || 'Clock-out request failed');
     const fallback = toCamelCase({

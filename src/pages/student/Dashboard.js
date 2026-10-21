@@ -20,10 +20,11 @@ import { getRoleTerms } from '../../utils/roleTerms';
 import {
   deriveExperienceEntries,
   computeExperienceSchedule,
+  findApplicationListing,
   formatListingSchedule,
   getApplicationListingTitle,
   getApplicationListingTypeLabel,
-  isApplicationActive
+  isApplicationInPlay
 } from '../../utils/experience';
 import './Dashboard.css';
 
@@ -50,10 +51,16 @@ export function StudentDashboard() {
   /**
    * Every application still in play - pending AND approved-but-unfinished.
    * `activeApplication` (singular) is kept for the journey stages below.
+   *
+   * Date-aware: an approved application whose event or placement has already
+   * ended is Done, not active, so it must not sit on this card beside the Done
+   * tile on My Applications.
    */
   const activeApplications = useMemo(
-    () => myApplications.filter(isApplicationActive),
-    [myApplications]
+    () => myApplications.filter((app) => isApplicationInPlay(app, {
+      listing: findApplicationListing(app, { opportunities, programs, events })
+    })),
+    [myApplications, opportunities, programs, events]
   );
   const activeApplication = activeApplications[0];
 

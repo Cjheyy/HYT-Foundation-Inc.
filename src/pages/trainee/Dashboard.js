@@ -11,10 +11,11 @@ import { getEventSlotState, isEventActive } from '../../services/supabaseService
 import { formatEventWindow } from '../student/Events';
 import { formatDate, getFirstName } from '../../utils/helpers';
 import {
+  findApplicationListing,
   getApplicationListingTitle,
   getApplicationListingTypeLabel,
-  isApplicationActive,
-  isApplicationApproved
+  isApplicationApproved,
+  isApplicationInPlay
 } from '../../utils/experience';
 import '../student/Dashboard.css';
 
@@ -25,10 +26,16 @@ export function TraineeDashboard() {
 
   const myApplications = getApplicationsByStudent(applications, currentUser?.id);
 
-  /** Every program application still in play, plus the first for the journey. */
+  /**
+   * Every programme application still in play, plus the first for the journey.
+   * Date-aware, so a finished programme moves off this card on its own instead
+   * of staying "Active" forever.
+   */
   const activeApplications = useMemo(
-    () => myApplications.filter(isApplicationActive),
-    [myApplications]
+    () => myApplications.filter((app) => isApplicationInPlay(app, {
+      listing: findApplicationListing(app, { opportunities, programs, events })
+    })),
+    [myApplications, opportunities, programs, events]
   );
   const activeApplication = activeApplications[0];
 

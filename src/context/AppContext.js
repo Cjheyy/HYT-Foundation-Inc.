@@ -407,8 +407,16 @@ export function AppProvider({ children }) {
     }
 
     const results = await Promise.allSettled([
-      getPrograms({ includeInactive: false }),
-      getOpportunities({ includeInactive: false }),
+      // `includeInactive: true` for the three listing tables, even though this
+      // is the student/trainee load. The browse pages filter themselves
+      // (`status === 'published' && isEventActive(...)`), but "My Applications"
+      // must still be able to RESOLVE an application whose listing has already
+      // ended - that is exactly the case that has to flip to Done. With the
+      // active-only load, a finished event/post was missing from state, the
+      // application had no listing to measure, and the tile sat in Ongoing
+      // forever.
+      getPrograms({ includeInactive: true }),
+      getOpportunities({ includeInactive: true }),
       getApplications(user.id),
       getOjtRecords(),
       getAttendanceLogs(user.id),
@@ -420,7 +428,7 @@ export function AppProvider({ children }) {
       getSettings(),
       getOtRequests(user.id),
       // Appended (not inserted) so the positional indexes above stay valid.
-      getEvents({ includeInactive: false })
+      getEvents({ includeInactive: true })
     ]);
     if (stale()) return;
     const ojtRecords = valueFromResult(results[3], []).filter((record) => record.studentId === user.id);

@@ -130,6 +130,25 @@ describe('checkGeofence - enforced', () => {
     expect(result.allowed).toBe(true);
   });
 
+  it('never lets the accuracy ceiling exceed the fence it is judging', () => {
+    // The ceiling used to be 30 against a 20 m radius, which cannot be right:
+    // a fix good to +/-30 m cannot prove someone is inside a 20 m circle.
+    expect(GEOFENCE_MAX_ACCURACY_METERS).toBeLessThanOrEqual(GEOFENCE_RADIUS_METERS);
+  });
+
+  it('refuses a 30 m fix at a 20 m fence, however good the distance looks', () => {
+    // Standing on the pin, but the phone is only sure to within 30 m.
+    const result = atOffice(0, 30);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('imprecise');
+  });
+
+  it('reports no distance at all when enforcement is bypassed', () => {
+    // It used to return 0, which any UI rendering the number would have shown
+    // as "0 meters away" - a claim nobody measured.
+    expect(checkGeofence(0, 0).distance).toBeNull();
+  });
+
   it('judges the distance when no accuracy is supplied at all', () => {
     const point = northOf(0);
     const result = checkGeofence(point.lat, point.lon, GEOFENCE_RADIUS_METERS, null, true);

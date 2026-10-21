@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
@@ -15,6 +15,8 @@ import {
   getApplicationListingKind,
   getApplicationListingTypeLabel,
   getListingEndDate,
+  getListingPosition,
+  getListingSummary,
   isApplicationApproved,
   isApplicationPending,
   isApplicationRejected,
@@ -33,6 +35,17 @@ export function StudentApplications() {
     () => getApplicationsByStudent(applications, currentUser?.id),
     [applications, currentUser?.id]
   );
+
+  /**
+   * "Done" is derived from the clock, not stored. A page left open past the
+   * end of an event would otherwise keep showing it as Ongoing until a reload,
+   * so this ticks once a minute and the split below is recomputed against it.
+   */
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   /**
    * Hours live on the user, not on the application, so they can only be
@@ -67,7 +80,8 @@ export function StudentApplications() {
     // for the student's single hours balance. Counting an event here would stop
     // the placement from ever completing on hours.
     const hoursAttributable = isHoursAttributable(
-      withListing.filter(({ application }) => isApplicationApproved(application))
+      withListing.filter(({ application }) => isApplicationApproved(application)),
+      now
     );
 
     return withListing.map(({ application, listing }) => {
@@ -86,11 +100,12 @@ export function StudentApplications() {
           listing,
           requiredHours: hours.required,
           renderedHours: hours.rendered,
-          hoursAttributable
+          hoursAttributable,
+          today: now
         })
       };
     });
-  }, [myApplications, opportunities, programs, events, hours.required, hours.rendered, hours.hasHours]);
+  }, [myApplications, opportunities, programs, events, hours.required, hours.rendered, hours.hasHours, now]);
 
   const groups = useMemo(() => {
     const ongoing = [];
@@ -154,6 +169,11 @@ export function StudentApplications() {
     const typeLabel = getApplicationListingTypeLabel(application);
     const location = listing?.location || listing?.organization || null;
     const badgeLabel = experienceState || 'Pending';
+    // Both come from the posting the administrator wrote, so the tile says what
+    // the applicant actually signed up for ("Software Engineer") instead of
+    // repeating the listing title in a second font size.
+    const position = getListingPosition(listing);
+    const summary = getListingSummary(listing);
 
     return (
       <Card key={application.id}>
@@ -172,6 +192,13 @@ export function StudentApplications() {
           </div>
           <Badge status={badgeLabel}>{badgeLabel}</Badge>
         </div>
+
+        {(position || summary) && (
+          <div className="application-card-body">
+            {position && <span className="application-card-position">{position}</span>}
+            {summary && <p className="application-card-description">{summary}</p>}
+          </div>
+        )}
 
         {renderInfoRows({ listing, experienceState, isEvent, showsHours })}
 
@@ -230,11 +257,11 @@ export function StudentApplications() {
             'Nothing running right now.'
           )}
           {renderGroup(
-            'Completed',
+            'Done',
             groups.completed,
             'Nothing has finished yet.',
             groups.completed.length > 0
-              ? `${pluralize(groups.completed.length, 'experience')} finished. These stay here for your records.`
+              ? `${pluralize(groups.completed.length, 'experience')} finished. These move here on their own once the event, programme or placement is over, and stay for your records.`
               : null
           )}
           {groups.rejected.length > 0 &&

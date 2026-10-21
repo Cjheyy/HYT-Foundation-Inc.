@@ -8,7 +8,7 @@
  * Permission denial (code 1) still surfaces its own message immediately.
  */
 
-import { OFFICE_LOCATIONS } from './geofence';
+import { GEOFENCE_ENFORCEMENT_ENABLED, OFFICE_LOCATIONS } from './geofence';
 
 export const GEOLOCATION_PRIMARY_OPTIONS = {
   enableHighAccuracy: true,
@@ -166,6 +166,12 @@ export const getCoordinatesWithFallback = async (
  * Always resolves.  With enforcement off the server records the coordinates but
  * does not act on them, so blocking a trainee because GPS *and* the IP service
  * were both unavailable would be a self-inflicted failure.
+ *
+ * The office fallback is a FABRICATION - it reports a position the device never
+ * measured - so it is only legal while enforcement is off. With enforcement on
+ * it would hand the fence a perfect "standing on the pin" fix (distance 0) from
+ * a device that knows nothing, and clock-ins would be approved from anywhere.
+ * In that mode it throws instead, and the caller shows the location error.
  */
 export const getQuickCoordinates = async () => {
   try {
@@ -174,6 +180,12 @@ export const getQuickCoordinates = async () => {
     try {
       return await fetchIpCoordinates(IP_FETCH_TIMEOUT_QUICK_MS);
     } catch (ipError) {
+      if (GEOFENCE_ENFORCEMENT_ENABLED) {
+        throw Object.assign(
+          new Error('Location unavailable. Turn on location services and try again.'),
+          { code: 2, cause: ipError }
+        );
+      }
       return {
         latitude: OFFICE_LOCATIONS[0].latitude,
         longitude: OFFICE_LOCATIONS[0].longitude,

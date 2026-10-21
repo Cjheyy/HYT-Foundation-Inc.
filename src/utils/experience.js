@@ -7,8 +7,9 @@
  * 2. That experience is **Ongoing** until it is finished, then **Done**.
  *    "Finished" means whichever of these happens first:
  *      a. the application status itself says completed, or
- *      b. the listing's own end date has passed (`endsAt` for an event,
- *         `scheduleEnd` for an OJT posting), or
+ *      b. the listing's own end has passed - an exact clock time when the
+ *         listing carries one (`ends_at`), the end of the day when it does not
+ *         (`schedule_end` is a DATE column), or
  *      c. the required hours have been rendered.
  * 3. The projected end date is derived from the hours still to be rendered,
  *    spread over a standard working day. It is never hand-entered.
@@ -128,20 +129,44 @@ export const getListingEndDate = (listing, { isEvent = false } = {}) => {
 };
 
 /**
- * True when the listing's own end date is already in the past.
+ * True when the listing's own end has already passed.
  *
- * Compared at day precision, not instant precision: an event ending at 18:00
- * today is still ongoing at 09:00 today, and an event that ended at 18:00
- * yesterday is finished. Without that, a same-day event would flicker to Done
- * the moment its start time passed.
+ * The end is read as an INSTANT when the listing carries a real clock time, and
+ * as the end of its calendar day when it does not. Both halves matter:
+ *
+ *   timed      an event ending at 15:00 is Done at 15:01 the same day. Waiting
+ *              for midnight would leave a finished event sitting in Ongoing
+ *              for nine hours after everybody had gone home.
+ *   whole day  00:00-23:59, 00:00-next 00:00, or a bare `YYYY-MM-DD` - there is
+ *              no time to compare, so the day itself is the unit and the tile
+ *              only moves at 23:59:59.
+ *
+ * `isWholeDayEvent` already answers the second question for events; an OJT
+ * posting's `schedule_end` is a DATE column, which `toValidDate` turns into
+ * local midnight, so a midnight end is treated as "end of that day" rather than
+ * "the placement ended the instant it began".
  */
 export const isListingFinished = (listing, today = new Date(), { isEvent = false } = {}) => {
   const endDate = getListingEndDate(listing, { isEvent });
   const reference = toValidDate(today) || new Date();
   if (!endDate) return false;
-  const endOfEndDay = new Date(endDate.getTime());
-  endOfEndDay.setHours(23, 59, 59, 999);
-  return endOfEndDay.getTime() < reference.getTime();
+
+  const endsAtMidnight = endDate.getHours() === 0 && endDate.getMinutes() === 0;
+  // For an event, `isWholeDayEvent` is the authority as long as it has a start
+  // to compare against - a 22:00-00:00 session is timed, not a whole day. With
+  // no start at all there is nothing to compare, so a midnight end is read as
+  // the end of that day. A posting/programme end is a DATE column, so midnight
+  // always means "that day".
+  const hasStart = Boolean(getListingWindow(listing).startDate);
+  const wholeDay = isEvent ? (hasStart ? isWholeDayEvent(listing) : endsAtMidnight) : endsAtMidnight;
+
+  if (wholeDay) {
+    const endOfEndDay = new Date(endDate.getTime());
+    endOfEndDay.setHours(23, 59, 59, 999);
+    return endOfEndDay.getTime() < reference.getTime();
+  }
+
+  return endDate.getTime() < reference.getTime();
 };
 
 /**
@@ -315,6 +340,31 @@ export const isApplicationActive = (application) =>
   !isApplicationRejected(application) && !isApplicationCompleted(application);
 
 /**
+ * The same question, but date-aware - what a dashboard should actually ask.
+ *
+ * `isApplicationActive` only reads the status column, so an approved
+ * application whose event/programme/placement has already ended still counted
+ * as "active" and sat on the dashboard beside the Done card on My Applications.
+ * Pass the resolved listing to get the honest answer. A pending application is
+ * still in play (it has no experience state yet) and stays listed.
+ */
+export const isApplicationInPlay = (application, {
+  listing = null,
+  today = new Date(),
+  requiredHours = 0,
+  renderedHours = 0,
+  hoursAttributable = false
+} = {}) =>
+  isApplicationActive(application) &&
+  getApplicationExperienceState(application, {
+    listing,
+    today,
+    requiredHours,
+    renderedHours,
+    hoursAttributable
+  }) !== ALREADY_DONE_LABEL;
+
+/**
  * Human title for an application's listing.
  *
  * Application rows carry only the foreign key (`opportunityId` / `programId` /
@@ -365,6 +415,35 @@ export function getApplicationListingTypeLabel(application) {
   if (programId) return 'Training Program';
   if (eventId) return 'Event';
   return 'Application';
+}
+
+/**
+ * The role the applicant applied for, exactly as the administrator typed it on
+ * the posting - "Software Engineer", "Barista", and so on.
+ *
+ * `position` is the column both admin forms write. `role` / `jobTitle` are
+ * accepted as fallbacks so a deployment that already names the field
+ * differently still renders instead of silently showing nothing.
+ */
+export function getListingPosition(listing) {
+  if (!listing) return null;
+  const value = pick(listing.position, listing.role, listing.jobTitle, listing.job_title);
+  return value ? String(value).trim() || null : null;
+}
+
+/**
+ * The posting's own description, collapsed to one readable paragraph.
+ *
+ * The admin writes this when creating the posting, so it is the honest source
+ * for "what did I actually apply for" - and it is what the application tile
+ * shows under the position. Newlines are folded to spaces and the tail is cut
+ * with an ellipsis so a long blurb cannot stretch a tile past its neighbours.
+ */
+export function getListingSummary(listing, maxLength = 150) {
+  const text = String(listing?.description || '').replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 /** Advance a date by N working days (Mon-Fri), leaving weekends out. */

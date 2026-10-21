@@ -20,6 +20,7 @@ import './Admin.css';
 
 const emptyForm = {
   title: '',
+  position: '',
   organization: '',
   description: '',
   location: '',
@@ -100,6 +101,8 @@ export function AdminOpportunities() {
       const total = Math.max(1, Number(formData.totalSlots) || 0);
       const saved = await createOpportunity({
         title: formData.title.trim(),
+        // Shown on the applicant's card as the role they applied for.
+        position: formData.position.trim() || undefined,
         organization: formData.organization.trim(),
         description: formData.description.trim(),
         category: 'OJT',
@@ -107,6 +110,10 @@ export function AdminOpportunities() {
         setup: formData.setup,
         duration: formData.duration.trim(),
         schedule: schedulePreview || undefined,
+        // Structured dates: the card flips to Done on its own once schedule_end
+        // has passed, so the human-readable `schedule` string is not enough.
+        scheduleStart: formData.scheduleStart || undefined,
+        scheduleEnd: formData.scheduleEnd || undefined,
         requiredHours: Number(formData.requiredHours) || 0,
         totalSlots: total,
         availableSlots: total,
@@ -165,6 +172,14 @@ export function AdminOpportunities() {
       <Modal isOpen={showCreateModal} onClose={() => closeModal()} title="Create New OJT Posting">
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto', padding: '4px' }}>
           <Input label="Posting Title" name="title" value={formData.title} onChange={handleChange} error={errors.title} required />
+          <Input
+            label="Position / Role"
+            name="position"
+            value={formData.position}
+            onChange={handleChange}
+            placeholder="e.g. Software Engineer, Barista"
+            help="Shown on the applicant's card as the role they applied for. Leave blank if the title already names it."
+          />
           <Select label="Organization" name="organization" value={formData.organization} onChange={handleChange} error={errors.organization} options={ORGANIZATION_OPTIONS} placeholder="Select partner organization" required />
           <Textarea label="Description" name="description" value={formData.description} onChange={handleChange} error={errors.description} rows={4} required />
           <Input label="Location" name="location" value={formData.location} onChange={handleChange} error={errors.location} required />

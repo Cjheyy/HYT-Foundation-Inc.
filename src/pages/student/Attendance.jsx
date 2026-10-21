@@ -29,7 +29,7 @@ import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, G
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
-import { computeExperienceSchedule } from '../../utils/experience';
+import { computeExperienceSchedule, getApplicationListingKind } from '../../utils/experience';
 import { toast } from 'react-toastify';
 import './Attendance.css';
 
@@ -45,11 +45,29 @@ const getCoordinates = () => (GEOFENCE_ENFORCEMENT_ENABLED
   ? getCoordinatesWithFallback()
   : getQuickCoordinates());
 
-export const hasApprovedOjtPosting = (applications = [], userId = null) => (applications || []).some((app) => {
-  const owner = app.userId || app.studentId;
+/**
+ * Whether the user has something to clock in FOR.
+ *
+ * The OJT/Intern portal is gated on an approved OJT posting - that placement is
+ * what a DTR belongs to. A Trainee joins a PROGRAMME instead, so requiring a
+ * posting locked them out of their own Attendance page with "apply for an OJT
+ * Posting", even though `request_clock_in` already accepts an approved
+ * programme application.
+ *
+ * So the rule is: an approved PLACEMENT of either kind. An approved EVENT is
+ * deliberately not enough in either portal - an event is a diary entry, not a
+ * placement, and the database gate excludes it (`event_id IS NULL`).
+ *
+ * This mirrors the server exactly. Where they disagreed, the client won and the
+ * trainee could never get past the button.
+ */
+export const hasApprovedPlacement = (applications = [], userId = null) => (applications || []).some((app) => {
+  const owner = app.userId || app.studentId || app.user_id;
   if (userId && owner && owner !== userId) return false;
-  const isOjtPosting = Boolean(app.opportunityId || app.opportunity_id || String(app.type || '').toUpperCase() === 'OPPORTUNITY');
-  if (!isOjtPosting) return false;
+  const kind = getApplicationListingKind(app);
+  if (kind === 'event') return false;
+  const isPlacement = kind === 'opportunity' || kind === 'program';
+  if (!isPlacement) return false;
   return ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(normalizeStatus(app.status));
 });
 
@@ -57,21 +75,42 @@ export const hasApprovedOjtPosting = (applications = [], userId = null) => (appl
 //   In : 09:00 -> 09:10   (9 AM, with a 10-minute grace)
 //   Out: 18:00 -> 18:10   (6 PM, with a 10-minute grace)
 // These are not one continuous span - a clock-in at 3 PM is refused.
-// The database enforces the same two windows in request_clock_in and
-// request_clock_out, so this is the friendly half of the rule and not the
-// authority: changing it here alone will not open a window.
+//
+// NOTE: the database does NOT enforce these windows. request_clock_in and
+// request_clock_out only check the geofence, approval state and (for clock-out)
+// that a CLOCKED_IN row exists. This block is therefore the whole rule, not the
+// friendly half of it - changing it here does change behaviour.
 const CLOCK_IN_OPENS_MINUTES = 9 * 60;          // 09:00
 const CLOCK_IN_CLOSES_MINUTES = 9 * 60 + 10;    // 09:10
 const CLOCK_OUT_OPENS_MINUTES = 18 * 60;        // 18:00
 const CLOCK_OUT_CLOSES_MINUTES = 18 * 60 + 10;  // 18:10
 
+/**
+ * Per-window kill switches.
+ *
+ * The clock-in window is OFF for testing: you can clock in at any hour. The
+ * clock-out window stays ON, because that half is what keeps a shift from being
+ * closed at 10 AM on the day it opened.
+ *
+ * Flip either one independently - they are read by getWindowState() below and
+ * by the banner copy further down, so nothing else needs touching.
+ */
+export const CLOCK_WINDOW_ENFORCEMENT = {
+  clockIn: false,   // TESTING: clock-in allowed any time
+  clockOut: true    // still 6:00-6:10 PM only
+};
+
 const getWindowState = () => {
   const now = new Date();
   const minutes = now.getHours() * 60 + now.getMinutes();
+  const inClockInWindow = minutes >= CLOCK_IN_OPENS_MINUTES && minutes <= CLOCK_IN_CLOSES_MINUTES;
+  const inClockOutWindow = minutes >= CLOCK_OUT_OPENS_MINUTES && minutes <= CLOCK_OUT_CLOSES_MINUTES;
   return {
     minutes,
-    isClockInOpen: minutes >= CLOCK_IN_OPENS_MINUTES && minutes <= CLOCK_IN_CLOSES_MINUTES,
-    isClockOutOpen: minutes >= CLOCK_OUT_OPENS_MINUTES && minutes <= CLOCK_OUT_CLOSES_MINUTES,
+    inClockInWindow,
+    inClockOutWindow,
+    isClockInOpen: CLOCK_WINDOW_ENFORCEMENT.clockIn ? inClockInWindow : true,
+    isClockOutOpen: CLOCK_WINDOW_ENFORCEMENT.clockOut ? inClockOutWindow : true,
     clockInMessage: minutes < CLOCK_IN_OPENS_MINUTES
       ? 'The clock-in window opens at 9:00 AM.'
       : 'The clock-in window closed at 9:10 AM. You cannot clock in for today.',
@@ -213,14 +252,26 @@ export function AttendanceNew() {
   const pendingClockOut = stage === 'CLOCK_OUT';
   const activeClock = status === 'CLOCKED_IN';
   const finalState = isFinalAttendanceStatus(status);
+
+  // Only the window that is actually switched on can produce a "closed"
+  // sentence. With the clock-in limit off, printing "the clock-in window closed
+  // at 9:10 AM" next to "clock-in is open any time" was both wrong and the only
+  // thing a trainee would read.
+  const windowNotice = activeClock
+    ? (CLOCK_WINDOW_ENFORCEMENT.clockOut && !windowState.inClockOutWindow
+      ? windowState.clockOutMessage
+      : null)
+    : (CLOCK_WINDOW_ENFORCEMENT.clockIn && !windowState.inClockInWindow
+      ? windowState.clockInMessage
+      : null);
   // A clock-in request is stamped by created_at (the row is born with the
   // request).  A clock-out request freezes pending_end_time at the moment it was
   // submitted, so that is the honest timestamp for that stage.
   const submittedAt = pendingClockOut
     ? (todayAttendance?.pendingEndTime || todayAttendance?.updatedAt || todayAttendance?.createdAt)
     : (todayAttendance?.createdAt || todayAttendance?.requestedAt || todayAttendance?.timeIn);
-  const approvedOjtPosting = useMemo(
-    () => hasApprovedOjtPosting(applications, currentUser?.id),
+  const approvedPlacement = useMemo(
+    () => hasApprovedPlacement(applications, currentUser?.id),
     [applications, currentUser?.id]
   );
   useEffect(() => {
@@ -274,8 +325,10 @@ export function AttendanceNew() {
   }, [attendanceHistory, currentUser?.startDate, currentUser?.start_date, progress]);
 
   const handleClockIn = () => {
-    if (!approvedOjtPosting) {
-      toast.warning('Please apply for an OJT Posting and wait for Admin acceptance before clocking in.');
+    if (!approvedPlacement) {
+      // Role-aware: a Trainee is told to join a programme, an OJT/Intern to
+      // apply for a posting. The old hard-coded OJT sentence was shown to both.
+      toast.warning(terms.attendanceLockedCopy);
       return;
     }
     if (!windowState.isClockInOpen) {
@@ -288,8 +341,8 @@ export function AttendanceNew() {
   const executeClockIn = async () => {
     setActionLoading(true);
     try {
-      if (!approvedOjtPosting) {
-        throw new Error('Please apply for an OJT Posting and wait for Admin approval before clocking in.');
+      if (!approvedPlacement) {
+        throw new Error(terms.attendanceLockedCopy);
       }
       // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
       const coordinates = await getCoordinates();
@@ -316,7 +369,13 @@ export function AttendanceNew() {
       if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
         throw new Error(describeGeofenceFailure(geofence, { action: 'clock in' }));
       }
-      const result = await clockIn(currentUser.id, coordinates.latitude, coordinates.longitude);
+      const result = await clockIn(
+        currentUser.id,
+        coordinates.latitude,
+        coordinates.longitude,
+        coordinates.accuracy,
+        coordinates.source
+      );
       setTodayAttendance(result);
       toast.success('Application submitted successfully.');
       await loadAttendanceData();
@@ -346,7 +405,9 @@ export function AttendanceNew() {
   const executeClockOut = async () => {
     setActionLoading(true);
     try {
-      // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
+      // Clock-out is fenced too: the same 20 m rule that opens a shift closes
+      // it. Coordinates go to request_clock_out, which re-checks them - the
+      // client check below is the friendly half, not the authority.
       const frozenCoordinates = await getCoordinates();
       if (GEOFENCE_ENFORCEMENT_ENABLED && frozenCoordinates.source === 'ip') {
         throw new Error(
@@ -362,7 +423,13 @@ export function AttendanceNew() {
       if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
         throw new Error(describeGeofenceFailure(geofence, { action: 'clock out' }));
       }
-      const result = await clockOut(currentUser.id);
+      const result = await clockOut(
+        currentUser.id,
+        frozenCoordinates.latitude,
+        frozenCoordinates.longitude,
+        frozenCoordinates.accuracy,
+        frozenCoordinates.source
+      );
       setTodayAttendance(result);
       toast.success('Application submitted successfully.');
       await loadAttendanceData();
@@ -504,7 +571,7 @@ export function AttendanceNew() {
           <p className="page-subtitle">{terms.attendanceSubtitle}</p>
         </div>
 
-        {!approvedOjtPosting && (
+        {!approvedPlacement && (
           <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
             <strong>{terms.approvalRequiredTitle}</strong>
             <p style={{ margin: '8px 0 0', fontSize: '14px' }}>{terms.attendanceLockedCopy}</p>
@@ -515,12 +582,18 @@ export function AttendanceNew() {
           <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
             <strong>Attendance windows</strong>
             <p style={{ margin: '8px 0 0', fontSize: '14px' }}>
-              Clock in between 9:00 AM and 9:10 AM, and clock out between 6:00 PM and 6:10 PM.
-              A day with no clock-out is recorded as void.
+              {CLOCK_WINDOW_ENFORCEMENT.clockIn
+                ? 'Clock in between 9:00 AM and 9:10 AM'
+                : 'Clock-in is open any time while the window limit is switched off'}
+              {', and '}
+              {CLOCK_WINDOW_ENFORCEMENT.clockOut
+                ? 'clock out between 6:00 PM and 6:10 PM.'
+                : 'clock-out is open any time.'}
+              {' '}A day with no clock-out is recorded as void.
             </p>
-            <p style={{ margin: '6px 0 0', fontSize: '14px' }}>
-              {activeClock ? windowState.clockOutMessage : windowState.clockInMessage}
-            </p>
+            {windowNotice && (
+              <p style={{ margin: '6px 0 0', fontSize: '14px' }}>{windowNotice}</p>
+            )}
           </div>
         )}
 
@@ -632,7 +705,7 @@ export function AttendanceNew() {
             ) : <p className="no-attendance">No attendance request submitted today.</p>}
 
             <div className="attendance-actions">
-              {!approvedOjtPosting ? (
+              {!approvedPlacement ? (
                 <div className="attendance-locked-message">
                   <strong>{terms.approvalRequiredTitle}</strong>
                   <span>{terms.attendanceLockedCopy}</span>
@@ -674,13 +747,28 @@ export function AttendanceNew() {
                 <div className="stat-item"><span className="stat-label">Remaining Hours:</span><span className="stat-value warning">{progress.remaining.toFixed(4)} hrs</span></div>
               )}
             </div>
-            <div className="progress-line">
-              <span className="progress-line-label">Progress</span>
-              <span className="progress-line-value">{progress.percentage.toFixed(1)}%</span>
-            </div>
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: `${progress.percentage}%` }}><span className="progress-text">{progress.percentage.toFixed(1)}%</span></div>
-            </div>
+            {/* No target, no percentage. A Trainee has no required hours at
+                all, and an OJT/Intern whose target has not been set yet had the
+                same problem: the bar sat at 0% beside hours they had actually
+                earned, which reads as "you have done nothing". Both now show
+                only the banked figure until a target exists. */}
+            {progress.required > 0 ? (
+              <>
+                <div className="progress-line">
+                  <span className="progress-line-label">Progress</span>
+                  <span className="progress-line-value">{progress.percentage.toFixed(1)}%</span>
+                </div>
+                <div className="progress-bar-container">
+                  <div className="progress-bar" style={{ width: `${progress.percentage}%` }}><span className="progress-text">{progress.percentage.toFixed(1)}%</span></div>
+                </div>
+              </>
+            ) : (
+              <p className="summary-hint">
+                {terms.isTrainee
+                  ? 'Trainees have no target hours - every approved hour is simply banked.'
+                  : 'No target hours have been set for you yet, so there is no percentage to show.'}
+              </p>
+            )}
           </Card>
 
           <Card className="attendance-history-card">
@@ -716,22 +804,32 @@ export function AttendanceNew() {
                 <span className="summary-label">Days Attended</span>
                 <span className="summary-value">{daysAttended}</span>
               </div>
-              <div className="summary-item">
-                <span className="summary-label">
-                  {schedule.isComplete ? 'End Date' : 'Projected End Date'}
-                </span>
-                <span className="summary-value">
-                  {schedule.endDate ? formatDate(schedule.endDate) : '--'}
-                </span>
-              </div>
-              {schedule.hasSchedule && !schedule.isComplete && (
+              {/* An end date is projected from the hours still to render, so it
+                  only exists when there IS a target. A Trainee never has one,
+                  and printing "--" plus "your required hours have not been set"
+                  read like a fault on their account. */}
+              {!terms.isTrainee && (
+                <div className="summary-item">
+                  <span className="summary-label">
+                    {schedule.isComplete ? 'End Date' : 'Projected End Date'}
+                  </span>
+                  <span className="summary-value">
+                    {schedule.endDate ? formatDate(schedule.endDate) : '--'}
+                  </span>
+                </div>
+              )}
+              {!terms.isTrainee && schedule.hasSchedule && !schedule.isComplete && (
                 <div className="summary-item">
                   <span className="summary-label">Working Days Left</span>
                   <span className="summary-value">{schedule.workDaysRemaining}</span>
                 </div>
               )}
             </div>
-            {!schedule.hasSchedule && (
+            {terms.isTrainee ? (
+              <p className="summary-hint">
+                Your {terms.progressNoun} is measured in approved hours only - there is no target to finish.
+              </p>
+            ) : !schedule.hasSchedule && (
               <p className="summary-hint">
                 Your required hours have not been set yet, so an end date cannot be projected.
               </p>

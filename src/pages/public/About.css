@@ -156,15 +156,17 @@
 }
 
 /* ==========================================================================
-   Thrusts - even grid, equal-height cards.
-   `auto-fit` + `minmax` guarantees every card in a row is the same width, so
-   the tiles can never end up staggered like they did before.
+   Thrusts - a fixed 4 x 2 grid: four tiles across, two rows, eight thrusts.
+   An explicit four-column track (not `auto-fit`) is what makes the rows line
+   up: with auto-fit the browser chose the column count from the container
+   width, so the last row could hold a different number of tiles than the one
+   above it and the block read as ragged. `minmax(0, 1fr)` keeps every track
+   exactly equal and stops a long word from widening its own column.
    ========================================================================== */
 .thrusts-list {
   display: grid;
-  /* min() keeps the track from overflowing a viewport narrower than 430px. */
-  grid-template-columns: repeat(auto-fit, minmax(min(430px, 100%), 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
   max-width: 1180px;
   margin: 0 auto;
   align-items: stretch;
@@ -172,14 +174,18 @@
 
 .thrust-item {
   position: relative;
+  /* Vertical, because four tiles across leave roughly 210px of content per
+     card: the old side-by-side 62px badge plus a 20px gap would have left
+     ~125px for the title and description and forced one word per line. */
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 14px;
   align-items: flex-start;
   /* No `height: 100%` here: an explicit height disables the grid's
      `align-items: stretch`, and a percentage against an auto-sized row
      resolves circularly - which left one tile per row taller than its
      neighbour and made the grid look staggered. */
-  padding: 30px 32px;
+  padding: 24px 22px;
   border-radius: 20px;
   overflow: hidden;
   isolation: isolate;
@@ -250,13 +256,13 @@
 .thrust-number {
   position: relative;
   flex-shrink: 0;
-  width: 62px;
-  height: 62px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -277,10 +283,10 @@
 }
 
 .thrust-title {
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--dark-text);
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   transition: color 0.3s ease;
 }
 
@@ -291,9 +297,9 @@
 /* Capped measure so the copy reads in a comfortable column instead of
    stretching the full width of a wide card. */
 .thrust-description {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--muted-text);
-  line-height: 1.65;
+  line-height: 1.6;
   margin: 0;
   max-width: 46ch;
 }
@@ -939,7 +945,9 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .thrusts-list {
-    gap: 24px;
+    /* Two across on a tablet: four tracks here would be ~170px each. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
   }
 
   .about-stats {

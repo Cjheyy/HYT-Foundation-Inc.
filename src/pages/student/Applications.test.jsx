@@ -199,7 +199,7 @@ describe('an OJT posting application card', () => {
 });
 
 describe('a finished event', () => {
-  test('moves to the Completed section with a Finished date', () => {
+  test('moves to the Done section with a Finished date', () => {
     renderPage({
       applications: [{ id: 'a3', userId: 'u1', status: 'APPROVED', eventId: 'e1' }],
       events: [
@@ -212,7 +212,7 @@ describe('a finished event', () => {
       ]
     });
 
-    expect(screen.getByRole('heading', { name: 'Completed' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Done' })).toBeInTheDocument();
     expect(screen.getByText('Finished')).toBeInTheDocument();
     expect(screen.getByText('March 1, 2020')).toBeInTheDocument();
     expect(screen.getByText(/this experience is complete/i)).toBeInTheDocument();
@@ -224,7 +224,7 @@ describe('a finished event', () => {
       events: [{ id: 'e2', title: 'Start Only', startsAt: '2020-05-04T08:00:00' }]
     });
 
-    expect(screen.getByRole('heading', { name: 'Completed' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Done' })).toBeInTheDocument();
     expect(screen.getByText('Finished')).toBeInTheDocument();
     expect(screen.getByText('May 4, 2020')).toBeInTheDocument();
     expect(screen.getByText(/this experience is complete/i)).toBeInTheDocument();
