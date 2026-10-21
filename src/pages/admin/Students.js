@@ -13,6 +13,45 @@ import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMet
 import './Students.css';
 import './Admin.css';
 
+/**
+ * Friendly wording for the application column.
+ *
+ * The column used to print the raw database value, so the table read
+ * "PENDING_APPROVAL" - a token from the schema, shown to a person.  The status
+ * itself is not changed: only how it is said.  Anything unrecognised falls back
+ * to the raw value in title case rather than being hidden, so a new state can
+ * never silently disappear from the table.
+ */
+const APPLICATION_STATUS_LABELS = {
+  PENDING_APPROVAL: { label: 'Under review', tone: 'PENDING' },
+  PENDING_APPLICATION: { label: 'Under review', tone: 'PENDING' },
+  PENDING: { label: 'Under review', tone: 'PENDING' },
+  SUBMITTED: { label: 'Under review', tone: 'PENDING' },
+  APPLIED: { label: 'Under review', tone: 'PENDING' },
+  UNDER_REVIEW: { label: 'Under review', tone: 'PENDING' },
+  APPROVED: { label: 'Approved', tone: 'APPROVED' },
+  ACCEPTED: { label: 'Approved', tone: 'APPROVED' },
+  ACTIVE: { label: 'Approved', tone: 'APPROVED' },
+  VERIFIED: { label: 'Approved', tone: 'APPROVED' },
+  REJECTED: { label: 'Not approved', tone: 'REJECTED' },
+  DECLINED: { label: 'Not approved', tone: 'REJECTED' },
+  DENIED: { label: 'Not approved', tone: 'REJECTED' }
+};
+
+const describeApplicationStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  if (!normalized) return { label: 'No application', tone: 'PENDING' };
+  const known = APPLICATION_STATUS_LABELS[normalized];
+  if (known) return known;
+  const readable = normalized
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  return { label: readable || normalized, tone: normalized };
+};
+
 export function AdminStudents() {
   const { state, dispatch, refreshData } = useApp();
   const { users } = state;
@@ -96,7 +135,7 @@ export function AdminStudents() {
                   const required = Number(student.requiredHours || 0);
                   const rendered = Number(student.renderedHours || 0);
                   const progress = required > 0 ? Math.min(100, (rendered / required) * 100) : 0;
-                  const status = normalizeStatus(student.applicationStatus) || 'UNKNOWN';
+                  const application = describeApplicationStatus(student.applicationStatus);
                   const isActive = student.isActive !== false;
                   const busy = actionLoadingId === student.id;
                   return (
@@ -105,8 +144,10 @@ export function AdminStudents() {
                       <td>{student.role}</td>
                       <td>{student.school || '--'}</td>
                       <td><div className="progress-cell"><div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }} /></div><span>{rendered.toFixed(2)} / {required.toFixed(2)} hrs ({progress.toFixed(1)}%)</span></div></td>
-                      <td><Badge status={status}>{status}</Badge></td>
-                      <td><Badge color={isActive ? 'green' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge></td>
+                      <td><Badge status={application.tone}>{application.label}</Badge></td>
+                      <td>
+                        <Badge color={isActive ? 'green' : 'red'}>{isActive ? 'Active' : 'Deactivated'}</Badge>
+                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <Button

@@ -485,17 +485,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Card header furniture - the numbered index chip.
+   Card headers no longer carry a numbered index chip ("01 / LIVE", "02", ...).
+   The numbers described the order the cards were authored in, not anything the
+   trainee needed, and they read like steps in a process that does not exist -
+   nothing has to be done in order here.  The rule is gone rather than left
+   behind, so a stray `.card-idx` cannot quietly reappear styled.
    -------------------------------------------------------------------------- */
-.attendance-col .card-idx {
-  flex: none;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-text, var(--muted-text));
-  white-space: nowrap;
-}
 
 /* ----------------------------------------------------------------------------
    Today's Attendance - timer left, status pill right, then the key/value strip.

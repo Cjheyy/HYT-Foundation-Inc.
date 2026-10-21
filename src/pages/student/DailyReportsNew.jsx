@@ -20,6 +20,8 @@ import {
   rowUserId
 } from '../../utils/dailyReportSlots';
 import { getDailyReports, reportSlotsReady, submitReportSlot } from '../../services/supabaseService';
+import { hasApprovedPlacement } from '../../utils/experience';
+import { getRoleTerms } from '../../utils/roleTerms';
 import './DailyReports.css';
 
 /**
@@ -49,7 +51,21 @@ const blankDraft = () => ({ ...emptyEntry() });
 
 export function DailyReportsNew() {
   const { state } = useApp();
-  const { currentUser } = state;
+  const { currentUser, applications } = state;
+  const terms = getRoleTerms(currentUser?.role);
+
+  /**
+   * A daily report describes work done on a placement. Without an approved OJT
+   * posting or training programme there is nothing to report on, and filing one
+   * only creates a queue an administrator has to reject by hand.
+   *
+   * This is the same predicate the Attendance page uses (utils/experience), so
+   * the two pages cannot disagree about whether the trainee is placed.
+   */
+  const hasPlacement = useMemo(
+    () => hasApprovedPlacement(applications, currentUser?.id),
+    [applications, currentUser?.id]
+  );
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +141,13 @@ export function DailyReportsNew() {
   };
 
   const handleSubmit = async (slot) => {
+    // The form is not rendered without a placement, but the handler is the
+    // actual gate - a stale tab that was opened before the placement lapsed
+    // must not be able to file into a queue nobody can approve.
+    if (!hasPlacement) {
+      showToast(terms.dailyReportsLockedCopy, 'error');
+      return;
+    }
     const draft = draftFor(slot.key);
     if (!entryIsFilled(draft)) {
       setErrors((previous) => ({
@@ -202,6 +225,16 @@ export function DailyReportsNew() {
           )}
         </div>
 
+        {!hasPlacement ? (
+          <div className="alert alert-warning">
+            <strong>{terms.approvalRequiredTitle}</strong>
+            <p style={{ margin: '8px 0 0', fontSize: '14px' }}>{terms.dailyReportsLockedCopy}</p>
+            <p style={{ margin: '6px 0 0', fontSize: '14px' }}>
+              A daily report describes work done on a placement, so there is nothing to file
+              until one is approved.
+            </p>
+          </div>
+        ) : (
         <div className="report-slot-list">
           {todaySlots.map((slot) => (
             <div key={slot.key} className={`report-slot is-${slot.status}`}>
@@ -286,6 +319,7 @@ export function DailyReportsNew() {
             </div>
           ))}
         </div>
+        )}
       </Card>
 
       <Card className="reports-history-card">

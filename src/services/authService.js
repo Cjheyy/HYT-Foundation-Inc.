@@ -1,6 +1,6 @@
 import { clearPersistedSession, supabase, toCamelCase, toSnakeCase } from '../config/supabase';
 import { toast } from 'react-toastify';
-import { isApprovedAccountStatus, normalizeRole, normalizeStatus, SAFE_USER_COLUMNS } from './supabaseService';
+import { isApprovedAccountStatus, isPendingApplicationStatus, normalizeRole, normalizeStatus, SAFE_USER_COLUMNS } from './supabaseService';
 
 const AUTH_MARKER_KEY = 'hyt.auth.last-user-id';
 
@@ -40,10 +40,45 @@ export const isRejectedAccount = (user) => {
   return ['REJECTED', 'DECLINED', 'DENIED'].includes(status);
 };
 
+/**
+ * An account an administrator has switched off.
+ *
+ * `is_active = false` has meant two different things over the life of this
+ * schema, and conflating them caused both bugs at once:
+ *
+ *   1. **The old registration default.**  `register()` used to write
+ *      `is_active: false` into the sign-up metadata for every single account,
+ *      so a brand-new, never-reviewed trainee was "inactive" from the moment
+ *      they existed.  That was never a deactivation - it was a placeholder -
+ *      and treating it as one locked out everyone who had just signed up.
+ *   2. **A real deactivation.**  An administrator decides a trainee has left
+ *      and switches the account off.  That person must not be able to sign in.
+ *
+ * Registration no longer writes (1), so from now on `is_active = false` only
+ * arrives from (2).  For the rows that already exist, the two are told apart by
+ * the application status: an account still waiting for its first review was
+ * caught by (1) and is allowed in; anything else that is switched off is a
+ * genuine deactivation.
+ */
+export const isDeactivatedAccount = (user) => {
+  if (!user || isAdminAccount(user)) return false;
+  if (user.isActive !== false && user.is_active !== false) return false;
+  const status = normalizeStatus(user.applicationStatus ?? user.application_status);
+  // Never reviewed yet -> the legacy placeholder, not a deactivation.
+  if (isPendingApplicationStatus(status)) return false;
+  return true;
+};
+
 export const isAccountApproved = (user) => {
   if (!user) return false;
   if (isAdminAccount(user)) return true;
   if (isRejectedAccount(user)) return false;
+
+  // Deactivation is checked BEFORE the pending shortcut below.  Otherwise an
+  // account that an administrator switched off while its application status
+  // still read PENDING_APPROVAL walked straight past the gate - the pending
+  // branch returned true and the is_active check was never reached.
+  if (isDeactivatedAccount(user)) return false;
 
   // Direct login flow: newly registered Trainees and OJT applicants may sign
   // in immediately. Admin approval is enforced when applying for an OJT
@@ -52,9 +87,6 @@ export const isAccountApproved = (user) => {
   if (['PENDING', 'PENDING_APPROVAL', 'PENDING_APPLICATION', 'SUBMITTED', 'APPLIED'].includes(status)) {
     return true;
   }
-
-  // Admin-deactivated accounts remain blocked.
-  if (user.isActive === false) return false;
 
   // Fail closed for unknown states without an approved status.
   if (!status) return Boolean(user.isActive !== false);
@@ -166,7 +198,12 @@ export async function register(userData) {
       required_hours: Number(userData.requiredHours) || 0,
       rendered_hours: 0,
       application_status: 'PENDING_APPROVAL',
-      is_active: false
+      // `is_active` is the administrator's switch, not a "not reviewed yet"
+      // placeholder.  Writing false here made every new account show as
+      // Inactive in the Students table and needed a manual activation nobody
+      // asked for.  New accounts are active; an administrator deactivates one
+      // deliberately, and only then does it stop signing in.
+      is_active: true
     };
 
     // The confirmation link must land on /login: a confirmed account is still
@@ -267,7 +304,15 @@ export async function login(email, password, selectedAccountType = null) {
     if (!isAccountApproved(user)) {
       await endSession(client);
       rememberUser(null);
-      const error = makeAuthError('Your account is not active yet. Please contact HYT support.', 'ACCOUNT_INACTIVE');
+      // A switched-off account gets its own message.  "Your account is not
+      // active yet" invited the trainee to keep retrying; a deactivated account
+      // will never become active on its own, so the only way forward is to ask.
+      const error = isDeactivatedAccount(user)
+        ? makeAuthError(
+          'Your account has been deactivated. Please contact an administrator to have it restored.',
+          'ACCOUNT_DEACTIVATED'
+        )
+        : makeAuthError('Your account is not active yet. Please contact HYT support.', 'ACCOUNT_INACTIVE');
       toast.error(error.message);
       throw error;
     }
@@ -313,7 +358,7 @@ export async function login(email, password, selectedAccountType = null) {
     rememberUser(user.id);
     return user;
   } catch (error) {
-    if (!['PENDING_APPROVAL', 'APPLICATION_REJECTED', 'ACCOUNT_INACTIVE', 'ROLE_MISMATCH', 'ACCOUNT_TYPE_REQUIRED', 'PROFILE_READ_ERROR'].includes(error.code)) {
+    if (!['PENDING_APPROVAL', 'APPLICATION_REJECTED', 'ACCOUNT_INACTIVE', 'ACCOUNT_DEACTIVATED', 'ROLE_MISMATCH', 'ACCOUNT_TYPE_REQUIRED', 'PROFILE_READ_ERROR'].includes(error.code)) {
       // Do not turn a network/profile read failure into a false successful
       // login.  Supabase has already invalidated the local session where
       // appropriate; the caller will show the useful error.

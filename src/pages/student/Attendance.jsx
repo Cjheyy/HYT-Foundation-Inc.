@@ -20,7 +20,8 @@ import {
   createOtRequest,
   getAbsenceRequests,
   createAbsenceRequest,
-  isAbsenceNoted,
+  getAbsenceDecision,
+  getAbsenceDecisionTone,
   isFinalAttendanceStatus,
   getAttendanceStage,
   normalizeStatus
@@ -29,11 +30,25 @@ import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, G
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
-import { computeExperienceSchedule, getApplicationListingKind } from '../../utils/experience';
+import {
+  computeExperienceSchedule,
+  countAcceptedAbsenceDays,
+  hasApprovedPlacement
+} from '../../utils/experience';
+import {
+  getClockOutReminder,
+  getClockOutWindow,
+  requestDesktopNotificationPermission,
+  showDesktopNotification
+} from '../../utils/clockReminder';
 import { toast } from 'react-toastify';
 import './Attendance.css';
 
 const POLL_INTERVAL_MS = 60_000;
+// The reminder has to land inside a five-minute window, so the clock is checked
+// more often than the data is.
+const REMINDER_TICK_MS = 30_000;
+const REMINDER_FLAG_PREFIX = 'hyt:clockout-reminded:';
 
 // Re-exported for unit tests and shared callers.
 export const describeGeolocationError = describeLocationError;
@@ -45,78 +60,60 @@ const getCoordinates = () => (GEOFENCE_ENFORCEMENT_ENABLED
   ? getCoordinatesWithFallback()
   : getQuickCoordinates());
 
-/**
- * Whether the user has something to clock in FOR.
- *
- * The OJT/Intern portal is gated on an approved OJT posting - that placement is
- * what a DTR belongs to. A Trainee joins a PROGRAMME instead, so requiring a
- * posting locked them out of their own Attendance page with "apply for an OJT
- * Posting", even though `request_clock_in` already accepts an approved
- * programme application.
- *
- * So the rule is: an approved PLACEMENT of either kind. An approved EVENT is
- * deliberately not enough in either portal - an event is a diary entry, not a
- * placement, and the database gate excludes it (`event_id IS NULL`).
- *
- * This mirrors the server exactly. Where they disagreed, the client won and the
- * trainee could never get past the button.
- */
-export const hasApprovedPlacement = (applications = [], userId = null) => (applications || []).some((app) => {
-  const owner = app.userId || app.studentId || app.user_id;
-  if (userId && owner && owner !== userId) return false;
-  const kind = getApplicationListingKind(app);
-  if (kind === 'event') return false;
-  const isPlacement = kind === 'opportunity' || kind === 'program';
-  if (!isPlacement) return false;
-  return ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(normalizeStatus(app.status));
-});
+// Re-exported for unit tests and shared callers.  The rule itself now lives in
+// utils/experience so the Daily Reports page can gate on exactly the same thing
+// without importing this page.
+export { hasApprovedPlacement };
 
-// Two SEPARATE clock windows, defined once.
+// Two SEPARATE rules, defined once.
 //   In : 09:00 -> 09:10   (9 AM, with a 10-minute grace)
-//   Out: 18:00 -> 18:10   (6 PM, with a 10-minute grace)
-// These are not one continuous span - a clock-in at 3 PM is refused.
+//   Out: any time -> 18:30  (a shift may be closed whenever it ends, but never
+//                            after 6:30 PM)
 //
-// NOTE: the database does NOT enforce these windows. request_clock_in and
-// request_clock_out only check the geofence, approval state and (for clock-out)
-// that a CLOCKED_IN row exists. This block is therefore the whole rule, not the
-// friendly half of it - changing it here does change behaviour.
+// Clock-out used to be a 6:00-6:10 PM window, which made an early finish
+// impossible: someone who worked 9-2 had to sit and wait until 6 PM to close a
+// shift that had already ended. The cutoff is the real rule - the start of the
+// window never was.
+//
+// NOTE: the database now enforces the 6:30 PM cutoff too, inside
+// request_clock_out (see PATCH_CLOCKOUT_CUTOFF.sql). This block is the friendly
+// half - it can say no before the button is pressed. The database is the
+// authority, and it cannot be bypassed from the browser or by changing the
+// system clock.
 const CLOCK_IN_OPENS_MINUTES = 9 * 60;          // 09:00
 const CLOCK_IN_CLOSES_MINUTES = 9 * 60 + 10;    // 09:10
-const CLOCK_OUT_OPENS_MINUTES = 18 * 60;        // 18:00
-const CLOCK_OUT_CLOSES_MINUTES = 18 * 60 + 10;  // 18:10
 
 /**
  * Per-window kill switches.
  *
  * The clock-in window is OFF for testing: you can clock in at any hour. The
- * clock-out window stays ON, because that half is what keeps a shift from being
- * closed at 10 AM on the day it opened.
+ * clock-out cutoff stays ON, because that half is what keeps a shift from being
+ * closed at 10 AM on the day it opened - and it is the half the database
+ * enforces.
  *
  * Flip either one independently - they are read by getWindowState() below and
  * by the banner copy further down, so nothing else needs touching.
  */
 export const CLOCK_WINDOW_ENFORCEMENT = {
   clockIn: false,   // TESTING: clock-in allowed any time
-  clockOut: true    // still 6:00-6:10 PM only
+  clockOut: true    // still a hard 6:30 PM cutoff
 };
 
 const getWindowState = () => {
   const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
+  const clockOut = getClockOutWindow(now);
+  const minutes = clockOut.minutes;
   const inClockInWindow = minutes >= CLOCK_IN_OPENS_MINUTES && minutes <= CLOCK_IN_CLOSES_MINUTES;
-  const inClockOutWindow = minutes >= CLOCK_OUT_OPENS_MINUTES && minutes <= CLOCK_OUT_CLOSES_MINUTES;
   return {
     minutes,
     inClockInWindow,
-    inClockOutWindow,
+    inClockOutWindow: clockOut.isOpen,
     isClockInOpen: CLOCK_WINDOW_ENFORCEMENT.clockIn ? inClockInWindow : true,
-    isClockOutOpen: CLOCK_WINDOW_ENFORCEMENT.clockOut ? inClockOutWindow : true,
+    isClockOutOpen: CLOCK_WINDOW_ENFORCEMENT.clockOut ? clockOut.isOpen : true,
     clockInMessage: minutes < CLOCK_IN_OPENS_MINUTES
       ? 'The clock-in window opens at 9:00 AM.'
       : 'The clock-in window closed at 9:10 AM. You cannot clock in for today.',
-    clockOutMessage: minutes < CLOCK_OUT_OPENS_MINUTES
-      ? 'The clock-out window opens at 6:00 PM.'
-      : 'The clock-out window closed at 6:10 PM. Today will be recorded as void.'
+    clockOutMessage: `Clock-out closed at ${clockOut.cutoffLabel}. Today can no longer be closed from the portal - ask an administrator to record it for you.`
   };
 };
 
@@ -305,6 +302,17 @@ export function AttendanceNew() {
    * Start date: the profile's own start date when present, otherwise the
    * earliest approved attendance day.  The end date is derived from the hours
    * still to render, so it tracks the approved hours automatically.
+   *
+   * Accepted absences are added back on top.  A day the administrator has
+   * accepted as absent renders no hours, so the projection has to move out by
+   * that day - otherwise the end date quietly assumes the trainee will make up
+   * time they were excused from, and it drifts earlier with every illness.
+   *
+   * The count depends on the window, and the window depends on the count, so
+   * this settles in two passes: project once, count the accepted absences that
+   * fall inside that projection, project again with them included. Two passes
+   * is enough - each one can only move the date later, and the second pass
+   * already covers everything the first one revealed.
    */
   const schedule = useMemo(() => {
     const dated = (attendanceHistory || [])
@@ -317,12 +325,74 @@ export function AttendanceNew() {
       dated[0] ||
       null;
 
-    return computeExperienceSchedule({
+    const project = (absenceDays) => computeExperienceSchedule({
       startDate,
       requiredHours: progress.required,
-      renderedHours: progress.rendered
+      renderedHours: progress.rendered,
+      absenceDays
     });
-  }, [attendanceHistory, currentUser?.startDate, currentUser?.start_date, progress]);
+
+    const first = project(0);
+    const firstPass = countAcceptedAbsenceDays(absenceRequests, {
+      from: first.startDate,
+      to: first.endDate
+    });
+    if (!firstPass) return first;
+
+    const second = project(firstPass);
+    const secondPass = countAcceptedAbsenceDays(absenceRequests, {
+      from: second.startDate,
+      to: second.endDate
+    });
+    return secondPass === firstPass ? second : project(secondPass);
+  }, [absenceRequests, attendanceHistory, currentUser?.startDate, currentUser?.start_date, progress]);
+
+  /**
+   * The 5-minutes-to-6:30 reminder.
+   *
+   * Fires once per day per browser, only while a shift is actually open. The
+   * flag is stored per user and per date so a reload, a route change or a
+   * second tab cannot turn it into a loop. A ref mirrors it so the interval is
+   * not rebuilt every time the flag flips.
+   */
+  const reminderFiredRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentUser?.id) return undefined;
+    const today = new Date();
+    const flagKey = `${REMINDER_FLAG_PREFIX}${currentUser.id}:${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    let alreadyReminded = reminderFiredRef.current;
+    try {
+      alreadyReminded = alreadyReminded || window.localStorage.getItem(flagKey) === '1';
+    } catch (error) {
+      // Private browsing: the in-memory flag still stops a repeat this session.
+      alreadyReminded = reminderFiredRef.current;
+    }
+    reminderFiredRef.current = alreadyReminded;
+    requestDesktopNotificationPermission();
+
+    const tick = () => {
+      const reminder = getClockOutReminder({
+        now: new Date(),
+        isClockedIn: activeClock,
+        alreadyReminded: reminderFiredRef.current
+      });
+      if (!reminder.isDue) return;
+
+      reminderFiredRef.current = true;
+      try {
+        window.localStorage.setItem(flagKey, '1');
+      } catch (error) {
+        /* the in-memory flag still stops a repeat this session */
+      }
+      toast.warning(reminder.message, { autoClose: 12000 });
+      showDesktopNotification('Clock-out closes soon', reminder.message);
+    };
+
+    tick();
+    const timer = window.setInterval(tick, REMINDER_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [activeClock, currentUser?.id]);
 
   const handleClockIn = () => {
     if (!approvedPlacement) {
@@ -395,6 +465,12 @@ export function AttendanceNew() {
 
   const handleClockOut = () => {
     if (!activeClock) return;
+    // A shift can only belong to a placement. Without one there is nothing to
+    // close, and the database would refuse it anyway.
+    if (!approvedPlacement) {
+      toast.warning(terms.attendanceLockedCopy);
+      return;
+    }
     if (!windowState.isClockOutOpen) {
       toast.error(windowState.clockOutMessage);
       return;
@@ -458,6 +534,10 @@ export function AttendanceNew() {
 
   const handleOtSubmit = async (event) => {
     event.preventDefault();
+    if (!approvedPlacement) {
+      toast.warning(terms.attendanceLockedCopy);
+      return;
+    }
     const nextErrors = validateOtForm();
     if (Object.keys(nextErrors).length) {
       setOtErrors(nextErrors);
@@ -585,10 +665,10 @@ export function AttendanceNew() {
               {CLOCK_WINDOW_ENFORCEMENT.clockIn
                 ? 'Clock in between 9:00 AM and 9:10 AM'
                 : 'Clock-in is open any time while the window limit is switched off'}
-              {', and '}
+              {', and clock out '}
               {CLOCK_WINDOW_ENFORCEMENT.clockOut
-                ? 'clock out between 6:00 PM and 6:10 PM.'
-                : 'clock-out is open any time.'}
+                ? `any time before ${getClockOutWindow().cutoffLabel} - no earlier window to wait for.`
+                : 'at any time.'}
               {' '}A day with no clock-out is recorded as void.
             </p>
             {windowNotice && (
@@ -609,7 +689,6 @@ export function AttendanceNew() {
           <Card className="today-attendance-card">
             <div className="card-header">
               <h2 className="card-title">Today's Attendance</h2>
-              <span className="card-idx">01 / LIVE</span>
               <span className="card-date">{formatDate(new Date())}</span>
             </div>
 
@@ -731,7 +810,6 @@ export function AttendanceNew() {
           <Card className="hours-progress-card">
             <div className="card-header">
               <h2 className="card-title">{terms.hoursTitle}</h2>
-              <span className="card-idx">02</span>
             </div>
             {/* A Trainee is measured by the hours they have banked, not by a
                 contractual target - so the Required / Remaining breakdown is
@@ -774,7 +852,6 @@ export function AttendanceNew() {
           <Card className="attendance-history-card">
             <div className="card-header">
               <h2 className="card-title">Attendance History</h2>
-              <span className="card-idx">06 / DTR</span>
             </div>
             {attendanceHistory.length > 0 ? (
               <div className="table-responsive">
@@ -791,7 +868,6 @@ export function AttendanceNew() {
           <Card className="attendance-summary-card">
             <div className="card-header">
               <h2 className="card-title">{terms.progressLabel}</h2>
-              <span className="card-idx">03</span>
             </div>
             <div className="attendance-summary-grid">
               <div className="summary-item">
@@ -824,7 +900,24 @@ export function AttendanceNew() {
                   <span className="summary-value">{schedule.workDaysRemaining}</span>
                 </div>
               )}
+              {/* Only shown when there is something to explain.  An accepted
+                  absence is already folded into the end date above; without
+                  this line the date would look later than the arithmetic
+                  suggests and read like an error. */}
+              {!terms.isTrainee && schedule.absenceDays > 0 && (
+                <div className="summary-item">
+                  <span className="summary-label">Accepted Absences</span>
+                  <span className="summary-value">{schedule.absenceDays}</span>
+                </div>
+              )}
             </div>
+            {!terms.isTrainee && schedule.absenceDays > 0 && (
+              <p className="summary-hint">
+                Your projected end date already includes {schedule.absenceDays} accepted
+                absence{schedule.absenceDays === 1 ? '' : 's'} - one working day each. You are
+                not expected to make those days up.
+              </p>
+            )}
             {terms.isTrainee ? (
               <p className="summary-hint">
                 Your {terms.progressNoun} is measured in approved hours only - there is no target to finish.
@@ -839,13 +932,14 @@ export function AttendanceNew() {
           <Card className="absence-request-card">
             <div className="card-header">
               <h2 className="card-title">Report an Absence</h2>
-              {!showAbsenceForm && <span className="card-idx">04</span>}
               {!showAbsenceForm && <Button onClick={() => setShowAbsenceForm(true)} size="sm">+ Report Absence</Button>}
             </div>
             <p className="absence-intro">
-              Tell the administrator in advance that you cannot attend, and why. This is for
-              their awareness only - they will reply <strong>Noted</strong> once they have seen it,
-              and nothing is deducted from your hours.
+              Tell the administrator in advance that you cannot attend, and why. They will
+              <strong> accept </strong> or <strong>reject </strong> it.
+              An accepted day is added to your projected end date, so you are never asked to
+              make up a day you were excused from. A rejected day counts as a normal working
+              day, and their reason is shown below.
             </p>
 
             {showAbsenceForm && (
@@ -901,8 +995,8 @@ export function AttendanceNew() {
                         <td>{formatDate(request.absenceDate || request.createdAt)}</td>
                         <td>{request.reason}</td>
                         <td>
-                          <Badge status={isAbsenceNoted(request) ? 'APPROVED' : 'PENDING'}>
-                            {isAbsenceNoted(request) ? 'Noted' : 'Waiting for admin'}
+                          <Badge status={getAbsenceDecisionTone(request)}>
+                            {getAbsenceDecision(request)}
                           </Badge>
                         </td>
                         <td>{request.adminNote || '--'}</td>
@@ -920,9 +1014,14 @@ export function AttendanceNew() {
           <Card className="ot-request-card">
             <div className="card-header">
               <h2 className="card-title">Overtime / Extension Request</h2>
-              {!showOtForm && <span className="card-idx">05</span>}
-              {!showOtForm && <Button onClick={() => setShowOtForm(true)} size="sm">+ Request OT</Button>}
+              {!showOtForm && approvedPlacement && <Button onClick={() => setShowOtForm(true)} size="sm">+ Request OT</Button>}
             </div>
+            {/* Overtime is hours on top of an attendance day, so it cannot exist
+                before there is a placement to attend. Offering the button only
+                produced requests an administrator had to reject. */}
+            {!approvedPlacement && (
+              <p className="empty-state">{terms.attendanceLockedCopy}</p>
+            )}
             {showOtForm && (
               <form onSubmit={handleOtSubmit} className="ot-form">
                 <Input
@@ -982,7 +1081,6 @@ function RecentActivity({ logs }) {
     <Card className="attendance-activity-card">
       <div className="card-header">
         <h2 className="card-title">Recent activity</h2>
-        <span className="card-idx">LOG</span>
       </div>
       <ul className="activity-list">
         {rows.map((log) => (

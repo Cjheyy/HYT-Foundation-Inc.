@@ -53,8 +53,107 @@
   margin-bottom: 4px;
 }
 
+.opportunity-card-position {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--info-text);
+  margin: -6px 0 10px;
+}
+
+/* The CTA has to look like a button at rest, not only on hover.
+   `.btn-primary` already paints a filled gradient, but on these cards the
+   action sits at the foot of a card whose whole surface reacts to hover - so
+   the button was reading as one more piece of card furniture until the pointer
+   arrived. A permanent shadow, a solid minimum height and a visible focus ring
+   make it read as the primary action from across the page. */
 .opportunity-apply-button {
   width: 100%;
+  min-height: 40px;
+  box-shadow: 0 2px 8px rgba(184, 68, 31, 0.28);
+}
+
+.opportunity-apply-button:focus-visible {
+  outline: 3px solid var(--info-text);
+  outline-offset: 2px;
+}
+
+/* The whole card opens the posting, so the card has to advertise that: a
+   pointer cursor, and a focus ring that matches the button's. */
+.posting-card-clickable {
+  cursor: pointer;
+}
+
+.posting-card-clickable:focus-visible {
+  outline: 3px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------------------
+   The posting itself, opened in place instead of navigating to the public
+   landing page.
+   -------------------------------------------------------------------------- */
+.posting-modal-head {
+  margin-bottom: 16px;
+}
+
+.posting-modal-org {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-text);
+  margin-bottom: 10px;
+}
+
+.posting-modal-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 8px 20px;
+  margin: 0 0 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
+
+.posting-modal-facts dt {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.posting-modal-facts dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dark-text);
+}
+
+.posting-modal-body h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+}
+
+.posting-modal-body p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted-text);
+  white-space: pre-wrap;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* Spacing for the modal footer and the inline error lives here rather than in
+   an inline `marginTop`. The listing-card height contract in index.css pins the
+   CTA with `margin-top: auto`, and an inline margin at a call site outranks it -
+   src/__tests__/listingCardHeight.test.js fails the build if one reappears. */
+.posting-modal-error {
+  margin-top: 12px;
+}
+
+.posting-modal-actions {
+  margin-top: 24px;
 }
 
 @media (max-width: 768px) {

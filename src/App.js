@@ -58,6 +58,7 @@ import { AdminCertificates } from './pages/admin/Certificates';
 import { AdminAnnouncements } from './pages/admin/Announcements';
 import { AdminReports } from './pages/admin/Reports';
 import { AttendanceVerification } from './pages/admin/AttendanceVerification';
+import { AbsenceReview } from './pages/admin/AbsenceReview';
 import { OtApprovals } from './pages/admin/OtApprovals';
 import { ReportApprovals } from './pages/admin/ReportApprovals';
 import { ApplicationReview } from './pages/admin/ApplicationReview';
@@ -328,6 +329,14 @@ function App() {
           <Route path="/admin/ot-approvals" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminLayout><OtApprovals /></AdminLayout>
+            </ProtectedRoute>
+          } />
+          {/* Absence reports: accept / reject with a mandatory reason. The
+              answer feeds the projected end date, which is why this is a
+              decision and not the old one-way "Noted" acknowledgement. */}
+          <Route path="/admin/absence-review" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminLayout><AbsenceReview /></AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin/report-approvals" element={

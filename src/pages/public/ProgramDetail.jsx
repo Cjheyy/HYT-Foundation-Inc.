@@ -139,7 +139,7 @@ export function ProgramDetail() {
               {thrustTags.length > 0 && (
                 <>
                   <h3 className="subsection-title">HYT Thrusts</h3>
-                  <div className="thrusts-list">
+                  <div className="detail-thrusts">
                     {thrustTags.map((thrust, idx) => (
                       <Badge key={idx} color="purple">{thrust}</Badge>
                     ))}

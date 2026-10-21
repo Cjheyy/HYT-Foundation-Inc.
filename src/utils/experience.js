@@ -490,11 +490,92 @@ export const isHoursAttributable = (entries, today = new Date()) => {
 };
 
 /**
+ * Working days lost to accepted absences.
+ *
+ * A placement is projected from the hours still to render, at `hoursPerDay`
+ * per working day.  A day the trainee was legitimately absent does not render
+ * those hours, so it has to be added back to the projection - otherwise the
+ * end date quietly assumes the trainee will make up a day they were excused
+ * from, and the date drifts earlier every time they are ill.
+ *
+ * Only **accepted** absences count.  A pending one has not been agreed to yet,
+ * and a rejected one is a normal working day by definition - counting either
+ * would let a trainee move their own deadline by filing requests.
+ *
+ * Weekends are dropped: the projection already skips them, so a Saturday
+ * absence must not buy an extra working day.  Duplicate dates collapse to one.
+ *
+ * `from` / `to` bound the window (the placement's start and end).  Omit them
+ * to count every accepted absence on file.
+ */
+export function countAcceptedAbsenceDays(absenceRequests = [], { from = null, to = null } = {}) {
+  const start = toValidDate(from);
+  const end = toValidDate(to);
+  const days = new Set();
+
+  (Array.isArray(absenceRequests) ? absenceRequests : []).forEach((request) => {
+    if (!request) return;
+    const status = String(request.status ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    // 'Noted' is the legacy acknowledgement, which only ever meant "yes".
+    if (!['ACCEPTED', 'NOTED', 'APPROVED'].includes(status)) return;
+
+    const raw = request.absenceDate || request.absence_date || request.date;
+    const day = toValidDate(raw);
+    if (!day) return;
+
+    const weekday = day.getDay();
+    if (weekday === 0 || weekday === 6) return;
+
+    if (start && day < start) return;
+    if (end && day > end) return;
+
+    days.add(
+      `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+    );
+  });
+
+  return days.size;
+}
+
+/**
+ * Whether the user has something to clock in FOR.
+ *
+ * The OJT/Intern portal is gated on an approved OJT posting - that placement is
+ * what a DTR belongs to. A Trainee joins a PROGRAMME instead, so requiring a
+ * posting locked them out of their own Attendance page with "apply for an OJT
+ * Posting", even though `request_clock_in` already accepts an approved
+ * programme application.
+ *
+ * So the rule is: an approved PLACEMENT of either kind. An approved EVENT is
+ * deliberately not enough in either portal - an event is a diary entry, not a
+ * placement, and the database gate excludes it (`event_id IS NULL`).
+ *
+ * This mirrors the server exactly. Where they disagreed, the client won and the
+ * trainee could never get past the button.
+ *
+ * Lives here rather than in Attendance.jsx so the Daily Reports page can apply
+ * the same gate without importing another page.
+ */
+export const hasApprovedPlacement = (applications = [], userId = null) => (applications || []).some((app) => {
+  const owner = app.userId || app.studentId || app.user_id;
+  if (userId && owner && owner !== userId) return false;
+  const kind = getApplicationListingKind(app);
+  if (kind === 'event') return false;
+  const isPlacement = kind === 'opportunity' || kind === 'program';
+  if (!isPlacement) return false;
+  return ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(normalizeStatus(app.status));
+});
+
+/**
  * Start date + projected end date for one experience.
  *
  * `endDate` is the day the remaining hours land on, projected forward from
  * whichever is later: the start date or today. A finished experience reports
  * the date it finished instead of a projection.
+ *
+ * `absenceDays` (see countAcceptedAbsenceDays) pushes the projection out by one
+ * working day per accepted absence.  It is added to `workDaysRemaining` too, so
+ * the number and the date can never contradict each other.
  */
 export function computeExperienceSchedule({
   startDate = null,
@@ -502,6 +583,7 @@ export function computeExperienceSchedule({
   renderedHours = 0,
   hoursPerDay = DEFAULT_HOURS_PER_DAY,
   completedAt = null,
+  absenceDays = 0,
   today = new Date()
 } = {}) {
   const required = Number(requiredHours) || 0;
@@ -510,18 +592,20 @@ export function computeExperienceSchedule({
   const remainingHours = Math.max(0, round2(required - rendered));
   const start = toValidDate(startDate);
   const reference = toValidDate(today) || new Date();
+  const absences = Math.max(0, Math.floor(Number(absenceDays) || 0));
 
   const base = {
     startDate: start,
     requiredHours: required,
     renderedHours: rendered,
     remainingHours,
-    hoursPerDay: perDay
+    hoursPerDay: perDay,
+    absenceDays: absences
   };
 
   // No required hours on file: we cannot honestly project an end date.
   if (required <= 0) {
-    return { ...base, hasSchedule: false, endDate: null, workDaysRemaining: 0, isComplete: false };
+    return { ...base, hasSchedule: false, endDate: null, workDaysRemaining: 0, hoursWorkDaysRemaining: 0, isComplete: false };
   }
 
   if (remainingHours <= 0) {
@@ -530,11 +614,13 @@ export function computeExperienceSchedule({
       hasSchedule: true,
       endDate: toValidDate(completedAt) || start || reference,
       workDaysRemaining: 0,
+      hoursWorkDaysRemaining: 0,
       isComplete: true
     };
   }
 
-  const workDaysRemaining = Math.ceil(remainingHours / perDay);
+  const hoursWorkDaysRemaining = Math.ceil(remainingHours / perDay);
+  const workDaysRemaining = hoursWorkDaysRemaining + absences;
   const projectFrom = start && start > reference ? start : reference;
 
   return {
@@ -542,6 +628,7 @@ export function computeExperienceSchedule({
     hasSchedule: true,
     endDate: addWorkingDays(projectFrom, workDaysRemaining),
     workDaysRemaining,
+    hoursWorkDaysRemaining,
     isComplete: false
   };
 }

@@ -38,6 +38,32 @@ const stageLabel = (stage) => stage === 'CLOCK_IN' ? 'Clock-in request' : 'Clock
 
 const isAlreadyProcessed = (error) => /already processed|no longer pending|not found/i.test(String(error?.message || ''));
 
+/**
+ * Statuses that mean "an administrator has already answered this request".
+ *
+ * `CLOCKED_IN` belongs here and its absence was a real bug.  Approving a
+ * clock-in writes `CLOCKED_IN`, not `APPROVED` - the row is not finished yet,
+ * the timer has only just started - so a request that had been accepted
+ * vanished from BOTH lists: it was no longer pending, and the processed filter
+ * only looked for APPROVED/REJECTED/VOID.  The administrator pressed Accept,
+ * the row left the queue, and "Recently Processed" stayed empty.
+ *
+ * `APPROVED` is still listed because that is what a clock-out approval writes,
+ * and `VOID`/`CANCELLED` are closed without a decision.
+ */
+const PROCESSED_STATUSES = ['APPROVED', 'REJECTED', 'VOID', 'CANCELLED', 'CLOCKED_IN'];
+
+/** Readable label for a processed row, so "CLOCKED_IN" is not shown raw. */
+const processedLabel = (status) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === 'CLOCKED_IN') return 'Approved - clocked in';
+  if (normalized === 'APPROVED') return 'Approved';
+  if (normalized === 'REJECTED') return 'Rejected';
+  if (normalized === 'VOID') return 'Void';
+  if (normalized === 'CANCELLED') return 'Cancelled';
+  return status || 'Unknown';
+};
+
 export function AttendanceVerification() {
   const { state, refreshData } = useApp();
   const { currentUser } = state;
@@ -108,7 +134,7 @@ export function AttendanceVerification() {
 
   const pendingLogs = useMemo(() => logs.filter((log) => isPendingAttendanceStatus(log.status)), [logs]);
   const processedLogs = useMemo(() => logs.filter((log) =>
-    ['APPROVED', 'REJECTED', 'VOID'].includes(normalizeStatus(log.status))
+    PROCESSED_STATUSES.includes(normalizeStatus(log.status))
   ), [logs]);
   const filteredPending = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -321,7 +347,16 @@ export function AttendanceVerification() {
       </Card>
 
       <Card style={{ marginTop: '24px' }}>
-        <div className="card-header"><h2 className="card-title">Recently Processed</h2></div>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Recently Processed</h2>
+            <p className="card-subtitle">
+              Requests an administrator has already answered. An accepted clock-in shows as
+              &ldquo;Approved - clocked in&rdquo; until its clock-out is approved and the hours are credited.
+            </p>
+          </div>
+          <Badge color="green">{processedLogs.length} Processed</Badge>
+        </div>
         {processedLogs.length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
@@ -333,7 +368,7 @@ export function AttendanceVerification() {
                     <td>{formatDate(log.date)}</td>
                     <td className="duration-display">{formatDuration(log.durationSeconds)}</td>
                     <td>{Number(log.renderedHours || 0).toFixed(4)} hrs</td>
-                    <td><Badge status={log.status}>{log.status}</Badge></td>
+                    <td><Badge status={log.status}>{processedLabel(log.status)}</Badge></td>
                     <td>{log.adminNote || '--'}</td>
                   </tr>
                 ))}

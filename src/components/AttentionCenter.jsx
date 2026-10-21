@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Icon } from './icons';
 import { useAnnouncementReads } from '../utils/announcementReads';
 import { buildAttentionItems, getPublishedAnnouncements } from '../utils/attention';
+import { buildListingNotifications, useListingReads } from '../utils/listingNotifications';
 import './AttentionCenter.css';
 
 const pluralize = (count, singular, plural = `${singular}s`) =>
@@ -13,21 +14,47 @@ const pluralize = (count, singular, plural = `${singular}s`) =>
  * Bell + count in the portal header, opening a panel of everything that is
  * waiting on the signed-in trainee.
  *
- * Those signals live on four different pages; before this the only way to find
- * a rejected daily report or an un-uploaded requirement was to visit each page
- * in turn.  The item list itself comes from utils/attention so the sidebar
- * badges and this panel can never disagree.
+ * Those signals live on five different pages; before this the only way to find
+ * a rejected daily report, an un-uploaded requirement or a newly published OJT
+ * posting was to visit each page in turn.
+ *
+ * Two sources feed the panel, and they are deliberately separate:
+ *
+ *   buildAttentionItems()      things that need an action, from app state
+ *   buildListingNotifications()  listings published since the viewer last
+ *                                acknowledged them
+ *
+ * The first is urgent (warning/danger tones), the second is informational
+ * (success tone), so the new listings sit at the top where they are noticed
+ * without pushing a rejected report down the list.
  */
 export function AttentionCenter({ basePath = '/student' }) {
   const { state } = useApp();
   const { currentUser } = state;
   const { readIds, markAllRead } = useAnnouncementReads(currentUser?.id);
+  const { seenIds, markAllSeen } = useListingReads(currentUser?.id);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
 
-  const items = useMemo(
+  const listingItems = useMemo(
+    () => buildListingNotifications({
+      state,
+      role: currentUser?.role,
+      userId: currentUser?.id,
+      basePath,
+      seenIds
+    }),
+    [state, currentUser?.role, currentUser?.id, basePath, seenIds]
+  );
+
+  const attentionItems = useMemo(
     () => buildAttentionItems({ state, userId: currentUser?.id, basePath, readIds }),
     [state, currentUser?.id, basePath, readIds]
+  );
+
+  const items = useMemo(
+    () => [...listingItems, ...attentionItems],
+    [listingItems, attentionItems]
   );
   const count = items.length;
 
@@ -35,7 +62,13 @@ export function AttentionCenter({ basePath = '/student' }) {
     () => getPublishedAnnouncements(state).map((announcement) => announcement.id),
     [state]
   );
-  const hasUnread = publishedIds.some((id) => !readIds.has(id));
+  const listingIds = useMemo(() => listingItems.map((item) => item.listingId), [listingItems]);
+  const hasUnread = publishedIds.some((id) => !readIds.has(id)) || listingIds.length > 0;
+
+  const handleMarkAllRead = () => {
+    markAllRead(publishedIds);
+    if (listingIds.length) markAllSeen(listingIds);
+  };
 
   // Dismiss on outside click or Escape.
   useEffect(() => {
@@ -83,7 +116,7 @@ export function AttentionCenter({ basePath = '/student' }) {
               <button
                 type="button"
                 className="attention-mark-all"
-                onClick={() => markAllRead(publishedIds)}
+                onClick={handleMarkAllRead}
               >
                 Mark all read
               </button>

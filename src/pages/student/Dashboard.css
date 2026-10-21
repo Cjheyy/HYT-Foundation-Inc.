@@ -101,15 +101,46 @@
   padding: 2px 9px;
 }
 
+/* --------------------------------------------------------------------------
+ * The scroll cap is a WHOLE number of rows.
+ *
+ * It used to be a flat `max-height: 264px`.  A row is 66px (14px title at
+ * line-height 1.6 + 2px + 12px date at 1.6 + 20px padding + 2px border) and the
+ * gap is 8px, so 264px showed three rows and then sliced the fourth one in half
+ * right under the "View my applications" button - the card looked clipped
+ * rather than scrollable.
+ *
+ * The row height and the cap are now both derived from the same three numbers,
+ * so the visible area is 4 x 66 + 3 x 8 = 288px: four complete rows, and the
+ * scrollbar only appears when a FIFTH one exists.  `grid-auto-rows` pins every
+ * row to the same height, which is what makes the arithmetic true - without it
+ * a row could be a pixel taller and the last one would be shaved again.
+ *
+ * Change `--active-visible-rows` to show more or fewer; nothing else needs
+ * touching, and a test asserts the cap stays expressed in these variables
+ * instead of drifting back to a magic pixel value.
+ * -------------------------------------------------------------------------- */
 .active-app-list {
+  --active-row-height: 66px;
+  --active-row-gap: 8px;
+  --active-visible-rows: 4;
+
   display: grid;
-  gap: 8px;
+  grid-auto-rows: var(--active-row-height);
+  gap: var(--active-row-gap);
   margin: 0;
   padding: 0;
   list-style: none;
-  /* Scroll rather than stretch the card once several applications are live. */
-  max-height: 264px;
+  max-height: calc(
+    var(--active-row-height) * var(--active-visible-rows) +
+    var(--active-row-gap) * (var(--active-visible-rows) - 1)
+  );
   overflow-y: auto;
+  /* Scrolling to the end of the list must not carry on into the page. */
+  overscroll-behavior: contain;
+  /* Reserve the scrollbar's width up front, so the rows do not jump sideways
+     the moment the list becomes scrollable. */
+  scrollbar-gutter: stable;
 }
 
 .active-app-row {
@@ -118,6 +149,8 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
+  /* Fill the row the grid allocated, so the cap above is exact. */
+  height: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border, var(--border));
   border-radius: 10px;

@@ -461,20 +461,32 @@ export function RegisterWizard({ onClose }) {
               )}
 
               <div className="form-group">
-                <label className="checkbox-label">
+                <div className="rw-consent">
                   <input
                     type="checkbox"
+                    id="agreeToTerms"
                     name="agreeToTerms"
                     checked={formData.agreeToTerms}
                     onChange={handleChange}
                   />
-                  <span>
+                  <label className="rw-consent-text" htmlFor="agreeToTerms">
                     I agree to the{' '}
-                    <button type="button" className="terms-link" onClick={() => setShowTermsModal(true)}>
+                    <button
+                      type="button"
+                      className="terms-link"
+                      onClick={(event) => {
+                        // The button sits inside the <label>, so without this the
+                        // click would also tick the checkbox - reading the terms
+                        // would count as accepting them.
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setShowTermsModal(true);
+                      }}
+                    >
                       Terms and Conditions
                     </button>
-                  </span>
-                </label>
+                  </label>
+                </div>
                 {errors.agreeToTerms && <div className="form-error">{errors.agreeToTerms}</div>}
               </div>
             </div>

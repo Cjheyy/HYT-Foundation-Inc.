@@ -370,6 +370,83 @@
   border-radius: 12px;
 }
 
+/* --- Consent block: the agree checkbox and the Terms link ----------------
+   Two problems, one block.
+
+   1. The Terms link was a bare <button> with no rule anywhere in the
+      stylesheet, so it inherited the browser default - a plain rectangle of
+      body text with no underline, no colour and no pointer cursor. It looked
+      exactly like the sentence around it, so nobody clicked it.
+   2. The checkbox was an 18px square in a 14px line of grey text, at the very
+      bottom of the last step: technically present, practically invisible.
+
+   The block below gives the consent line its own surface, makes the link read
+   as a link, and grows the checkbox to a comfortable target while keeping it
+   aligned with the first line of the sentence rather than the middle of the
+   whole paragraph. */
+.rw-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-sunken);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+/* Checked (or hovered) the block acknowledges the choice - the checkbox on its
+   own was too small to be feedback. */
+.rw-consent:has(input[type="checkbox"]:checked) {
+  border-color: var(--accent-text);
+  background: var(--tint-warm);
+}
+
+.rw-consent input[type="checkbox"] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent-text);
+}
+
+.rw-consent-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--dark-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* A real link, not a word in the sentence: brand colour, underlined, pointer,
+   and a focus ring for keyboard users. `button` reset first, because this is a
+   <button type="button"> that opens a modal rather than navigating. */
+.terms-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.terms-link:hover {
+  color: #8A2F13;
+  text-decoration-thickness: 2px;
+}
+
+.terms-link:focus-visible {
+  outline: 3px solid var(--info-text);
+  outline-offset: 2px;
+}
+
 /* --- Step 4: success ---------------------------------------------------- */
 .rw-success {
   display: grid;

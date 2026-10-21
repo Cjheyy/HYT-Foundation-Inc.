@@ -33,6 +33,7 @@ export const OJT_TERMS = {
   attendanceSubtitle: 'Submit attendance requests and track approved OJT progress',
   attendanceLockedCopy: 'Please apply for an OJT Posting and wait for Admin acceptance before clocking in.',
   approvalRequiredTitle: 'OJT approval required',
+  dailyReportsLockedCopy: 'Please apply for an OJT Posting and wait for Admin acceptance before filing a daily report.',
   journeyEmptyMessage: 'Apply to postings to start your OJT journey',
   completionTitle: 'OJT Completed',
   completionNotice: 'You have successfully completed your OJT program. Your certificate is now available.'
@@ -53,6 +54,7 @@ export const TRAINEE_TERMS = {
   attendanceSubtitle: 'Submit attendance requests and track approved training hours',
   attendanceLockedCopy: 'Please join a program and wait for Admin acceptance before clocking in.',
   approvalRequiredTitle: 'Program approval required',
+  dailyReportsLockedCopy: 'Please join a program and wait for Admin acceptance before filing a daily report.',
   journeyEmptyMessage: 'Join a program to start your training journey',
   completionTitle: 'Training Completed',
   completionNotice: 'You have successfully completed your training program. Your certificate is now available.'

@@ -1,24 +1,45 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { Badge } from '../../components/Badge';
+import { Modal } from '../../components/Modal';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/icons';
 import { OPPORTUNITY_CATEGORIES } from '../../utils/helpers';
-import { isEventActive, getEventSlotState, applicationReleasesSlot } from '../../services/supabaseService';
+import { formatDate } from '../../utils/helpers';
+import { formatListingSchedule, getListingPosition, getListingSummary } from '../../utils/experience';
+import {
+  applyToOpportunity,
+  applicationReleasesSlot,
+  getEventSlotState,
+  isEventActive
+} from '../../services/supabaseService';
+import { toast } from 'react-toastify';
 import './Opportunities.css';
 
+/**
+ * OJT Postings catalogue.
+ *
+ * "View & Apply" used to navigate to `/opportunities/:id` - the PUBLIC landing
+ * page. That threw the signed-in intern out of their portal into the marketing
+ * site, where the apply button either asked them to sign in again or was not
+ * there at all, and the only way back was the browser's Back button.
+ *
+ * The posting now opens in place, as a modal over the catalogue, and the
+ * application is submitted from the portal itself. Nothing leaves `/student`.
+ */
 export function StudentOpportunities() {
-  const { state } = useApp();
+  const { state, refreshData } = useApp();
   const { opportunities, currentUser, applications } = state;
-  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [activePosting, setActivePosting] = useState(null);
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState('');
 
   const userRole = String(currentUser?.role || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
   const isTrainee = userRole === 'TRAINEE' || userRole === 'STUDENT';
@@ -59,9 +80,40 @@ export function StudentOpportunities() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleApply = (oppId) => {
-    navigate('/opportunities/' + oppId);
+  const openPosting = (opp) => {
+    setActivePosting(opp);
+    setApplyError('');
   };
+
+  const closePosting = () => {
+    if (applying) return;
+    setActivePosting(null);
+    setApplyError('');
+  };
+
+  const handleApply = async () => {
+    if (!activePosting || !currentUser?.id) return;
+    try {
+      setApplying(true);
+      setApplyError('');
+      await applyToOpportunity(activePosting.id, currentUser.id);
+      toast.success(`Application sent for ${activePosting.title}.`);
+      setActivePosting(null);
+      await refreshData().catch(() => undefined);
+    } catch (error) {
+      // Slot-full, "one application only" and the approval gate all arrive here
+      // with a readable message from the service. Shown inside the modal so the
+      // posting stays open for a retry.
+      console.error('Apply to posting error:', error);
+      setApplyError(error.message || 'The application could not be sent.');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const activeSlots = activePosting ? getEventSlotState(activePosting) : null;
+  const activeAlreadyApplied = Boolean(activePosting) && myApplicationIds.includes(activePosting.id);
+  const activeBlocked = Boolean(blockingOpportunityId) && blockingOpportunityId !== activePosting?.id;
 
   return (
     <div className="student-opportunities-page">
@@ -105,8 +157,22 @@ export function StudentOpportunities() {
             const slots = getEventSlotState(opp);
             const alreadyApplied = myApplicationIds.includes(opp.id);
             const blockedByOther = Boolean(blockingOpportunityId) && blockingOpportunityId !== opp.id;
+            const position = getListingPosition(opp);
             return (
-              <Card key={opp.id} className="card--posting reveal-card">
+              <Card
+                key={opp.id}
+                className="card--posting reveal-card posting-card-clickable"
+                onClick={() => openPosting(opp)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openPosting(opp);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${opp.title}`}
+              >
                 {/* Same clip-path circle reveal as the Home rails. */}
                 <span className="reveal-wipe" aria-hidden="true" />
                 <div className="opportunity-card-badges">
@@ -117,6 +183,7 @@ export function StudentOpportunities() {
                 </div>
                 <h3 className="opportunity-card-title">{opp.title}</h3>
                 <p className="opportunity-card-org">{opp.organization}</p>
+                {position && <p className="opportunity-card-position">{position}</p>}
                 <p className="opportunity-card-description">
                   {String(opp.description || '').substring(0, 100)}{opp.description?.length > 100 ? '...' : ''}
                 </p>
@@ -135,8 +202,17 @@ export function StudentOpportunities() {
                     No Slots Available
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={() => handleApply(opp.id)} className="opportunity-apply-button">
-                    View & Apply
+                  <Button
+                    size="sm"
+                    className="opportunity-apply-button"
+                    onClick={(event) => {
+                      // The card itself opens the posting; the button opens the
+                      // same modal without firing the card handler twice.
+                      event.stopPropagation();
+                      openPosting(opp);
+                    }}
+                  >
+                    View &amp; Apply
                   </Button>
                 )}
               </Card>
@@ -152,6 +228,73 @@ export function StudentOpportunities() {
       )}
       </>
       )}
+
+      <Modal
+        isOpen={Boolean(activePosting)}
+        onClose={closePosting}
+        title={activePosting?.title || 'OJT Posting'}
+      >
+        {activePosting && (
+          <div className="posting-modal">
+            <div className="posting-modal-head">
+              <p className="posting-modal-org">{activePosting.organization}</p>
+              <div className="opportunity-card-badges">
+                <Badge color="blue">{activePosting.category}</Badge>
+                <Badge color={activeSlots.isFull ? 'red' : 'green'}>
+                  {activeSlots.isFull
+                    ? 'No Slots Available'
+                    : `${activeSlots.available} of ${activeSlots.total} slots remaining`}
+                </Badge>
+              </div>
+            </div>
+
+            <dl className="posting-modal-facts">
+              {getListingPosition(activePosting) && (
+                <>
+                  <dt>Position</dt>
+                  <dd>{getListingPosition(activePosting)}</dd>
+                </>
+              )}
+              <dt>Location</dt>
+              <dd>{activePosting.location || '--'}</dd>
+              <dt>Required hours</dt>
+              <dd>{activePosting.requiredHours ? `${activePosting.requiredHours} hours` : '--'}</dd>
+              <dt>Schedule</dt>
+              <dd>{formatListingSchedule(activePosting) || 'Not specified'}</dd>
+              {activePosting.applicationDeadline && (
+                <>
+                  <dt>Apply by</dt>
+                  <dd>{formatDate(activePosting.applicationDeadline)}</dd>
+                </>
+              )}
+            </dl>
+
+            <div className="posting-modal-body">
+              <h4>About this posting</h4>
+              <p>{getListingSummary(activePosting, 1200) || 'No description was provided.'}</p>
+            </div>
+
+            {applyError && (
+              <div className="form-error posting-modal-error" role="alert">{applyError}</div>
+            )}
+
+            <div className="modal-actions posting-modal-actions">
+              {activeAlreadyApplied ? (
+                <Badge color="green">Already Applied</Badge>
+              ) : activeBlocked ? (
+                <Button disabled>One OJT Application Only</Button>
+              ) : activeSlots.isFull ? (
+                <Button disabled>No Slots Available</Button>
+              ) : (
+                <Button onClick={handleApply} disabled={applying}>
+                  {applying ? 'Sending...' : 'Submit Application'}
+                </Button>
+              )}
+              <Button variant="ghost" onClick={closePosting} disabled={applying}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

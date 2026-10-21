@@ -154,6 +154,14 @@
   color: var(--info-text);
 }
 
+/* Newly published Events / OJT Postings / Trainee Programs.  Green rather than
+   blue: nothing is wrong and nothing is late, there is just something new to
+   look at. */
+.attention-item.tone-success .attention-item-icon {
+  background: var(--success-surface);
+  color: var(--success-text);
+}
+
 .attention-item-body {
   min-width: 0;
   display: grid;

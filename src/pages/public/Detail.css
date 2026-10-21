@@ -84,7 +84,15 @@
   margin-bottom: 8px;
 }
 
-.thrusts-list {
+/* The thrust chips on the two detail pages.
+   These used to be called `.thrusts-list` - the same class the About page uses
+   for its 4-column card grid. CRA bundles every stylesheet into one global
+   scope and this file loads AFTER About.css, so this three-line flex rule won
+   the cascade on the About page too: `display: flex` replaced the grid, the
+   cards shrank to their content width and wrapped into a ragged, left-aligned
+   block with a big empty gutter on the right. Nothing about the About grid was
+   wrong; it was being overridden from here. Renamed so the two can never meet. */
+.detail-thrusts {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

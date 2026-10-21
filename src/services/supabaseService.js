@@ -2196,18 +2196,33 @@ export const rejectOtRequest = async (otRequestId, adminNote) => {
 // ABSENCE REQUESTS
 //
 // A trainee/OJT tells the administrator in advance that they cannot attend,
-// and why.  This is deliberately NOT an approval workflow: the administrator
-// only *acknowledges* it with "Noted", so the request has exactly two states - // Submitted (waiting to be seen) and Noted (seen).  Nothing here credits or
-// removes hours.
+// and why.  The administrator then answers the request: Accepted (the absence
+// stands and the projected end date moves out) or Rejected (the day is
+// expected as normal).  Nothing here credits or removes hours.
 //
-// Requires the absence_requests table - see ABSENCE_REQUESTS_MIGRATION.sql.
-// Every reader degrades to an empty list when the table has not been created
-// yet, so the attendance page still loads on an older database.
+// Requires the absence_requests table - see ABSENCE_REQUESTS_MIGRATION.sql -
+// and the three-state CHECK from PATCH_ABSENCE_REVIEW.sql.  Every reader
+// degrades to an empty list when the table has not been created yet, so the
+// attendance page still loads on an older database.
 // ==========================================================================
 
 export const ABSENCE_STATUS_SUBMITTED = 'Submitted';
+export const ABSENCE_STATUS_ACCEPTED = 'Accepted';
+export const ABSENCE_STATUS_REJECTED = 'Rejected';
+
+/**
+ * `Noted` is the pre-review acknowledgement.  It is kept as a status the
+ * readers understand (and counted as accepted) so a database that has not run
+ * PATCH_ABSENCE_REVIEW.sql still behaves sensibly instead of treating every
+ * acknowledged absence as pending again.
+ */
 export const ABSENCE_STATUS_NOTED = 'Noted';
 export const ABSENCE_ACKNOWLEDGEMENT = 'Noted';
+
+export const ABSENCE_DECISIONS = ['Accepted', 'Rejected'];
+
+/** Minimum length of the reason an administrator must give for a rejection. */
+export const ABSENCE_REJECTION_MIN_NOTE = 10;
 
 /** 42P01 = undefined_table; PGRST205 = table not found in the schema cache. */
 export const isMissingTableError = (error) => {
@@ -2218,11 +2233,33 @@ export const isMissingTableError = (error) => {
     (message.includes('relation') && message.includes('does not exist'));
 };
 
-export const isAbsenceNoted = (request) =>
-  normalizeStatus(request?.status) === 'NOTED';
+export const isAbsenceAccepted = (request) => {
+  const status = normalizeStatus(request?.status);
+  return status === 'ACCEPTED' || status === 'NOTED' || status === 'APPROVED';
+};
+
+export const isAbsenceRejected = (request) => normalizeStatus(request?.status) === 'REJECTED';
+
+/** Legacy alias kept so older callers keep compiling. */
+export const isAbsenceNoted = isAbsenceAccepted;
 
 export const isAbsencePending = (request) =>
-  !isAbsenceNoted(request);
+  !isAbsenceAccepted(request) && !isAbsenceRejected(request);
+
+/** 'Accepted' | 'Rejected' | 'Waiting' - the single label every screen shows. */
+export const getAbsenceDecision = (request) => {
+  if (isAbsenceAccepted(request)) return 'Accepted';
+  if (isAbsenceRejected(request)) return 'Rejected';
+  return 'Waiting';
+};
+
+/** Badge tone for a decision, so the trainee and the admin never disagree. */
+export const getAbsenceDecisionTone = (request) => {
+  const decision = getAbsenceDecision(request);
+  if (decision === 'Accepted') return 'APPROVED';
+  if (decision === 'Rejected') return 'REJECTED';
+  return 'PENDING';
+};
 
 const ABSENCE_SELECT = `
   id, user_id, absence_date, reason, status, admin_note, noted_by, noted_at, created_at, updated_at,
@@ -2292,18 +2329,43 @@ export const createAbsenceRequest = async ({ userId, absenceDate, reason }) => {
 };
 
 /**
- * Acknowledge a request.  There is no approve/reject - the administrator simply
- * marks it as seen, optionally with a short note back to the trainee.
+ * Decide an absence request.
+ *
+ * `decision` is 'Accepted' or 'Rejected'.  A rejection carries a mandatory
+ * reason: the trainee has to know what to do differently, and "Rejected" with
+ * no words is the same dead end the old two-state flow had.
+ *
+ * The write is a single UPDATE of status + admin_note + the review stamp.  RLS
+ * allows it only for an administrator, and `hyt_guard_absence_status` repeats
+ * that check at the row level (PATCH_ABSENCE_REVIEW.sql).
  */
-export const acknowledgeAbsenceRequest = async (requestId, adminNote = '', adminUserId = null) => {
+export const reviewAbsenceRequest = async ({
+  requestId,
+  decision,
+  adminNote = '',
+  adminUserId = null
+}) => {
   const client = requireSupabase();
   if (!requestId) throw new Error('Missing absence request.');
+
+  const nextStatus = ABSENCE_DECISIONS.includes(decision) ? decision : null;
+  if (!nextStatus) {
+    throw new Error('Choose whether to accept or reject this absence.');
+  }
+
+  const note = String(adminNote || '').trim();
+  if (nextStatus === 'Rejected' && note.length < ABSENCE_REJECTION_MIN_NOTE) {
+    throw new Error(`Explain the rejection (at least ${ABSENCE_REJECTION_MIN_NOTE} characters) so the trainee knows what to do next.`);
+  }
 
   const { data, error } = await client
     .from('absence_requests')
     .update(toSnakeCase({
-      status: ABSENCE_STATUS_NOTED,
-      adminNote: String(adminNote || '').trim(),
+      status: nextStatus,
+      adminNote: note,
+      // `noted_by` / `noted_at` are the existing review stamp columns.  They are
+      // reused rather than duplicated so there is one place that answers "who
+      // decided this, and when".
       notedBy: adminUserId || (await getCurrentAuthUserId()),
       notedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -2312,9 +2374,30 @@ export const acknowledgeAbsenceRequest = async (requestId, adminNote = '', admin
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // 23514 = CHECK violation.  The usual cause is a database that has not run
+    // PATCH_ABSENCE_REVIEW.sql yet, where the only legal values are
+    // Submitted/Noted.  Say so instead of surfacing a constraint name.
+    if (String(error.code) === '23514') {
+      throw new Error('This database does not accept absence decisions yet. Ask an administrator to run PATCH_ABSENCE_REVIEW.sql.');
+    }
+    throw error;
+  }
   return toCamelCase(data);
 };
+
+export const acceptAbsenceRequest = (requestId, adminNote = '', adminUserId = null) =>
+  reviewAbsenceRequest({ requestId, decision: 'Accepted', adminNote, adminUserId });
+
+export const rejectAbsenceRequest = (requestId, adminNote = '', adminUserId = null) =>
+  reviewAbsenceRequest({ requestId, decision: 'Rejected', adminNote, adminUserId });
+
+/**
+ * The old one-button acknowledgement.  Kept as an alias so nothing that still
+ * calls it breaks; it now records a real decision.
+ */
+export const acknowledgeAbsenceRequest = (requestId, adminNote = '', adminUserId = null) =>
+  acceptAbsenceRequest(requestId, adminNote, adminUserId);
 
 // ==========================================================================
 // DAILY REPORTS

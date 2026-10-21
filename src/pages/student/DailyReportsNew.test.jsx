@@ -2,14 +2,42 @@ import { render, screen } from '@testing-library/react';
 import { DailyReportsNew } from './DailyReportsNew';
 import { getDailyReports, reportSlotsReady } from '../../services/supabaseService';
 
+/**
+ * The page is now gated on an approved placement, so the mocked state has to
+ * carry one - otherwise every slot assertion below would be looking at the
+ * locked card instead of the form. `lockedState` is the no-placement case, used
+ * by the gate test at the bottom.
+ *
+ * The name must start with `mock` for Jest's hoisted factory to be allowed to
+ * close over it.
+ */
+const APPROVED_APPLICATION = {
+  id: 'app-1',
+  userId: 'user-1',
+  opportunityId: 'opp-1',
+  status: 'APPROVED'
+};
+
+let mockState = {
+  currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' },
+  applications: [APPROVED_APPLICATION]
+};
+
 jest.mock('../../context/AppContext', () => ({
   useApp: () => ({
-    state: { currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' } },
+    state: mockState,
     dispatch: jest.fn()
   })
 }));
 
 jest.mock('../../services/supabaseService', () => ({
+  // utils/experience imports normalizeStatus from the service, and the placement
+  // gate now runs through it.  Stubbed with the real implementation rather than
+  // omitted, so the gate is exercised for real instead of throwing.
+  normalizeStatus: (value) => String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_'),
   getDailyReports: jest.fn(),
   reportSlotsReady: jest.fn(),
   submitReportSlot: jest.fn()
@@ -49,6 +77,10 @@ const FILED_DAY = {
 
 describe('DailyReportsNew', () => {
   beforeEach(() => {
+    mockState = {
+      currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' },
+      applications: [APPROVED_APPLICATION]
+    };
     getDailyReports.mockResolvedValue([FILED_DAY]);
     reportSlotsReady.mockResolvedValue(true);
   });
@@ -120,5 +152,46 @@ describe('DailyReportsNew', () => {
     render(<DailyReportsNew />);
     await screen.findByText('No reports yet');
     expect(screen.getByText('The days you submit will appear here.')).toBeInTheDocument();
+  });
+
+  /**
+   * A daily report describes work done on a placement, so without an approved
+   * OJT posting or programme there is nothing to file - and a filing would only
+   * create a queue an administrator has to reject by hand.
+   */
+  describe('without an approved placement', () => {
+    test('replaces the form with an explanation instead of the three slots', async () => {
+      mockState = { currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' }, applications: [] };
+      const { container } = render(<DailyReportsNew />);
+      await screen.findByText('Previous days');
+
+      expect(screen.getByText('OJT approval required')).toBeInTheDocument();
+      // The three filing slots are gone; the history of already-filed days is
+      // not - a trainee must still be able to read what they sent before.
+      expect(container.querySelector('.report-slot-list')).toBeNull();
+      expect(screen.getByText('Previous days')).toBeInTheDocument();
+    });
+
+    test('does not count a pending application as a placement', async () => {
+      mockState = {
+        currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' },
+        applications: [{ ...APPROVED_APPLICATION, status: 'PENDING_APPROVAL' }]
+      };
+      const { container } = render(<DailyReportsNew />);
+      await screen.findByText('Previous days');
+
+      expect(container.querySelector('.report-slot-list')).toBeNull();
+    });
+
+    test('does not count an approved EVENT as a placement', async () => {
+      mockState = {
+        currentUser: { id: 'user-1', fullName: 'Juan Dela Cruz' },
+        applications: [{ id: 'app-2', userId: 'user-1', eventId: 'evt-1', status: 'APPROVED' }]
+      };
+      const { container } = render(<DailyReportsNew />);
+      await screen.findByText('Previous days');
+
+      expect(container.querySelector('.report-slot-list')).toBeNull();
+    });
   });
 });

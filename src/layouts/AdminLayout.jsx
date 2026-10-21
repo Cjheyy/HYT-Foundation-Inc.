@@ -47,6 +47,7 @@ export function AdminLayout({ children }) {
     { path: '/admin/events', label: 'Events', icon: 'calendar' },
     { path: '/admin/opportunities', label: 'OJT Postings', icon: 'target' },
     { path: '/admin/attendance-verification', label: 'Attendance Verification', icon: 'check' },
+    { path: '/admin/absence-review', label: 'Absence Reports', icon: 'alert' },
     { path: '/admin/ot-approvals', label: 'OT Approvals', icon: 'clock' },
     // One entry, one screen. The three-slot day is approved here, whole - // `/admin/report-approvals` is the older per-filing queue and is kept only
     // as a route, not as a second competing door in the sidebar.
