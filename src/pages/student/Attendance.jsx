@@ -5,7 +5,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Badge } from '../../components/Badge';
-import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { TimestampCamera } from '../../components/TimestampCamera';
 import { LiveTimeTracker } from '../../components/LiveTimeTracker';
 import { Skeleton } from '../../components/Skeleton';
 import { AttendanceStepper } from '../../components/AttendanceStepper';
@@ -24,10 +24,13 @@ import {
   getAbsenceDecisionTone,
   isFinalAttendanceStatus,
   getAttendanceStage,
-  normalizeStatus
+  normalizeStatus,
+  uploadAttendancePhoto
 } from '../../services/supabaseService';
 import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED } from '../../utils/geofence';
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
+import { stampPhotoBlob } from '../../utils/attendancePhoto';
+import { buildStampLines } from '../../utils/stampLines';
 import { formatDate, formatTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
 import {
@@ -133,8 +136,11 @@ export function AttendanceNew() {
   const [absenceErrors, setAbsenceErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [showClockInConfirm, setShowClockInConfirm] = useState(false);
-  const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
+  // Which request the camera is currently collecting a photo for.  `null` means
+  // the dialog is closed.  The coordinates are resolved BEFORE the camera opens
+  // so an off-site attempt is refused without asking for a selfie first.
+  const [cameraAction, setCameraAction] = useState(null);
+  const [pendingCoordinates, setPendingCoordinates] = useState(null);
   const [showOtForm, setShowOtForm] = useState(false);
   const [otFormData, setOtFormData] = useState({ requestedHours: '', reason: '' });
   const [otErrors, setOtErrors] = useState({});
@@ -394,6 +400,107 @@ export function AttendanceNew() {
     return () => window.clearInterval(timer);
   }, [activeClock, currentUser?.id]);
 
+  /**
+   * Resolve the fix and apply the fence, BEFORE the camera opens.
+   *
+   * Order matters for two reasons. First, asking someone standing in MOA for a
+   * selfie and only then telling them they are 10 km away wastes their time.
+   * Second, the coordinates are needed for the stamp, so they have to exist
+   * before the photo is taken rather than after.
+   *
+   * Throws with the sentence the trainee should read; the caller decides
+   * whether to toast it or let it bubble.
+   */
+  const resolveCoordinates = async (actionLabel) => {
+    // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
+    const coordinates = await getCoordinates();
+
+    if (coordinates.source !== 'ip' && coordinates.accuracy > GEOFENCE_MAX_ACCURACY_METERS) {
+      toast.warning(`Location accuracy is ${Math.round(coordinates.accuracy)} meters.`);
+    }
+    // An IP lookup is a city-level guess (kilometres, not metres). It can
+    // never satisfy a 20 m fence honestly, so it is refused outright instead
+    // of being run through the distance check and passing by luck.
+    if (GEOFENCE_ENFORCEMENT_ENABLED && coordinates.source === 'ip') {
+      throw new Error(
+        'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
+      );
+    }
+    const geofence = checkGeofence(
+      coordinates.latitude,
+      coordinates.longitude,
+      GEOFENCE_RADIUS_METERS,
+      coordinates.accuracy
+    );
+    // Enforcement is ON (src/utils/geofence.js). The server applies the same
+    // rule inside request_clock_in, driven by
+    // settings.geofence_enforcement_enabled - this is the friendly half only.
+    if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
+      throw new Error(describeGeofenceFailure(geofence, { action: actionLabel }));
+    }
+
+    return { coordinates, geofence };
+  };
+
+  const openCamera = async (action, actionLabel) => {
+    setActionLoading(true);
+    try {
+      const resolved = await resolveCoordinates(actionLabel);
+      setPendingCoordinates(resolved);
+      setCameraAction(action);
+    } catch (error) {
+      toast.error(isGeolocationError(error)
+        ? describeLocationError(error)
+        : error.message || 'Could not confirm your location.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const closeCamera = () => {
+    setCameraAction(null);
+    setPendingCoordinates(null);
+  };
+
+  /**
+   * Stamp the captured frame with SERVER facts and store it.
+   *
+   * Runs after the request has already been accepted, which is what lets the
+   * stamp carry `requested_at` / `pending_end_time` instead of the device
+   * clock. Every failure here is swallowed: the attendance record is already
+   * written, and telling the trainee "failed" would invite a duplicate
+   * submission for a day that is already logged.
+   */
+  const saveAttendancePhoto = async ({ attendanceId, photoBlob, action, resolved, at }) => {
+    if (!photoBlob || !attendanceId) return;
+    try {
+      const stamp = buildStampLines({
+        action,
+        at: at || new Date(),
+        locationName: resolved?.geofence?.location || null,
+        latitude: resolved?.coordinates?.latitude,
+        longitude: resolved?.coordinates?.longitude,
+        distanceMeters: resolved?.geofence?.distance,
+        accuracyMeters: resolved?.coordinates?.accuracy,
+        userName: currentUser?.fullName,
+        roleLabel: terms.roleLabel
+      });
+      const stamped = await stampPhotoBlob(photoBlob, stamp);
+      const { recorded } = await uploadAttendancePhoto({
+        userId: currentUser.id,
+        attendanceId,
+        stage: action,
+        blob: stamped
+      });
+      if (!recorded) {
+        toast.info('Attendance submitted. The photo was saved but could not be attached to the record yet.');
+      }
+    } catch (error) {
+      console.warn('[attendance] the photo could not be stored', error);
+      toast.warning('Attendance submitted, but the photo could not be saved.');
+    }
+  };
+
   const handleClockIn = () => {
     if (!approvedPlacement) {
       // Role-aware: a Trainee is told to join a programme, an OJT/Intern to
@@ -405,60 +512,35 @@ export function AttendanceNew() {
       toast.error(windowState.clockInMessage);
       return;
     }
-    setShowClockInConfirm(true);
+    openCamera('clockIn', 'clock in');
   };
 
-  const executeClockIn = async () => {
+  const executeClockIn = async (resolved, photoBlob) => {
     setActionLoading(true);
     try {
       if (!approvedPlacement) {
         throw new Error(terms.attendanceLockedCopy);
       }
-      // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
-      const coordinates = await getCoordinates();
-
-      if (coordinates.source !== 'ip' && coordinates.accuracy > GEOFENCE_MAX_ACCURACY_METERS) {
-        toast.warning(`Location accuracy is ${Math.round(coordinates.accuracy)} meters.`);
-      }
-      // An IP lookup is a city-level guess (kilometres, not metres). It can
-      // never satisfy a 20 m fence honestly, so it is refused outright instead
-      // of being run through the distance check and passing by luck.
-      if (GEOFENCE_ENFORCEMENT_ENABLED && coordinates.source === 'ip') {
-        throw new Error(
-          'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
-        );
-      }
-      const geofence = checkGeofence(
-        coordinates.latitude,
-        coordinates.longitude,
-        GEOFENCE_RADIUS_METERS,
-        coordinates.accuracy
-      );
-      // Enforcement is ON (src/utils/geofence.js). The server applies the same
-      // rule inside request_clock_in, driven by
-      // settings.geofence_enforcement_enabled - this is the friendly half only.
-      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
-        throw new Error(describeGeofenceFailure(geofence, { action: 'clock in' }));
-      }
       const result = await clockIn(
         currentUser.id,
-        coordinates.latitude,
-        coordinates.longitude,
-        coordinates.accuracy,
-        coordinates.source
+        resolved.coordinates.latitude,
+        resolved.coordinates.longitude,
+        resolved.coordinates.accuracy,
+        resolved.coordinates.source
       );
       setTodayAttendance(result);
-      toast.success('Application submitted successfully.');
+      toast.success('Clock-in request submitted. Waiting for admin approval.');
+      await saveAttendancePhoto({
+        attendanceId: result?.id,
+        photoBlob,
+        action: 'clockIn',
+        resolved,
+        // The server's own timestamp, not this device's.
+        at: result?.requestedAt || result?.createdAt || result?.timeIn
+      });
       await loadAttendanceData();
     } catch (error) {
-      // Geolocation hints are toasted once by ConfirmationModal; every other
-      // failure (geofence, approval, database) is reported here with its real
-      // message.
-      if (!isGeolocationError(error)) {
-        toast.error(error.message || 'Failed to submit clock-in request');
-      }
-      // Re-throw so ConfirmationModal keeps the dialog open for a retry.
-      throw error;
+      toast.error(error.message || 'Failed to submit clock-in request');
     } finally {
       setActionLoading(false);
     }
@@ -476,49 +558,51 @@ export function AttendanceNew() {
       toast.error(windowState.clockOutMessage);
       return;
     }
-    setShowClockOutConfirm(true);
+    openCamera('clockOut', 'clock out');
   };
 
-  const executeClockOut = async () => {
+  const executeClockOut = async (resolved, photoBlob) => {
     setActionLoading(true);
     try {
       // Clock-out is fenced too: the same 20 m rule that opens a shift closes
       // it. Coordinates go to request_clock_out, which re-checks them - the
-      // client check below is the friendly half, not the authority.
-      const frozenCoordinates = await getCoordinates();
-      if (GEOFENCE_ENFORCEMENT_ENABLED && frozenCoordinates.source === 'ip') {
-        throw new Error(
-          'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
-        );
-      }
-      const geofence = checkGeofence(
-        frozenCoordinates.latitude,
-        frozenCoordinates.longitude,
-        GEOFENCE_RADIUS_METERS,
-        frozenCoordinates.accuracy
-      );
-      if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
-        throw new Error(describeGeofenceFailure(geofence, { action: 'clock out' }));
-      }
+      // client check in resolveCoordinates is the friendly half, not the
+      // authority.
       const result = await clockOut(
         currentUser.id,
-        frozenCoordinates.latitude,
-        frozenCoordinates.longitude,
-        frozenCoordinates.accuracy,
-        frozenCoordinates.source
+        resolved.coordinates.latitude,
+        resolved.coordinates.longitude,
+        resolved.coordinates.accuracy,
+        resolved.coordinates.source
       );
       setTodayAttendance(result);
-      toast.success('Application submitted successfully.');
+      toast.success('Clock-out request submitted. Waiting for admin approval.');
+      await saveAttendancePhoto({
+        attendanceId: result?.id,
+        photoBlob,
+        action: 'clockOut',
+        resolved,
+        // The frozen end time the server wrote, which is also the duration the
+        // administrator will review.
+        at: result?.pendingEndTime || result?.requestedAt
+      });
       await loadAttendanceData();
     } catch (error) {
-      if (!isGeolocationError(error)) {
-        toast.error(error.message || 'Failed to submit clock-out request');
-      }
-      // Re-throw so ConfirmationModal keeps the dialog open for a retry.
-      throw error;
+      toast.error(error.message || 'Failed to submit clock-out request');
     } finally {
       setActionLoading(false);
     }
+  };
+
+  /** Called by the camera dialog with the captured frame, or `null` when skipped. */
+  const submitClockPhoto = async (photoBlob) => {
+    const resolved = pendingCoordinates;
+    const action = cameraAction;
+    setCameraAction(null);
+    setPendingCoordinates(null);
+    if (!resolved || !action) return;
+    if (action === 'clockIn') await executeClockIn(resolved, photoBlob);
+    else await executeClockOut(resolved, photoBlob);
   };
 
   const validateOtForm = () => {
@@ -623,27 +707,26 @@ export function AttendanceNew() {
 
   return (
     <>
-      <ConfirmationModal
-        isOpen={showClockInConfirm}
-        onClose={() => setShowClockInConfirm(false)}
-        onConfirm={executeClockIn}
-        title="Submit Clock-in Request"
-        message="Your timer will not start until an administrator approves this request."
-        confirmText="Submit Request"
-        cancelText="Cancel"
-        type="info"
-        loading={actionLoading}
-      />
-      <ConfirmationModal
-        isOpen={showClockOutConfirm}
-        onClose={() => setShowClockOutConfirm(false)}
-        onConfirm={executeClockOut}
-        title="Submit Clock-out Request"
-        message="Your running timer will freeze immediately. Hours are credited only after administrator approval."
-        confirmText="Freeze & Submit"
-        cancelText="Cancel"
-        type="success"
-        loading={actionLoading}
+      {/* Replaces the old yes/no confirmation dialog. The camera step is the
+          confirmation now: the request is not sent until a photo is captured
+          (or the camera is unavailable and the trainee is offered the way
+          through without one). */}
+      <TimestampCamera
+        isOpen={Boolean(cameraAction)}
+        action={cameraAction || 'clockIn'}
+        stampBase={{
+          locationName: pendingCoordinates?.geofence?.location || null,
+          latitude: pendingCoordinates?.coordinates?.latitude ?? null,
+          longitude: pendingCoordinates?.coordinates?.longitude ?? null,
+          distanceMeters: pendingCoordinates?.geofence?.distance ?? null,
+          accuracyMeters: pendingCoordinates?.coordinates?.accuracy ?? null,
+          userName: currentUser?.fullName || null,
+          roleLabel: terms.roleLabel || null
+        }}
+        submitting={actionLoading}
+        onCancel={closeCamera}
+        onSubmit={submitClockPhoto}
+        onSkip={() => submitClockPhoto(null)}
       />
 
       <div className="page-container">

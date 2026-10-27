@@ -1532,9 +1532,16 @@ export const getSettings = async () => {
 // ATTENDANCE_LOGS - dual approval state machine
 // ==========================================================================
 
+// `requested_at`, the raw fix and the two photo paths are listed here rather
+// than left to the `select('*')` fallback: the admin review screen needs the
+// coordinates to show WHERE a clock-in happened, and the photo path to show
+// the picture the trainee submitted.  Without them the queue can only say
+// "approved", which is the least useful thing it could say.
 const attendanceUserSelect = `
   id, user_id, date, time_in, time_out, status, rendered_hours, duration_seconds,
   pending_end_time, location_name, admin_note, approved_by, approved_at, created_at,
+  requested_at, latitude, longitude, accuracy_meters, location_source,
+  photo_in_path, photo_out_path,
   user:users(id, full_name, email, school, role, required_hours, rendered_hours)
 `;
 
@@ -1702,6 +1709,112 @@ export const updateAttendanceLog = async (attendanceId, updates) => {
   if (error) throw error;
   return toCamelCase(data);
 };
+
+// ==========================================================================
+// ATTENDANCE PHOTOS
+//
+// The bucket is PRIVATE. These are photographs of people's faces attached to
+// their attendance record; a public bucket would make every one of them
+// readable by anyone who ever saw a URL. Readers get a short-lived signed URL
+// instead, and the storage policies in PATCH_ATTENDANCE_PHOTOS.sql decide who
+// may ask for one: the owner, or an administrator.
+//
+// The path is stored on the attendance row (not a URL), because a signed URL
+// expires and a stored one would rot.
+// ==========================================================================
+
+export const ATTENDANCE_PHOTO_BUCKET = 'attendance-photos';
+
+/** Lifetime of a signed URL. Storage caps this at a week; an hour is plenty. */
+const ATTENDANCE_PHOTO_URL_TTL_SECONDS = 60 * 60;
+
+/** Signed URLs are reused for most of their life instead of re-signed per render. */
+const attendancePhotoUrlCache = new Map();
+
+/** `clockIn` / `clock_out` / `CLOCK-OUT` -> `CLOCK_IN` / `CLOCK_OUT`. */
+const normalizePhotoStage = (stage) => (String(stage || '').toLowerCase().includes('out')
+  ? 'CLOCK_OUT'
+  : 'CLOCK_IN');
+
+/**
+ * Upload one stamped photo and record it on the attendance row.
+ *
+ * Returns `{ path, recorded }`. `recorded: false` means the file reached
+ * storage but the row could not be pointed at it - which happens on a database
+ * that has not run `PATCH_ATTENDANCE_PHOTOS.sql` yet. That is reported, not
+ * thrown: the clock-in itself has already succeeded by this point, and failing
+ * the whole action over a missing photo would tell the trainee their
+ * attendance was not recorded when it was.
+ */
+export const uploadAttendancePhoto = async ({ userId, attendanceId, stage, blob }) => {
+  const client = requireSupabase();
+  if (!client.storage) throw new Error('Photo storage is not available.');
+  if (!userId || !attendanceId) throw new Error('A user and an attendance row are required to store a photo.');
+  if (!blob) throw new Error('No photo was captured.');
+
+  const stageKey = normalizePhotoStage(stage);
+  const path = `${userId}/${attendanceId}-${stageKey.toLowerCase()}-${Date.now()}.jpg`;
+
+  const { error: uploadError } = await client.storage
+    .from(ATTENDANCE_PHOTO_BUCKET)
+    .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  const { data, error: recordError } = await client.rpc('set_attendance_photo', {
+    p_attendance_id: attendanceId,
+    p_stage: stageKey,
+    p_path: path
+  });
+
+  if (recordError) {
+    console.warn('[attendancePhoto] stored the file but could not record it', recordError);
+    return { path, recorded: false };
+  }
+  if (data && data.success === false) {
+    console.warn('[attendancePhoto] the database refused to record the photo', data.message);
+    return { path, recorded: false };
+  }
+
+  return { path, recorded: true };
+};
+
+/**
+ * A signed URL for one stored photo, or `null`.
+ *
+ * Never throws: the caller is a table cell, and a photo that cannot be signed
+ * must degrade to "unavailable" rather than take the admin queue down with it.
+ */
+export const getAttendancePhotoUrl = async (path) => {
+  if (!path) return null;
+
+  const cached = attendancePhotoUrlCache.get(path);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
+  try {
+    const client = requireSupabase();
+    if (!client.storage) return null;
+
+    const { data, error } = await client.storage
+      .from(ATTENDANCE_PHOTO_BUCKET)
+      .createSignedUrl(path, ATTENDANCE_PHOTO_URL_TTL_SECONDS);
+
+    if (error || !data?.signedUrl) return null;
+
+    attendancePhotoUrlCache.set(path, {
+      url: data.signedUrl,
+      // Renew two minutes early so a URL never expires mid-render.
+      expiresAt: Date.now() + (ATTENDANCE_PHOTO_URL_TTL_SECONDS - 120) * 1000
+    });
+    return data.signedUrl;
+  } catch (error) {
+    console.warn('[attendancePhoto] could not sign a photo URL', error);
+    return null;
+  }
+};
+
+/** Test seam: the cache is module state and would leak between test cases. */
+export const __resetAttendancePhotoUrlCache = () => attendancePhotoUrlCache.clear();
 
 /**
  * Submit a clock-in request.  The timer must not start here.  The database

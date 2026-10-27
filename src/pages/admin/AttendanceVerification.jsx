@@ -13,9 +13,12 @@ import {
   isPendingAttendanceStatus,
   getAttendanceStage,
   normalizeStatus,
-  resolveAttendanceUserName
+  resolveAttendanceUserName,
+  getAttendancePhotoUrl
 } from '../../services/supabaseService';
 import { formatDate, formatTime } from '../../utils/helpers';
+import { GEOFENCE_MAX_ACCURACY_METERS, nearestOffice } from '../../utils/geofence';
+import { formatMeters, shortOfficeName } from '../../utils/stampLines';
 import { toast } from 'react-toastify';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import './Admin.css';
@@ -64,6 +67,140 @@ const processedLabel = (status) => {
   return status || 'Unknown';
 };
 
+/**
+ * Where the request came from, in the words an administrator needs.
+ *
+ * The fence is enforced server-side, so in theory every stored row is inside
+ * 20 m and the location is just decoration. It is not: the stored accuracy is
+ * the evidence that the fence was measured against something real. A fix good
+ * to +/-5000 m came from the network, not GPS, and is worth a second look
+ * before hours are credited - that is what `weak` marks.
+ *
+ * The distance is recomputed from the stored coordinates rather than trusted
+ * from any client field, so the number beside "HYT Building" cannot be a
+ * figure the browser chose.
+ */
+function describeAttendanceLocation(log) {
+  // `Number('')` and `Number(null)` are both 0, so an empty column would
+  // otherwise be plotted as a real fix at 0,0 and reported as 10,000 km away.
+  const hasCoordinates = log?.latitude !== null && log?.latitude !== undefined && log?.latitude !== ''
+    && log?.longitude !== null && log?.longitude !== undefined && log?.longitude !== '';
+  const nearest = hasCoordinates ? nearestOffice(log.latitude, log.longitude) : null;
+
+  const accuracyValue = log?.accuracyMeters;
+  const accuracy = accuracyValue === null || accuracyValue === undefined || accuracyValue === ''
+    ? null
+    : Number(accuracyValue);
+
+  return {
+    place: shortOfficeName(log?.locationName) || shortOfficeName(nearest?.name) || null,
+    distance: nearest ? nearest.distance : null,
+    accuracy: Number.isFinite(accuracy) ? accuracy : null,
+    weak: Number.isFinite(accuracy) && accuracy > GEOFENCE_MAX_ACCURACY_METERS,
+    coordinates: hasCoordinates
+      ? { latitude: Number(log.latitude), longitude: Number(log.longitude) }
+      : null
+  };
+}
+
+/**
+ * One stored photo.
+ *
+ * The bucket is private, so this resolves a short-lived signed URL before it
+ * can render anything. Every failure degrades to a label instead of an empty
+ * box: "No photo" (none was taken) and "Unavailable" (one exists but could not
+ * be signed) are different facts and an administrator deciding whether to
+ * credit hours needs to tell them apart.
+ */
+function AttendancePhoto({ path, label, onOpen, variant = 'thumb' }) {
+  const [url, setUrl] = useState(null);
+  const [status, setStatus] = useState(path ? 'loading' : 'missing');
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!path) {
+      setUrl(null);
+      setStatus('missing');
+      return () => { alive = false; };
+    }
+
+    setStatus('loading');
+    getAttendancePhotoUrl(path)
+      .then((signed) => {
+        if (!alive) return;
+        setUrl(signed);
+        setStatus(signed ? 'ready' : 'unavailable');
+      })
+      .catch(() => {
+        if (alive) setStatus('unavailable');
+      });
+
+    return () => { alive = false; };
+  }, [path]);
+
+  if (status === 'missing') {
+    return <span className="av-photo-empty" title="No photo was captured for this request.">No photo</span>;
+  }
+  if (status === 'loading') {
+    return <span className="av-photo-empty">Loading...</span>;
+  }
+  if (status === 'unavailable' || !url) {
+    return <span className="av-photo-empty" title="The photo exists but could not be opened.">Unavailable</span>;
+  }
+
+  if (variant === 'large') {
+    return (
+      <img
+        className="av-photo-large"
+        src={url}
+        alt={label || 'Attendance photo'}
+        onClick={() => onOpen?.({ url, label })}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="av-photo-button"
+      onClick={() => onOpen?.({ url, label })}
+      title="Open the full photo"
+    >
+      <img className="av-photo-thumb" src={url} alt={label || 'Attendance photo'} loading="lazy" />
+    </button>
+  );
+}
+
+/** The Location cell: site, distance from the pin, and the fix's own doubt. */
+function AttendanceLocationCell({ log }) {
+  const info = describeAttendanceLocation(log);
+
+  if (!info.place && info.distance === null && info.accuracy === null) {
+    return <span className="av-photo-empty">Not recorded</span>;
+  }
+
+  return (
+    <span className="av-location">
+      <span className="av-location-place">{info.place || 'Unnamed site'}</span>
+      <span className={`av-location-meta${info.weak ? ' is-weak' : ''}`}>
+        {info.distance !== null && <span>{formatMeters(info.distance)} from the pin</span>}
+        {info.accuracy !== null && (
+          <span>
+            {info.distance !== null ? ' · ' : ''}
+            {`±${formatMeters(info.accuracy)}`}
+          </span>
+        )}
+      </span>
+      {info.weak && (
+        <span className="av-location-warn" title="This fix is coarser than the fence, so it could not have proven anyone was inside it.">
+          Imprecise fix
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function AttendanceVerification() {
   const { state, refreshData } = useApp();
   const { currentUser } = state;
@@ -76,6 +213,8 @@ export function AttendanceVerification() {
   const [modalAction, setModalAction] = useState(null);
   const [adminNote, setAdminNote] = useState('');
   const [noteError, setNoteError] = useState('');
+  // Full-size photo, opened from a thumbnail or from the review dialog.
+  const [photoViewer, setPhotoViewer] = useState(null);
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
   const requestedStatus = searchParams.get('status');
@@ -222,6 +361,17 @@ export function AttendanceVerification() {
 
   const executeAction = () => (modalAction === 'approve' ? handleApprove() : handleReject());
 
+  // Everything the review dialog needs about the selected row, resolved once
+  // rather than inline in the JSX where it would be recomputed on every render.
+  const selectedStage = selectedLog ? getStage(selectedLog) : null;
+  const selectedLocation = selectedLog ? describeAttendanceLocation(selectedLog) : null;
+  const selectedPhotoPath = selectedLog
+    ? (selectedStage === 'CLOCK_OUT' ? selectedLog.photoOutPath : selectedLog.photoInPath)
+    : null;
+  const selectedPhotoLabel = selectedLog
+    ? `${resolveAttendanceUserName(selectedLog)} - ${selectedStage === 'CLOCK_OUT' ? 'clock-out' : 'clock-in'}`
+    : '';
+
   if (loading) {
     return <div className="admin-page"><div className="loading-spinner">Loading attendance requests...</div></div>;
   }
@@ -267,10 +417,12 @@ export function AttendanceVerification() {
               <thead>
                 <tr>
                   <th>Student</th>
+                  <th>Photo</th>
                   <th>Stage</th>
                   <th>Date</th>
                   <th>Time In</th>
                   <th>Frozen End</th>
+                  <th>Location</th>
                   <th>Duration / Hours</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -289,6 +441,13 @@ export function AttendanceVerification() {
                         </div>
                       </td>
                       <td>
+                        <AttendancePhoto
+                          path={stage === 'CLOCK_OUT' ? log.photoOutPath : log.photoInPath}
+                          label={`${resolveAttendanceUserName(log)} - ${stage === 'CLOCK_OUT' ? 'clock-out' : 'clock-in'}`}
+                          onOpen={setPhotoViewer}
+                        />
+                      </td>
+                      <td>
                         <Badge color={!stage ? 'gray' : stage === 'CLOCK_IN' ? 'blue' : 'yellow'}>
                           {stage ? stageLabel(stage) : 'Unrecognised status'}
                         </Badge>
@@ -296,6 +455,7 @@ export function AttendanceVerification() {
                       <td>{formatDate(log.date)}</td>
                       <td>{log.timeIn ? formatTime(log.timeIn) : 'Not started'}</td>
                       <td>{log.pendingEndTime ? formatTime(log.pendingEndTime) : '--:--'}</td>
+                      <td><AttendanceLocationCell log={log} /></td>
                       <td>
                         {!stage ? (
                           <span className="muted-cell" title="Normalise this legacy status before approving.">
@@ -360,11 +520,18 @@ export function AttendanceVerification() {
         {processedLogs.length > 0 ? (
           <div className="table-responsive">
             <table className="data-table">
-              <thead><tr><th>Student</th><th>Date</th><th>Duration</th><th>Hours</th><th>Status</th><th>Admin note</th></tr></thead>
+              <thead><tr><th>Student</th><th>Photo</th><th>Date</th><th>Duration</th><th>Hours</th><th>Status</th><th>Admin note</th></tr></thead>
               <tbody>
                 {processedLogs.slice(0, 15).map((log) => (
                   <tr key={log.id}>
                     <td>{resolveAttendanceUserName(log)}</td>
+                    <td>
+                      <AttendancePhoto
+                        path={log.photoOutPath || log.photoInPath}
+                        label={`${resolveAttendanceUserName(log)} - attendance photo`}
+                        onOpen={setPhotoViewer}
+                      />
+                    </td>
                     <td>{formatDate(log.date)}</td>
                     <td className="duration-display">{formatDuration(log.durationSeconds)}</td>
                     <td>{Number(log.renderedHours || 0).toFixed(4)} hrs</td>
@@ -385,6 +552,21 @@ export function AttendanceVerification() {
       >
         {selectedLog && (
           <div>
+            {/* The photo is the reason the request is reviewable at all, so it
+                sits above the text rather than behind a link. */}
+            <div className="av-review-photo">
+              <AttendancePhoto
+                variant="large"
+                path={selectedPhotoPath}
+                label={selectedPhotoLabel}
+                onOpen={setPhotoViewer}
+              />
+              {!selectedPhotoPath && (
+                <p className="av-photo-warning">
+                  No photo was captured for this request. Accept it only if you can confirm the trainee was on site.
+                </p>
+              )}
+            </div>
             <div className="modal-info attendance-review-summary">
               <p><strong>Student:</strong> {resolveAttendanceUserName(selectedLog)}</p>
               <p>
@@ -392,6 +574,22 @@ export function AttendanceVerification() {
                 {getStage(selectedLog) ? stageLabel(getStage(selectedLog)) : `Unrecognised status (${selectedLog.status})`}
               </p>
               <p><strong>Date:</strong> {formatDate(selectedLog.date)}</p>
+              <p><strong>Location:</strong> <AttendanceLocationCell log={selectedLog} /></p>
+              {selectedLocation?.coordinates && (
+                <p>
+                  <strong>Coordinates:</strong>{' '}
+                  {selectedLocation.coordinates.latitude.toFixed(5)},{' '}
+                  {selectedLocation.coordinates.longitude.toFixed(5)}{' '}
+                  <a
+                    className="av-map-link"
+                    href={`https://www.google.com/maps?q=${selectedLocation.coordinates.latitude},${selectedLocation.coordinates.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open in Maps
+                  </a>
+                </p>
+              )}
               {getStage(selectedLog) === 'CLOCK_OUT' && (
                 <>
                   <p><strong>Frozen duration:</strong> {formatDuration(selectedLog.durationSeconds)}</p>
@@ -426,6 +624,22 @@ export function AttendanceVerification() {
               <Button variant="ghost" onClick={closeModal} disabled={actionLoading}>Cancel</Button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* Full-size view, opened from any thumbnail. */}
+      <Modal
+        isOpen={Boolean(photoViewer)}
+        onClose={() => setPhotoViewer(null)}
+        title={photoViewer?.label || 'Attendance photo'}
+        size="lg"
+      >
+        {photoViewer && (
+          <img
+            className="av-photo-full"
+            src={photoViewer.url}
+            alt={photoViewer.label || 'Attendance photo'}
+          />
         )}
       </Modal>
     </div>
