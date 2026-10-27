@@ -100,8 +100,21 @@ export const GEOFENCE_REQUIRE_ACCURACY_INSIDE_RADIUS = false;
  * - `false` = skip the local Haversine pre-check and let the server decide.
  * - `true` = also run the local pre-check, for a friendlier message without a
  *   round trip. Set both this flag and the settings row together.
+ *
+ * ## Why this is now `true` (it was `false` for months)
+ *
+ * While it was false, `Attendance.jsx` chose `getQuickCoordinates()` instead of
+ * `getCoordinatesWithFallback()` - one short coarse attempt, then an IP lookup,
+ * then a FABRICATED "you are standing on the office pin" fix with
+ * `accuracy: null`. A real off-site clock-in was accepted that way: the server
+ * switch was also off, so nothing anywhere said no.
+ *
+ * Flipping this to true is not cosmetic. It is what makes the client ask for a
+ * high-accuracy fix, which is the only kind that can honestly satisfy a 20 m
+ * fence. Leave it false and the server will reject legitimate on-site clock-ins
+ * as `imprecise`, because a coarse or IP fix cannot be better than 20 m.
  */
-export const GEOFENCE_ENFORCEMENT_ENABLED = false;
+export const GEOFENCE_ENFORCEMENT_ENABLED = true;
 
 export const MAX_SHIFT_SECONDS = 8 * 60 * 60; // 08:00:00 hard cap
 export const SHIFT_WARNING_SECONDS = (7 * 60 + 55) * 60; // 07:55:00 alarm

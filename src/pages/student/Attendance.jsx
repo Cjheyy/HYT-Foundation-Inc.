@@ -434,8 +434,9 @@ export function AttendanceNew() {
         GEOFENCE_RADIUS_METERS,
         coordinates.accuracy
       );
-      // TESTING BYPASS: skip the distance block while GEOFENCE_ENFORCEMENT_ENABLED is false.
-      // Re-enable by flipping the flag in src/utils/geofence.js before production.
+      // Enforcement is ON (src/utils/geofence.js). The server applies the same
+      // rule inside request_clock_in, driven by
+      // settings.geofence_enforcement_enabled - this is the friendly half only.
       if (GEOFENCE_ENFORCEMENT_ENABLED && !geofence.allowed) {
         throw new Error(describeGeofenceFailure(geofence, { action: 'clock in' }));
       }

@@ -5,15 +5,21 @@ import {
   nearestOffice,
   OFFICE_LOCATIONS,
   GEOFENCE_RADIUS_METERS,
-  GEOFENCE_MAX_ACCURACY_METERS
+  GEOFENCE_MAX_ACCURACY_METERS,
+  GEOFENCE_ENFORCEMENT_ENABLED
 } from './geofence';
 
 /**
  * The fence itself.
  *
- * These tests pass `enforce = true` explicitly, because the shipped flag is
- * false and a bypassed fence always says yes. Testing through the flag would
- * have tested nothing.
+ * These tests pass `enforce` EXPLICITLY - `true` for the enforced cases and
+ * `false` for the bypass cases - rather than letting it default to the shipped
+ * flag. Testing through the flag means the suite silently changes meaning the
+ * day somebody flips it, which is exactly what happened: the two bypass tests
+ * only passed because the shipped flag was false, and turning enforcement on
+ * turned them red.
+ *
+ * The flag's own value is asserted once, on purpose, at the bottom of this file.
  */
 
 const OFFICE = OFFICE_LOCATIONS[0];
@@ -85,11 +91,29 @@ describe('nearestOffice', () => {
 });
 
 describe('checkGeofence - bypass', () => {
+  // `enforce = false` is passed explicitly. The shipped flag used to be false,
+  // which made these two tests pass for the wrong reason.
+  const bypassed = (lat, lon) => checkGeofence(lat, lon, GEOFENCE_RADIUS_METERS, null, false);
+
   it('allows everything and says so when enforcement is off', () => {
-    const result = checkGeofence(0, 0);
+    const result = bypassed(0, 0);
     expect(result.allowed).toBe(true);
     expect(result.reason).toBe('bypassed');
     expect(result.bypassed).toBe(true);
+  });
+
+  it('reports no distance at all when enforcement is bypassed', () => {
+    // It used to return 0, which any UI rendering the number would have shown
+    // as "0 meters away" - a claim nobody measured.
+    expect(bypassed(0, 0).distance).toBeNull();
+  });
+
+  it('is the shipped behaviour only when the flag is off', () => {
+    // Guards the fix for the off-site clock-in: enforcement must stay ON in the
+    // shipped bundle. While this flag was false the page used getQuickCoordinates
+    // (coarse -> IP -> a fabricated "standing on the pin" fix), so a 6.4 km
+    // clock-in was accepted and reached the admin queue.
+    expect(GEOFENCE_ENFORCEMENT_ENABLED).toBe(true);
   });
 });
 
@@ -141,12 +165,6 @@ describe('checkGeofence - enforced', () => {
     const result = atOffice(0, 30);
     expect(result.allowed).toBe(false);
     expect(result.reason).toBe('imprecise');
-  });
-
-  it('reports no distance at all when enforcement is bypassed', () => {
-    // It used to return 0, which any UI rendering the number would have shown
-    // as "0 meters away" - a claim nobody measured.
-    expect(checkGeofence(0, 0).distance).toBeNull();
   });
 
   it('judges the distance when no accuracy is supplied at all', () => {
