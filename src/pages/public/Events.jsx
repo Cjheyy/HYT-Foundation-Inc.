@@ -55,7 +55,10 @@ export function Events() {
   const action = useMemo(() => {
     if (!currentUser) return { label: 'Log In to Apply', path: '/login' };
     const role = normalizeRole(currentUser.role);
-    if (role === 'ADMIN') return { label: 'View & Apply', path: '/admin/events' };
+    // An admin does not apply to events, so the label must not promise it -
+    // they land on the management page, where the only actions are edit,
+    // publish and review.
+    if (role === 'ADMIN') return { label: 'Manage Events', path: '/admin/events' };
     if (role === 'TRAINEE') return { label: 'View & Apply', path: '/trainee/events' };
     if (role === 'OJT/INTERN') return { label: 'View & Apply', path: '/student/events' };
     return { label: 'Log In to Apply', path: '/login' };

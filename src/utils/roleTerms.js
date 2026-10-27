@@ -71,3 +71,15 @@ export function getRoleTerms(role) {
 export function isTraineeRole(role) {
   return TRAINEE_KEYS.includes(normalizeRoleKey(role));
 }
+
+/**
+ * Admins run the programme - they do not take part in it.
+ *
+ * Every "apply" surface asks this before it offers the action. Without it an
+ * admin account could apply to its own postings: the public detail pages are
+ * not role-gated, so a logged-in admin saw the same "Apply Now" button an
+ * intern does, and the RPC happily accepted the row.
+ */
+export function isAdminRole(role) {
+  return normalizeRoleKey(role) === 'ADMIN';
+}

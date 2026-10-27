@@ -5,6 +5,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { formatDate } from '../../utils/helpers';
+import { isAdminRole } from '../../utils/roleTerms';
 import { isEventActive, applyToProgram, getEventSlotState } from '../../services/supabaseService';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { showToast } from '../../utils/notifications';
@@ -23,6 +24,11 @@ export function ProgramDetail() {
   const { programs, applications, currentUser } = state;
   const navigate = useNavigate();
   const [applying, setApplying] = useState(false);
+
+  /* Admins manage programmes, they do not enrol in them. The public detail
+     route is not role-gated, so an admin account used to see the same
+     "Apply Now" button an intern does - and the RPC accepted it. */
+  const isAdmin = isAdminRole(currentUser?.role);
 
   const program = programs.find((p) => p.id === id);
 
@@ -57,6 +63,9 @@ export function ProgramDetail() {
       navigate('/login', { state: { from: `/programs/${id}` } });
       return;
     }
+    // Belt and braces: the button is already disabled for an admin, but the
+    // handler refuses too so no future call site can route around it.
+    if (isAdmin) return;
     if (myApplication) {
       navigate(dashboardApplicationsPath(currentUser.role));
       return;
@@ -85,11 +94,13 @@ export function ProgramDetail() {
 
   const applyLabel = !currentUser
     ? 'Login to Apply'
-    : myApplication
-      ? 'View My Application'
-      : slotState.isFull
-        ? 'No Slots Available'
-        : applying ? 'Submitting...' : 'Apply Now';
+    : isAdmin
+      ? 'Admins cannot apply'
+      : myApplication
+        ? 'View My Application'
+        : slotState.isFull
+          ? 'No Slots Available'
+          : applying ? 'Submitting...' : 'Apply Now';
 
   return (
     <div className="detail-page">
@@ -181,12 +192,17 @@ export function ProgramDetail() {
 
               <Button
                 onClick={handleApply}
-                disabled={applying || (Boolean(currentUser) && !myApplication && slotState.isFull)}
+                disabled={applying || isAdmin || (Boolean(currentUser) && !myApplication && slotState.isFull)}
                 style={{ width: '100%', marginTop: '20px' }}
               >
                 {applyLabel}
               </Button>
-              {slotState.isFull && !myApplication && (
+              {isAdmin && (
+                <p className="text-small text-muted" style={{ marginTop: '8px', textAlign: 'center' }}>
+                  Admin accounts manage programs from the dashboard instead of applying to them.
+                </p>
+              )}
+              {!isAdmin && slotState.isFull && !myApplication && (
                 <p className="text-small text-muted" style={{ marginTop: '8px', textAlign: 'center' }}>
                   This program has reached full capacity.
                 </p>

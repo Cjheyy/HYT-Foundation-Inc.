@@ -9,6 +9,7 @@ import { DreamAcademy } from '../../components/DreamAcademy';
 import { HYT_THRUSTS } from '../../data/hytThrusts';
 import { useMagnetic } from '../../hooks/useMagnetic';
 import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
+import { isAdminRole } from '../../utils/roleTerms';
 import { CountUp } from '../../components/CountUp';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectCoverflow, Pagination } from 'swiper/modules';
@@ -118,6 +119,10 @@ export function Home() {
   const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+
+  /* An admin runs the programme, so the rails only ever offer them "View
+     Details". Without this they got the same "Apply Now" an intern does. */
+  const isAdmin = isAdminRole(state.currentUser?.role);
 
   const magnetic = useMagnetic();
 
@@ -436,7 +441,9 @@ export function Home() {
                   </div>
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                     <Button size="sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); navigate(`/opportunities/${opp.id}`); }}>View Details</Button>
-                    <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate(`/opportunities/${opp.id}`); }}>Apply Now</Button>
+                    {!isAdmin && (
+                      <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate(`/opportunities/${opp.id}`); }}>Apply Now</Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -474,7 +481,9 @@ export function Home() {
                   </div>
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                     <Button size="sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); navigate(`/programs/${program.id}`); }}>View Details</Button>
-                    <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate(`/programs/${program.id}`); }}>Apply Now</Button>
+                    {!isAdmin && (
+                      <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate(`/programs/${program.id}`); }}>Apply Now</Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -511,7 +520,9 @@ export function Home() {
                   </div>
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                     <Button size="sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); navigate('/events'); }}>View Details</Button>
-                    <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate('/events'); }}>Apply Now</Button>
+                    {!isAdmin && (
+                      <Button size="sm" variant="outline" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); if (!state.currentUser) setAuthPromptOpen(true); else navigate('/events'); }}>Apply Now</Button>
+                    )}
                   </div>
                 </Card>
               ))}

@@ -1,4 +1,4 @@
-import { getRoleTerms, isTraineeRole } from './roleTerms';
+import { getRoleTerms, isAdminRole, isTraineeRole } from './roleTerms';
 
 describe('getRoleTerms', () => {
   test('an OJT / Intern sees OJT wording', () => {
@@ -51,5 +51,29 @@ describe('getRoleTerms', () => {
         expect(value.length).toBeGreaterThan(0);
       });
     });
+  });
+});
+
+describe('isAdminRole', () => {
+  // The gate that stops an admin applying to their own postings. The public
+  // detail routes are not role-gated, so this is the only thing standing
+  // between an admin account and an application row.
+  test('recognises an admin however the role is written', () => {
+    expect(isAdminRole('ADMIN')).toBe(true);
+    expect(isAdminRole('Admin')).toBe(true);
+    expect(isAdminRole('  admin ')).toBe(true);
+    expect(isAdminRole('A-D-M-I-N')).toBe(false);
+  });
+
+  test('never mistakes a participant for an admin', () => {
+    ['OJT/Intern', 'Trainee', 'Student', 'ojt-intern'].forEach((role) => {
+      expect(isAdminRole(role)).toBe(false);
+    });
+  });
+
+  test('a missing role is not an admin', () => {
+    expect(isAdminRole(undefined)).toBe(false);
+    expect(isAdminRole(null)).toBe(false);
+    expect(isAdminRole('')).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { formatDate } from '../../utils/helpers';
+import { isAdminRole } from '../../utils/roleTerms';
 import { isEventActive, applyToOpportunity, getEventSlotState, applicationReleasesSlot } from '../../services/supabaseService';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
 import { showToast } from '../../utils/notifications';
@@ -23,6 +24,11 @@ export function OpportunityDetail() {
   const { opportunities, applications, currentUser } = state;
   const navigate = useNavigate();
   const [applying, setApplying] = useState(false);
+
+  /* Admins post OJT openings, they do not apply to them. The public detail
+     route is not role-gated, so an admin account used to see the same
+     "Apply Now" button an intern does - and the RPC accepted it. */
+  const isAdmin = isAdminRole(currentUser?.role);
 
   const opportunity = opportunities.find((o) => o.id === id);
   const slotState = useMemo(() => getEventSlotState(opportunity || {}), [opportunity]);
@@ -66,6 +72,9 @@ export function OpportunityDetail() {
       navigate('/login', { state: { from: `/opportunities/${id}` } });
       return;
     }
+    // Belt and braces: the button is already disabled for an admin, but the
+    // handler refuses too so no future call site can route around it.
+    if (isAdmin) return;
     if (myApplication) {
       navigate(dashboardApplicationsPath(currentUser.role));
       return;
@@ -98,13 +107,15 @@ export function OpportunityDetail() {
 
   const applyLabel = !currentUser
     ? 'Login to Apply'
-    : myApplication
-      ? 'View My Application'
-      : blockingApplication
-        ? 'One OJT Application Only'
-        : slotState.isFull
-          ? 'No Slots Available'
-          : applying ? 'Submitting...' : 'Apply Now';
+    : isAdmin
+      ? 'Admins cannot apply'
+      : myApplication
+        ? 'View My Application'
+        : blockingApplication
+          ? 'One OJT Application Only'
+          : slotState.isFull
+            ? 'No Slots Available'
+            : applying ? 'Submitting...' : 'Apply Now';
 
   return (
     <div className="detail-page">
@@ -201,17 +212,22 @@ export function OpportunityDetail() {
 
               <Button
                 onClick={handleApply}
-                disabled={applying || (Boolean(currentUser) && !myApplication && (slotState.isFull || Boolean(blockingApplication)))}
+                disabled={applying || isAdmin || (Boolean(currentUser) && !myApplication && (slotState.isFull || Boolean(blockingApplication)))}
                 style={{ width: '100%', marginTop: '20px' }}
               >
                 {applyLabel}
               </Button>
-              {blockingApplication && !myApplication && (
+              {isAdmin && (
+                <p className="text-small text-muted" style={{ marginTop: '8px', textAlign: 'center' }}>
+                  Admin accounts manage OJT postings from the dashboard instead of applying to them.
+                </p>
+              )}
+              {!isAdmin && blockingApplication && !myApplication && (
                 <p className="text-small text-muted" style={{ marginTop: '8px', textAlign: 'center' }}>
                   You already have an active OJT application. Only one OJT posting application is allowed per intern.
                 </p>
               )}
-              {slotState.isFull && !myApplication && !blockingApplication && (
+              {!isAdmin && slotState.isFull && !myApplication && !blockingApplication && (
                 <p className="text-small text-muted" style={{ marginTop: '8px', textAlign: 'center' }}>
                   This opportunity has reached full capacity.
                 </p>

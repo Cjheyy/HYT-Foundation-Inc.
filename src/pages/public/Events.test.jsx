@@ -76,6 +76,16 @@ describe('public Events page', () => {
     expect(screen.getByRole('button', { name: 'View & Apply' })).toBeInTheDocument();
   });
 
+  test('never offers an admin an apply action', () => {
+    // An admin runs the programme; "View & Apply" on their screen was a lie -
+    // the link goes to /admin/events, where nothing can be applied to.
+    renderPage({ events: [PUBLISHED], currentUser: { id: 'a1', role: 'ADMIN' } });
+
+    expect(screen.getByRole('button', { name: 'Manage Events' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View & Apply' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Log In to Apply' })).toBeNull();
+  });
+
   test('filters by search term', () => {
     renderPage({ events: [PUBLISHED] });
 

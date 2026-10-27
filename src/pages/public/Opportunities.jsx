@@ -9,6 +9,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/Badge';
 import { Icon } from '../../components/icons';
 import { OPPORTUNITY_CATEGORIES, HYT_THRUSTS } from '../../utils/helpers';
+import { isAdminRole } from '../../utils/roleTerms';
 import { isEventActive, getEventSlotState } from '../../services/supabaseService';
 import './Opportunities.css';
 
@@ -16,6 +17,10 @@ export function Opportunities() {
   const { state } = useApp();
   const { opportunities } = state;
   const navigate = useNavigate();
+
+  /* The card's button promises "& Apply"; an admin never applies, so for them
+     it only offers the details. */
+  const isAdmin = isAdminRole(state.currentUser?.role);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -115,7 +120,7 @@ export function Opportunities() {
                     {/* Pinned by the shared flex-column card rule, so the row
                         of cards shows one button baseline. */}
                     <Button size="sm" style={{ width: '100%' }}>
-                      View Details & Apply
+                      {isAdmin ? 'View Details' : 'View Details & Apply'}
                     </Button>
                   </Card>
                 );
