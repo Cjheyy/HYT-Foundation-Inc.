@@ -307,14 +307,9 @@ export function AbsenceReview() {
               <p><strong>Trainee:</strong> {resolveUserName(selected.user, selected)}</p>
               <p><strong>Absence date:</strong> {formatDate(selected.absenceDate || selected.createdAt)}</p>
               <p><strong>Reason given:</strong> {selected.reason}</p>
-              {decision === 'Accepted' ? (
+              {decision === 'Accepted' && (
                 <p style={{ marginTop: '12px' }}>
                   Accepting this adds <strong>one working day</strong> to the projected end date.
-                </p>
-              ) : (
-                <p style={{ marginTop: '12px' }}>
-                  Rejecting this keeps the day as a normal working day. The trainee will read
-                  what you write below, so say what they should do instead.
                 </p>
               )}
             </div>
