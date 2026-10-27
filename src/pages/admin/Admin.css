@@ -1226,96 +1226,120 @@
 }
 
 /* --------------------------------------------------------------------------
-   Attendance review tables on a narrow screen.
+   Attendance review tables - a field card per row, at every width.
 
-   Ten columns cannot fit a phone or a small laptop, and the old answer was
-   `.table-responsive` scrolling sideways - which gave the page a scrollbar
-   along the bottom that competed with the sidebar's own scrollbar, and still
-   left the Actions column off-screen where nobody could reach it.
+   Ten columns cannot fit this card, and the old answer was `.table-responsive`
+   scrolling sideways. Two separate things were wrong with that:
 
-   Below 1180px each row becomes a labelled card instead: the header row is
-   hidden, and every cell prints its own name from `data-label`. Nothing
-   scrolls horizontally, and the buttons sit at the bottom of the card where a
-   thumb expects them.
+   1. `.main-content` is a flex item, so its `min-width` defaults to `auto`: a
+      wide table stretched the whole PAGE past the window, which is why the
+      scrollbar showed up at the bottom of the browser instead of inside the
+      card. Fixed in PortalLayout.css with `min-width: 0`.
+   2. Even once contained, the wrapper still scrolled sideways - and the width
+      that matters is the CARD's, not the viewport's. On a 1920px screen the
+      card is only ~1570px after the 280px sidebar, so a viewport media query
+      cannot describe it. That is why the old `max-width: 1180px` block never
+      fired on the machine it was written for.
+
+   So there is no table any more, and no media query either. Each row is a card
+   whose fields sit in an auto-fitting grid: one field per cell, the label above
+   the value. The column count follows the card's own width - seven fields
+   across on a desktop, two on a phone - so the layout uses the space it has
+   instead of stretching a label and its value to opposite ends of the screen.
+   Nothing scrolls horizontally at any size.
    -------------------------------------------------------------------------- */
-@media (max-width: 1180px) {
-  .av-stack {
-    overflow-x: visible;
-  }
+.av-stack {
+  overflow-x: visible;
+}
 
-  .av-stack .data-table,
-  .av-stack .data-table tbody,
-  .av-stack .data-table tr,
-  .av-stack .data-table td {
-    display: block;
-    width: 100%;
-  }
+/* `.table-responsive > .data-table` sets `min-width: 640px`, which would keep
+   the now-block table wider than the card it sits in. */
+.av-stack .data-table {
+  min-width: 0;
+}
 
-  .av-stack .data-table thead {
-    display: none;
-  }
+.av-stack .data-table,
+.av-stack .data-table tbody,
+.av-stack .data-table tr,
+.av-stack .data-table td {
+  display: block;
+  width: 100%;
+}
 
-  .av-stack .data-table tr {
-    margin-bottom: 12px;
-    padding: 14px 16px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--surface);
-  }
+.av-stack .data-table thead {
+  display: none;
+}
 
-  .av-stack .data-table td {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 6px 0;
-    border: none;
-    text-align: right;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
+/* The row is the card; its cells are the grid. */
+.av-stack .data-table tr {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  align-items: start;
+  gap: 14px 20px;
+  margin-bottom: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
 
-  .av-stack .data-table td::before {
-    content: attr(data-label);
-    flex: none;
-    max-width: 45%;
-    padding-top: 2px;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    color: var(--muted-text);
-    text-align: left;
-  }
+/* One field: label above, value below, both left-aligned so a long value
+   wraps inside its own cell instead of running the width of the card. */
+.av-stack .data-table td {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  text-align: left;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
-  /* The student is the heading of the card, not a labelled field. */
-  .av-stack .data-table td:first-child {
-    display: block;
-    padding: 0 0 10px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
+.av-stack .data-table td::before {
+  content: attr(data-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
 
-  .av-stack .data-table td:first-child::before {
-    display: none;
-  }
+/* The student heads the card, so it takes the whole first line. */
+.av-stack .data-table td:first-child {
+  grid-column: 1 / -1;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
 
-  /* Buttons are the one row that should not be squeezed to the right edge. */
-  .av-stack .data-table td[data-label='Actions'] {
-    display: block;
-    padding-top: 12px;
-  }
+.av-stack .data-table td:first-child::before {
+  display: none;
+}
 
-  .av-stack .data-table td[data-label='Actions']::before {
-    display: none;
-  }
+/* Buttons get their own full-width line at the bottom, where a thumb expects
+   them, rather than being squeezed into a 168px column. */
+.av-stack .data-table td[data-label='Actions'] {
+  grid-column: 1 / -1;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
 
-  .av-stack .data-table td[data-label='Actions'] .action-buttons {
-    width: 100%;
-  }
+.av-stack .data-table td[data-label='Actions']::before {
+  display: none;
+}
 
-  .av-stack .data-table td[data-label='Actions'] .action-buttons > .btn {
-    flex: 1;
-  }
+.av-stack .data-table td[data-label='Actions'] .action-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  /* Two buttons stretched across a 1570px card read as banners, not as
+     controls. Capped and pushed to the right so they sit where the eye
+     finishes the card; on a phone the cap is wider than the card and the
+     buttons simply fill it. */
+  max-width: 420px;
+  margin-left: auto;
+}
+
+.av-stack .data-table td[data-label='Actions'] .action-buttons > .btn {
+  flex: 1;
 }
