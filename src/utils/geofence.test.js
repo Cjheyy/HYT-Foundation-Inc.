@@ -8,7 +8,8 @@ import {
   GEOFENCE_MAX_ACCURACY_METERS,
   GEOFENCE_ENFORCEMENT_ENABLED,
   DEV_BYPASS_FIX,
-  shouldBypassGeofence
+  shouldBypassGeofence,
+  snapToNearestOffice
 } from './geofence';
 
 /**
@@ -269,5 +270,37 @@ describe('shouldBypassGeofence', () => {
     );
     expect(decision.allowed).toBe(true);
     expect(decision.reason).toBe('inside');
+  });
+});
+
+/**
+ * Which office a localhost dev run gets filed under.
+ *
+ * The bypass used to submit the first office unconditionally, so testing from
+ * Atlanta produced a stamp reading "HYT Building · 0 m" - which looks exactly
+ * like a broken location lookup and cost a round of debugging.
+ */
+describe('snapToNearestOffice', () => {
+  it('picks Atlanta when the guess is at Atlanta', () => {
+    const [, atlanta] = OFFICE_LOCATIONS;
+    expect(snapToNearestOffice(atlanta.latitude, atlanta.longitude).name).toBe(atlanta.name);
+  });
+
+  it('picks HYT when the guess is at HYT', () => {
+    const [hyt] = OFFICE_LOCATIONS;
+    expect(snapToNearestOffice(hyt.latitude, hyt.longitude).name).toBe(hyt.name);
+  });
+
+  it('picks the right side of a guess that is merely in the same city', () => {
+    // ~2 km north of Atlanta - a typical Wi-Fi fix: wrong by kilometres, but
+    // nowhere near the other office.
+    const [, atlanta] = OFFICE_LOCATIONS;
+    const nearAtlanta = atlanta.latitude + 0.018;
+    expect(snapToNearestOffice(nearAtlanta, atlanta.longitude).name).toBe(atlanta.name);
+  });
+
+  it('falls back instead of throwing when there is no guess', () => {
+    expect(snapToNearestOffice(null, null).name).toBe(OFFICE_LOCATIONS[0].name);
+    expect(snapToNearestOffice('abc', undefined).name).toBe(OFFICE_LOCATIONS[0].name);
   });
 });

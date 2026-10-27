@@ -27,7 +27,7 @@ import {
   normalizeStatus,
   uploadAttendancePhoto
 } from '../../services/supabaseService';
-import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED, GEOFENCE_DEV_BYPASS, DEV_BYPASS_FIX, OFFICE_LOCATIONS } from '../../utils/geofence';
+import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED, GEOFENCE_DEV_BYPASS, DEV_BYPASS_FIX, OFFICE_LOCATIONS, snapToNearestOffice } from '../../utils/geofence';
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { stampPhotoBlob } from '../../utils/attendancePhoto';
 import { buildStampLines } from '../../utils/stampLines';
@@ -417,15 +417,35 @@ export function AttendanceNew() {
     // and admin flow below could never be exercised. The deployed build has
     // this branch removed at compile time.
     //
+    // The office is SNAPPED to the nearest one rather than fixed to the first:
+    // this used to always submit the HYT pin, so a developer testing from
+    // Atlanta got a stamp reading "HYT Building · 0 m" and reasonably concluded
+    // the location was broken. A Wi-Fi/IP guess is good enough to pick the right
+    // office, which is all this needs to get right - it is not good enough to
+    // measure metres, which is why the submitted accuracy is not the guess's.
+    //
     // Deliberately silent: a banner on every dev clock-in is noise. The row is
     // labelled "Dev test" in the admin queue, which is where it matters.
     if (GEOFENCE_DEV_BYPASS) {
+      let office = OFFICE_LOCATIONS[0];
+      try {
+        const guess = await getQuickCoordinates();
+        office = snapToNearestOffice(guess.latitude, guess.longitude);
+      } catch (error) {
+        // No guess at all (denied, offline): fall back to the first office
+        // rather than blocking a dev run.
+      }
       return {
-        coordinates: { ...DEV_BYPASS_FIX },
+        coordinates: {
+          latitude: office.latitude,
+          longitude: office.longitude,
+          accuracy: DEV_BYPASS_FIX.accuracy,
+          source: DEV_BYPASS_FIX.source
+        },
         geofence: {
           allowed: true,
           distance: 0,
-          location: OFFICE_LOCATIONS[0].name,
+          location: office.name,
           accuracy: DEV_BYPASS_FIX.accuracy,
           reason: 'dev-bypass',
           bypassed: true

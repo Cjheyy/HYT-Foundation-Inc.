@@ -182,9 +182,14 @@ export function shouldBypassGeofence({
 export const GEOFENCE_DEV_BYPASS = shouldBypassGeofence();
 
 /**
- * The fix the dev bypass submits: the first office pin, flagged as `dev`.
+ * The shape of the fix the dev bypass submits: the office pin, flagged as `dev`.
  *
- * It is deliberately a real, valid pair of coordinates with a small accuracy,
+ * The COORDINATES here are only the fallback used when the laptop cannot produce
+ * any position at all. Normally the page snaps to whichever office the machine's
+ * Wi-Fi/IP guess is nearest, so a developer testing from Atlanta gets "Atlanta
+ * San Juan Building" rather than a stamp that always says HYT.
+ *
+ * `accuracy` and `source` are always taken from here. The accuracy is small
  * because the server applies the same fence inside `request_clock_in` - a
  * client-only bypass would simply be rejected there instead.
  */
@@ -194,6 +199,22 @@ export const DEV_BYPASS_FIX = {
   accuracy: 5,
   source: 'dev'
 };
+
+/**
+ * Which office a dev-bypass run should be filed under.
+ *
+ * Extracted from the page so it can be tested: the bug it fixes was that the
+ * bypass always submitted `OFFICE_LOCATIONS[0]`, so a developer testing from
+ * Atlanta got a stamp reading "HYT Building · 0 m" and concluded the location
+ * was broken. It never was - the bypass simply did not look.
+ *
+ * A Wi-Fi/IP guess is good enough to choose between two sites 5.2 km apart,
+ * which is all this needs. Anything unusable falls back to the first office so
+ * a dev run is never blocked.
+ */
+export function snapToNearestOffice(latitude, longitude, fallback = OFFICE_LOCATIONS[0]) {
+  return nearestOffice(latitude, longitude) || fallback;
+}
 
 export const MAX_SHIFT_SECONDS = 8 * 60 * 60; // 08:00:00 hard cap
 export const SHIFT_WARNING_SECONDS = (7 * 60 + 55) * 60; // 07:55:00 alarm
