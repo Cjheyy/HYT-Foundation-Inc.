@@ -159,7 +159,8 @@ REVOKE INSERT, UPDATE, DELETE ON public.attendance_logs FROM authenticated;
 -- ===========================================================================
 UPDATE public.attendance_logs
 SET location_name = 'HYT Building'
-WHERE location_name LIKE 'HYT Foundation Building%';
+WHERE location_name LIKE 'HYT Foundation Building%'
+   OR location_name LIKE 'HYT Foundation Inc%';
 
 UPDATE public.attendance_logs
 SET location_name = 'Atlanta San Juan Building'
@@ -177,7 +178,8 @@ BEGIN
   ) THEN
     UPDATE public.attendance_logs
     SET clock_out_location_name = 'HYT Building'
-    WHERE clock_out_location_name LIKE 'HYT Foundation Building%';
+    WHERE clock_out_location_name LIKE 'HYT Foundation Building%'
+       OR clock_out_location_name LIKE 'HYT Foundation Inc%';
 
     UPDATE public.attendance_logs
     SET clock_out_location_name = 'Atlanta San Juan Building'
@@ -214,6 +216,17 @@ places AS (
   SELECT COALESCE(location_name, '(null)') AS name, COUNT(*) AS rows
   FROM public.attendance_logs
   GROUP BY 1
+),
+stray AS (
+  SELECT COUNT(*) AS n,
+         COALESCE(STRING_AGG(DISTINCT location_name, ', '), '') AS names
+  FROM public.attendance_logs
+  WHERE location_name IS NOT NULL
+    AND location_name NOT IN (
+      'HYT Building',
+      'Atlanta San Juan Building',
+      'Testing bypass - geofence disabled'
+    )
 )
 SELECT '1 helper default radius' AS item,
        CASE WHEN (SELECT args FROM helper) LIKE '%DEFAULT 100%' THEN 'PASS (100)' ELSE 'FAIL -> ' || COALESCE((SELECT args FROM helper), 'missing') END AS value
@@ -251,6 +264,11 @@ SELECT '9 Atlanta pin passes against Atlanta',
        CASE WHEN public.hyt_location_is_valid(14.604736146553744, 121.05314663304407,
                                               14.604736146553744, 121.05314663304407)
             THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
+SELECT '11 labels outside the two allowed',
+       CASE WHEN (SELECT n FROM stray) = 0
+            THEN 'PASS (none)'
+            ELSE 'FAIL -> ' || (SELECT names FROM stray) END
 UNION ALL
 SELECT '10 place label: ' || name, rows || ' row(s)' FROM places
 ORDER BY item;
