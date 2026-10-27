@@ -317,3 +317,19 @@ export function parseScheduleRange(schedule) {
   };
   return { start: toISO(parts[0]), end: toISO(parts[1]) };
 }
+
+/**
+ * `246.0000` -> `246`, `243.5` -> `243.5`, `0` -> `0`.
+ *
+ * Hours were printed with `toFixed(4)` on the Attendance page, so a 246-hour
+ * target rendered as "246.0000 hrs" - four digits of noise that pushed a 28px
+ * figure onto two lines inside a narrow card. The stored column is NUMERIC(8,4)
+ * but the fourth digit has never meant anything to anyone reading it, so two
+ * decimals is the most this prints, and trailing zeros are dropped because
+ * "246" is easier to scan than "246.00".
+ */
+export function formatHours(value) {
+  const hours = Number(value);
+  if (!Number.isFinite(hours)) return '0';
+  return String(Number(hours.toFixed(2)));
+}

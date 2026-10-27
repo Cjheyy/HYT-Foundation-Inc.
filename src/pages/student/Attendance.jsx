@@ -31,7 +31,7 @@ import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, G
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { stampPhotoBlob } from '../../utils/attendancePhoto';
 import { buildStampLines } from '../../utils/stampLines';
-import { formatDate, formatTime } from '../../utils/helpers';
+import { formatDate, formatHours, formatTime } from '../../utils/helpers';
 import { getRoleTerms } from '../../utils/roleTerms';
 import {
   computeExperienceSchedule,
@@ -941,13 +941,18 @@ export function AttendanceNew() {
                 hidden for that portal and only the approved milestone (plus
                 the bar below) is shown.  The OJT/Intern portal still needs all
                 three, so this stays role-aware rather than deleting them. */}
+            {/* `formatHours` instead of `toFixed(4)`: "246.0000 hrs" was four
+                digits of noise that wrapped onto a second line in a narrow
+                card. The percentage is printed once, on the progress line
+                above - it used to be printed twice, and the copy inside the bar
+                spilled out of the track whenever the fill was near 0%. */}
             <div className="progress-stats">
               {!terms.isTrainee && (
-                <div className="stat-item"><span className="stat-label">Required Hours:</span><span className="stat-value">{progress.required.toFixed(2)} hrs</span></div>
+                <div className="stat-item"><span className="stat-label">Required Hours:</span><span className="stat-value">{formatHours(progress.required)} hrs</span></div>
               )}
-              <div className="stat-item"><span className="stat-label">Approved Hours:</span><span className="stat-value success">{progress.rendered.toFixed(4)} hrs</span></div>
+              <div className="stat-item"><span className="stat-label">Approved Hours:</span><span className="stat-value success">{formatHours(progress.rendered)} hrs</span></div>
               {!terms.isTrainee && (
-                <div className="stat-item"><span className="stat-label">Remaining Hours:</span><span className="stat-value warning">{progress.remaining.toFixed(4)} hrs</span></div>
+                <div className="stat-item"><span className="stat-label">Remaining Hours:</span><span className="stat-value warning">{formatHours(progress.remaining)} hrs</span></div>
               )}
             </div>
             {/* No target, no percentage. A Trainee has no required hours at
@@ -962,7 +967,7 @@ export function AttendanceNew() {
                   <span className="progress-line-value">{progress.percentage.toFixed(1)}%</span>
                 </div>
                 <div className="progress-bar-container">
-                  <div className="progress-bar" style={{ width: `${progress.percentage}%` }}><span className="progress-text">{progress.percentage.toFixed(1)}%</span></div>
+                  <div className="progress-bar" style={{ width: `${progress.percentage}%` }} />
                 </div>
               </>
             ) : (

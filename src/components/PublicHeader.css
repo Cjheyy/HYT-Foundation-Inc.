@@ -25,6 +25,9 @@
   color: var(--dark-text);
   text-decoration: none;
   transition: transform 0.3s ease;
+  /* The logo and the action buttons keep their size; the nav is the only part
+     allowed to give up space when the row gets tight. */
+  flex-shrink: 0;
 }
 
 .logo:hover {
@@ -83,6 +86,8 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(213, 113, 86, 0.3);
   transition: all 0.3s ease;
+  flex-shrink: 0;
+  line-height: 0;
 }
 
 .mobile-menu-toggle:hover {
@@ -90,23 +95,47 @@
   box-shadow: 0 6px 16px rgba(213, 113, 86, 0.4);
 }
 
+.mobile-menu-toggle:focus-visible {
+  outline: 2px solid var(--dark-text);
+  outline-offset: 2px;
+}
+
+/* The wrapper that holds the links and the action buttons.
+   On a wide screen it is just a transparent flex row that takes whatever space
+   is left between the logo and the edge, so the nav and the buttons lay out
+   exactly as they did when they were direct children. It only becomes a real
+   panel - absolutely positioned, full width - below the breakpoint. */
+.header-menu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex: 1;
+  min-width: 0;
+}
+
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 40px;
+  /* Seven links plus the logo and the CTA do not fit in the 1160px the
+     `.container` allows, so the gap has to give as the viewport narrows. It
+     used to be a flat 40px, which is why the row collided with itself. */
+  gap: clamp(16px, 1.6vw, 28px);
   flex: 1;
   justify-content: center;
+  min-width: 0;
 }
 
 .nav-link {
   color: var(--dark-text);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.3s ease;
   position: relative;
   letter-spacing: 0.3px;
   padding: 8px 4px;
+  /* A link that wraps to two lines is what made the row look broken. */
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -143,6 +172,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 /* The header's primary call to action. Given its own size, weight and lift so it
@@ -156,6 +186,7 @@
   border-radius: 12px;
   text-decoration: none;
   box-shadow: 0 8px 20px -8px rgba(213, 113, 86, 0.65);
+  white-space: nowrap;
 }
 
 .header-login-btn:hover {
@@ -168,91 +199,131 @@
   outline-offset: 2px;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Drawer breakpoint.
+
+   1180px is not an arbitrary round number: the desktop row needs roughly
+   1100px once the logo, the seven links at their clamped gap, the theme switch
+   and the Log In / Dashboard buttons are all accounted for. Below that the row
+   had nowhere to go, which is what produced the overlapping panels on a phone
+   and the squashed row on a tablet.
+--------------------------------------------------------------------------- */
+@media (max-width: 1180px) {
   .header-content {
-    padding: 16px 0;
+    padding: 12px 0;
+    gap: 16px;
   }
 
   .mobile-menu-toggle {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .nav-menu {
+  .header-menu {
+    display: none;
+  }
+
+  /* ONE panel. Everything - links, theme switch, buttons - lives inside this
+     single scroll container, so there is nothing left to overlap. */
+  .header-menu.open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
+    /* The desktop rule gives this element `flex: 1` and a 32px gap; neither
+       means anything once it is an absolutely positioned column. */
+    flex: none;
+    gap: 0;
+    padding: 14px 20px 22px;
     background: var(--surface-frosted);
     backdrop-filter: blur(20px);
-    flex-direction: column;
-    padding: 24px;
-    gap: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
     border-top: 1px solid var(--border);
-    display: none;
-    animation: slideDown 0.3s ease-out;
+    /* The tallest this header ever gets in this range is 84px (60px logo +
+       12px padding top and bottom), so that is the offset used here. The panel
+       scrolls internally instead of running off the bottom of the screen. */
+    max-height: calc(100vh - 84px);
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: slideDown 0.26s ease-out;
   }
 
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .nav-menu.open {
+  .header-menu .nav-menu {
+    position: static;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex: none;
+    width: 100%;
+    gap: 8px;
+    padding: 0;
+    min-width: 0;
   }
 
-  .nav-link {
+  .header-menu .nav-link {
     width: 100%;
-    text-align: center;
-    padding: 12px;
+    text-align: left;
+    padding: 13px 16px;
     border-radius: 12px;
     background: var(--surface);
-    border: 2px solid var(--border);
-    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
-  .nav-link:hover {
+  .header-menu .nav-link:hover {
     background: linear-gradient(135deg, rgba(213, 113, 86, 0.1), rgba(243, 219, 110, 0.1));
     border-color: var(--primary-orange);
-    transform: scale(1.02);
+    transform: none;
   }
 
-  .nav-link::after {
+  .header-menu .nav-link::after {
     display: none;
   }
 
-  .header-actions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--surface-frosted);
-    backdrop-filter: blur(20px);
-    padding: 24px;
-    flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    border-top: 1px solid var(--border);
-    margin-top: 280px;
-    display: none;
-    animation: slideDown 0.3s ease-out 0.1s backwards;
-  }
-
-  .header-actions.open {
+  .header-menu .header-actions {
+    position: static;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+    margin: 14px 0 0;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    background: none;
+    box-shadow: none;
   }
 
-  /* Both the Dashboard <button> and the Log In <Link> fill the stacked menu. */
-  .header-actions button,
-  .header-actions .btn {
+  .header-menu .theme-toggle {
+    align-self: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Both the Dashboard <button> and the Log In <Link> fill the stacked menu.
+     The theme switch is excluded - it is a circle, not a row. */
+  .header-menu .header-actions > .btn,
+  .header-menu .header-actions > button:not(.theme-toggle) {
     width: 100%;
+    justify-content: center;
   }
 
   .logo-circle {
@@ -267,6 +338,10 @@
 }
 
 @media (max-width: 480px) {
+  .header-menu.open {
+    padding: 12px 16px 20px;
+  }
+
   .logo-text {
     font-size: 16px;
   }
@@ -275,5 +350,16 @@
     width: 38px;
     height: 38px;
     font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-menu.open,
+  .nav-link,
+  .logo,
+  .mobile-menu-toggle,
+  .header-login-btn {
+    animation: none !important;
+    transition: none !important;
   }
 }

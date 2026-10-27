@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons';
 import { PartnerModal } from '../../components/PartnerModal';
@@ -8,9 +8,10 @@ import { PARTNER_ORGANIZATIONS, partnerAccentVars } from '../../data/partnerOrga
 import './About.css';
 
 /**
- * Feeds the cursor position into the card so the spotlight highlight follows
- * the pointer.  Written straight to the element's style to avoid a React
- * re-render on every mouse move.
+ * Feeds the cursor position into a card so its spotlight highlight follows the
+ * pointer. Written straight to the element's style to avoid a React re-render
+ * on every mouse move. The thrust cards use this; the partner tiles used to as
+ * well, until their dialog stopped opening on hover.
  */
 const trackPointerGlow = (event) => {
   const el = event.currentTarget;
@@ -20,72 +21,21 @@ const trackPointerGlow = (event) => {
 };
 
 /**
- * A tile only opens its dialog once the pointer has rested on it, so sweeping
- * the cursor across the grid does not fire eleven dialogs in a row.
+ * Partner tiles open their dialog on CLICK only.
+ *
+ * They used to open on hover after a 200ms dwell, with a pointer-following glow
+ * to make the delay feel deliberate. Three problems with that: the dialog
+ * appeared while you were only *looking* at the grid, there is no hover on a
+ * phone so the whole section was dead to a finger, and the dwell timer plus the
+ * "just closed, don't reopen" flag were a lot of machinery guarding against the
+ * dialog fighting the cursor. A click is the one gesture that works with a
+ * mouse, a finger and a keyboard alike - and each tile is a real <button>, so
+ * Enter and Space fire it for free.
  */
-const HOVER_OPEN_DELAY_MS = 200;
-
 export function About() {
   const thrusts = HYT_THRUSTS;
   const [activePartner, setActivePartner] = useState(null);
-  const openTimerRef = useRef(null);
-  /** True while the pointer is still resting on a tile whose dialog just closed. */
-  const suppressHoverRef = useRef(false);
-
-  /** Cancel an open that has not fired yet - never closes an open dialog. */
-  const cancelPendingOpen = useCallback(() => {
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-  }, []);
-
-  /**
-   * Closing deliberately does NOT happen on mouse-leave.
-   *
-   * The dialog renders a full-viewport backdrop, so the moment it opens the
-   * pointer is no longer over the tile - a mouse-leave close would fire
-   * immediately, the dialog would close, the tile would be hovered again, and
-   * the two would flicker forever.  The dialog is dismissed the way a modal
-   * should be: backdrop click, the close control, or Escape.
-   *
-   * `suppressHoverRef` guards the mirror-image trap: when the overlay unmounts
-   * the pointer is usually still over the tile, so the browser fires a fresh
-   * `mouseenter` and the dialog would re-open instantly - making the close look
-   * broken.  The flag is cleared the next time the pointer actually leaves.
-   */
-  const closePartner = useCallback(() => {
-    suppressHoverRef.current = true;
-    cancelPendingOpen();
-    setActivePartner(null);
-  }, [cancelPendingOpen]);
-
-  /** Arm the delayed open; a second call replaces the pending one. */
-  const scheduleOpen = useCallback((partner) => {
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    openTimerRef.current = setTimeout(() => {
-      openTimerRef.current = null;
-      setActivePartner(partner);
-    }, HOVER_OPEN_DELAY_MS);
-  }, []);
-
-  const handleTileEnter = useCallback(
-    (partner) => {
-      if (suppressHoverRef.current) return;
-      scheduleOpen(partner);
-    },
-    [scheduleOpen]
-  );
-
-  const handleTileLeave = useCallback(() => {
-    suppressHoverRef.current = false;
-    cancelPendingOpen();
-  }, [cancelPendingOpen]);
-
-  // A hover still in flight must not set state after the page unmounts.
-  useEffect(() => () => {
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-  }, []);
+  const closePartner = () => setActivePartner(null);
 
   return (
     <div className="about-page">
@@ -168,13 +118,8 @@ export function About() {
             </p>
           </div>
 
-          {/*
-            Tiles open their dialog on hover - there is no click-to-open step for
-            a pointer.  `onClick` is kept only as the touch and keyboard path:
-            a tap has no hover, and a real <button> fires click on Enter/Space,
-            which is how a keyboard user opens the dialog.  It is not the
-            primary affordance and nothing about the tile invites a click.
-          */}
+          {/* Click / tap / Enter opens the dialog. No hover handlers: the tile
+              is a <button>, so it is reachable and operable three ways already. */}
           <div className="partners-grid">
             {PARTNER_ORGANIZATIONS.map((partner) => (
               <button
@@ -182,11 +127,9 @@ export function About() {
                 key={partner.key}
                 className="partner-chip"
                 style={partnerAccentVars(partner.accent, partner.accentDeep)}
-                onMouseEnter={() => handleTileEnter(partner)}
-                onMouseLeave={handleTileLeave}
-                onMouseMove={trackPointerGlow}
                 onClick={() => setActivePartner(partner)}
                 aria-haspopup="dialog"
+                aria-label={`More about ${partner.name}`}
               >
                 <span className="partner-chip-glow" aria-hidden="true" />
                 <PartnerLogo partner={partner} />

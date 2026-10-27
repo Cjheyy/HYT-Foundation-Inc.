@@ -313,12 +313,35 @@
    ========================================================================== */
 .partners-grid {
   display: grid;
-  /* Narrower tracks than the old initials layout: a logo plate needs width far
-     less than a wrapped two-line company name did. */
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  /* Four per row, fixed rather than auto-fit. Twelve partners divide evenly
+     into three rows of four, so no row is left with a straggler - which is
+     exactly what auto-fit produced here: five tracks at this width, so the
+     twelve tiles fell 5 + 5 + 2 and the last two sat alone at the left edge.
+     `minmax(0, 1fr)` keeps a long company name from widening its own track. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  max-width: 1040px;
+  max-width: 1120px;
   margin: 0 auto;
+}
+
+/* 12 divides evenly by 3, 2 and 1 as well, so every step down stays a full
+   rectangle right to the smallest phone. */
+@media (max-width: 900px) {
+  .partners-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .partners-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
+  .partners-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .partner-chip {
@@ -387,9 +410,10 @@
   outline-offset: 3px;
 }
 
-/* Soft highlight that follows the pointer; `--mx`/`--my` are written straight
-   to the element by trackPointerGlow() in About.jsx, so moving the mouse never
-   triggers a React render.  Sits at z-index:-1 (see `isolation` above) so it
+/* Soft highlight wash on the tile. It used to follow the pointer (`--mx`/`--my`
+   written straight to the element on mousemove, so tracking never triggered a
+   React render); with the hover-to-open gone it rests centred, which is the
+   same wash minus the motion. Sits at z-index:-1 (see `isolation` above) so it
    tints the tile without washing out the logo or the label. */
 .partner-chip-glow {
   position: absolute;
@@ -424,9 +448,10 @@
   height: auto;
 }
 
-/* "There is more here" affordance.  The tile opens on hover, so a cue that
-   reads as *disclosure* rather than *button* is what tells the visitor a dialog
-   is behind it.  Pinned to the corner so it never crowds the centred logo. */
+/* "There is more here" affordance. The tile opens on CLICK now, and a click is
+   only discoverable if the cue is on screen before the pointer arrives - so it
+   rests visible rather than waiting for a hover that a phone never fires.
+   Pinned to the corner so it never crowds the centred logo. */
 .partner-chip-hint {
   position: absolute;
   top: 10px;
@@ -440,16 +465,13 @@
   /* Deepened accent keeps the glyph legible on every brand. */
   color: var(--accent-deep);
   background: var(--accent-soft);
-  opacity: 0;
-  transform: scale(0.8);
-  transition: opacity 0.3s ease,
-              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0.6;
+  transition: opacity 0.25s ease;
 }
 
 .partner-chip:hover .partner-chip-hint,
 .partner-chip:focus-visible .partner-chip-hint {
   opacity: 1;
-  transform: scale(1);
 }
 
 .partner-monogram {
@@ -796,12 +818,8 @@
     transition: none !important;
   }
 
-  /* The hint is opacity-0 until hover; without the transition it would pop in
-     abruptly, so pin it visible for reduced-motion visitors instead. */
-  .partner-chip-hint {
-    opacity: 1;
-    transform: none;
-  }
+  /* The hint no longer depends on hover, so there is nothing to pin here - it
+     already rests at a visible opacity. */
 }
 
 /* Offer Cards */

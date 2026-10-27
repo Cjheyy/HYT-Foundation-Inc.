@@ -171,35 +171,51 @@
   min-width: 0;
 }
 
-.progress-stats {
+/* Scoped to the card, deliberately.
+   `.stat-item` / `.stat-value` are also written in pages/student/Dashboard.css
+   for the trainee tiles, and CRA bundles every route into ONE stylesheet - so a
+   bare rule here styled the dashboard as well, and the dashboard's centred
+   bordered tile leaked back into these three. That is how "246.0000 hrs" ended
+   up sharing a 16px-padded box with a 28px font and wrapping onto two lines,
+   which in turn made the three tiles different heights. */
+.hours-progress-card .progress-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 24px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
-.stat-item {
+.hours-progress-card .stat-item {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
-.stat-label {
-  font-size: 14px;
+.hours-progress-card .stat-label {
+  font-size: 13px;
   color: var(--muted-text);
 }
 
-.stat-value {
-  font-size: 28px;
+.hours-progress-card .stat-value {
+  /* Never wraps. The figure is the point of the tile; "246" and "hrs" on two
+     lines reads as two separate numbers. */
+  white-space: nowrap;
+  font-size: clamp(18px, 2.1vw, 26px);
   font-weight: 700;
+  line-height: 1.15;
   color: var(--dark-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.stat-value.success {
-  color: var(--dark-text);
-}
-
-.stat-value.warning {
+.hours-progress-card .stat-value.success,
+.hours-progress-card .stat-value.warning {
   color: var(--dark-text);
 }
 
@@ -230,16 +246,17 @@
   /* Deepened so the white percentage clears 4.5:1 across the whole fill;
      #279EB6 was 3.16:1 against white. */
   background: linear-gradient(90deg, #16697A, var(--info-text));
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 16px;
+  border-radius: 16px;
   transition: width 0.3s ease;
-  min-width: 50px;
+  /* No percentage is printed inside the bar any more. It used to be, with
+     `min-width: 50px` and `padding-right: 16px` to keep the text on screen -
+     which at 0% pushed a "0.0%" badge out of the track and onto the card. The
+     number is already on the progress line above; printing it twice was the
+     only reason the bar needed a minimum width at all. */
 }
 
-/* Two classes so this outranks the global `.card :is(span)` phrasing rule
-   (0,1,1), which otherwise re-pointed the percentage at --muted-text. */
+/* The percentage used to be printed inside the fill. Kept as a rule so an old
+   cached bundle cannot style a stray span, but nothing renders it now. */
 .progress-bar-container .progress-bar .progress-text {
   color: #FFFFFF;
   font-weight: 700;
@@ -396,16 +413,16 @@
     grid-template-columns: 1fr;
   }
 
-  .progress-stats {
-    grid-template-columns: 1fr;
+  /* Three tiles at ~150px each still fit a 480px-wide phone, and stacking them
+     pushed the progress bar off the first screen for no reason. One column only
+     once the tile would be narrower than the longest figure can render. */
+  .hours-progress-card .progress-stats {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
   }
 
   .status-value {
     font-size: 20px;
-  }
-
-  .stat-value {
-    font-size: 24px;
   }
 
   .table-responsive {

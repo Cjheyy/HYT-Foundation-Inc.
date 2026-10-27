@@ -16,7 +16,7 @@ import {
   resolveAttendanceUserName,
   getAttendancePhotoUrl
 } from '../../services/supabaseService';
-import { formatDate, formatTime } from '../../utils/helpers';
+import { formatDate, formatHours, formatTime } from '../../utils/helpers';
 import { GEOFENCE_TRUSTED_ACCURACY_METERS, nearestOffice } from '../../utils/geofence';
 import { formatMeters, shortOfficeName } from '../../utils/stampLines';
 import { toast } from 'react-toastify';
@@ -424,7 +424,7 @@ export function AttendanceVerification() {
         </div>
 
         {filteredPending.length > 0 ? (
-          <div className="table-responsive">
+          <div className="table-responsive av-stack">
             <table className="data-table">
               <thead>
                 <tr>
@@ -446,29 +446,29 @@ export function AttendanceVerification() {
                   const isRequestedUser = !requestedUser || requestedUser === log.userId || requestedUser === log.user?.id;
                   return (
                     <tr key={log.id} className={isRequestedUser ? 'requested-row' : ''}>
-                      <td>
+                      <td data-label="Student">
                         <div className="student-info">
                           <div className="student-name">{resolveAttendanceUserName(log)}</div>
                           <div className="student-email">{log.user?.email || '--'}</div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Photo">
                         <AttendancePhoto
                           path={stage === 'CLOCK_OUT' ? log.photoOutPath : log.photoInPath}
                           label={`${resolveAttendanceUserName(log)} - ${stage === 'CLOCK_OUT' ? 'clock-out' : 'clock-in'}`}
                           onOpen={setPhotoViewer}
                         />
                       </td>
-                      <td>
+                      <td data-label="Stage">
                         <Badge color={!stage ? 'gray' : stage === 'CLOCK_IN' ? 'blue' : 'yellow'}>
                           {stage ? stageLabel(stage) : 'Unrecognised status'}
                         </Badge>
                       </td>
-                      <td>{formatDate(log.date)}</td>
-                      <td>{log.timeIn ? formatTime(log.timeIn) : 'Not started'}</td>
-                      <td>{log.pendingEndTime ? formatTime(log.pendingEndTime) : '--:--'}</td>
-                      <td><AttendanceLocationCell log={log} /></td>
-                      <td>
+                      <td data-label="Date">{formatDate(log.date)}</td>
+                      <td data-label="Time In">{log.timeIn ? formatTime(log.timeIn) : 'Not started'}</td>
+                      <td data-label="Frozen End">{log.pendingEndTime ? formatTime(log.pendingEndTime) : '--:--'}</td>
+                      <td data-label="Location"><AttendanceLocationCell log={log} /></td>
+                      <td data-label="Duration / Hours">
                         {!stage ? (
                           <span className="muted-cell" title="Normalise this legacy status before approving.">
                             Cannot be approved automatically
@@ -476,12 +476,12 @@ export function AttendanceVerification() {
                         ) : stage === 'CLOCK_IN' ? <span className="muted-cell">Timer starts after approval</span> : (
                           <>
                             <div className="duration-display">{formatDuration(log.durationSeconds)}</div>
-                            <strong className="hours-display">{Number(log.renderedHours || 0).toFixed(4)} hrs</strong>
+                            <strong className="hours-display">{formatHours(log.renderedHours)} hrs</strong>
                           </>
                         )}
                       </td>
-                      <td><Badge status={log.status}>Pending</Badge></td>
-                      <td>
+                      <td data-label="Status"><Badge status={log.status}>Pending</Badge></td>
+                      <td data-label="Actions">
                         <div className="action-buttons">
                           <Button
                             size="sm"
@@ -530,25 +530,25 @@ export function AttendanceVerification() {
           <Badge color="green">{processedLogs.length} Processed</Badge>
         </div>
         {processedLogs.length > 0 ? (
-          <div className="table-responsive">
+          <div className="table-responsive av-stack">
             <table className="data-table">
               <thead><tr><th>Student</th><th>Photo</th><th>Date</th><th>Duration</th><th>Hours</th><th>Status</th><th>Admin note</th></tr></thead>
               <tbody>
                 {processedLogs.slice(0, 15).map((log) => (
                   <tr key={log.id}>
-                    <td>{resolveAttendanceUserName(log)}</td>
-                    <td>
+                    <td data-label="Student">{resolveAttendanceUserName(log)}</td>
+                    <td data-label="Photo">
                       <AttendancePhoto
                         path={log.photoOutPath || log.photoInPath}
                         label={`${resolveAttendanceUserName(log)} - attendance photo`}
                         onOpen={setPhotoViewer}
                       />
                     </td>
-                    <td>{formatDate(log.date)}</td>
-                    <td className="duration-display">{formatDuration(log.durationSeconds)}</td>
-                    <td>{Number(log.renderedHours || 0).toFixed(4)} hrs</td>
-                    <td><Badge status={log.status}>{processedLabel(log.status)}</Badge></td>
-                    <td>{log.adminNote || '--'}</td>
+                    <td data-label="Date">{formatDate(log.date)}</td>
+                    <td data-label="Duration" className="duration-display">{formatDuration(log.durationSeconds)}</td>
+                    <td data-label="Hours">{formatHours(log.renderedHours)} hrs</td>
+                    <td data-label="Status"><Badge status={log.status}>{processedLabel(log.status)}</Badge></td>
+                    <td data-label="Admin note">{log.adminNote || '--'}</td>
                   </tr>
                 ))}
               </tbody>

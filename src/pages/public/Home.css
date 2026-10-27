@@ -1,12 +1,11 @@
 .home-page {
   min-height: 100vh;
   /* Must be `clip`, not `hidden`. `overflow-x: hidden` forces overflow-y to
-     `auto`, which turns .home-page into a scroll container - and a
-     `position: sticky` descendant then sticks to *that* box, which never
-     scrolls, so the pinned "What We Do" section would never pin.
-     `clip` suppresses the overflow without creating a scroll container.
-     Browsers without `clip` (pre-2022 Safari) simply keep overflow visible and
-     the pinned mode disables itself in JS. */
+     `auto`, which turns .home-page into a scroll container - and anything
+     `position: sticky` inside it (the header) would then stick to *that* box
+     instead of the viewport. `clip` suppresses the overflow without creating a
+     scroll container. The hero's decorative layers bleed past the right edge,
+     so the clip is still needed even though the pinned section is gone. */
   overflow-x: clip;
 }
 
@@ -208,81 +207,67 @@
    ========================================================================== */
 
 /* ============================================================================
-   Impact figures - bento  (B3)
+   Impact figures - four equal cards
    Named `bento-*`, NOT `stat-*`: .stats-grid / .stat-card / .stat-value /
    .stat-label are also declared in Impact.css, Attendance.css and
    Dashboard.css, and CRA bundles every route into one stylesheet. Reusing
    those names would leak this layout onto three other pages.
    ========================================================================== */
 
+/* Four equal cells. `minmax(0, 1fr)` rather than `1fr` because a grid track's
+   default minimum is `auto`, which lets a long label push the column wider than
+   its share and makes the row uneven again. */
 .bento-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
   max-width: 1080px;
   margin: 0 auto;
 }
 
+/* Every cell is a flex column with the index pushed to the top and the figure
+   sitting on the baseline, so all four read as one row no matter how long the
+   label is. */
 .bento-cell {
   position: relative;
   overflow: hidden;
-  border-radius: 18px;
-  padding: 32px 30px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-
-.bento-cell.bento-hero {
-  grid-row: span 2;
-  background: var(--ink-900, var(--dark-text));
-  border-color: var(--ink-900, var(--dark-text));
-  color: #fff;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  min-height: 176px;
+  padding: 24px 22px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s ease;
 }
 
-.bento-cell.bento-wide {
-  grid-column: span 2;
+.bento-cell:hover {
+  border-color: var(--primary-orange);
 }
 
 .bento-index {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 850;
   letter-spacing: 0.1em;
   font-variant-numeric: tabular-nums;
   color: #C3CBD6;
-  margin-bottom: 14px;
-}
-
-.bento-cell.bento-hero .bento-index {
-  color: rgba(255, 255, 255, 0.5);
+  /* Pushes the figure and label to the bottom of the cell. */
+  margin-bottom: auto;
 }
 
 .bento-value {
-  font-size: 40px;
+  font-size: clamp(30px, 3.1vw, 40px);
   font-weight: 850;
   line-height: 1;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   color: var(--dark-text);
   margin-bottom: 8px;
+  white-space: nowrap;
 }
 
-.bento-cell.bento-hero .bento-value {
-  font-size: 82px;
-  color: #fff;
-  margin-bottom: 14px;
-}
-
-/* The "+" / "%" takes the brand yellow so the figure reads as a figure.
-   .bento-value em also covers CountUp's own <em>. */
-.bento-cell.bento-hero .bento-value em {
-  font-style: normal;
-  color: var(--yellow, #F3DB6E);
-}
-
+/* The "+" / "%" takes the brand teal so the figure reads as a figure.
+   This also covers CountUp's own <em>. */
 .bento-value em {
   font-style: normal;
   color: var(--teal, #279EB6);
@@ -291,52 +276,37 @@
 .bento-label {
   font-size: 13.5px;
   font-weight: 650;
+  line-height: 1.4;
   color: var(--muted-text);
-}
-
-.bento-cell.bento-hero .bento-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.68);
 }
 
 .bento-note {
   font-size: 12.5px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 14px;
-  max-width: 280px;
+  color: var(--muted-text);
+  text-align: center;
+  max-width: 560px;
+  margin: 18px auto 0;
 }
 
 @media (max-width: 1024px) {
   .bento-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .bento-cell.bento-hero {
-    grid-row: span 1;
-    grid-column: span 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 560px) {
   .bento-grid {
     grid-template-columns: 1fr;
   }
 
-  .bento-cell.bento-hero,
-  .bento-cell.bento-wide {
-    grid-column: span 1;
-  }
-
   .bento-cell {
-    padding: 26px 22px;
+    min-height: 0;
+    padding: 20px 18px;
   }
 
-  .bento-cell.bento-hero .bento-value {
-    font-size: 62px;
+  .bento-index {
+    margin-bottom: 10px;
   }
 }
 
@@ -590,10 +560,11 @@
   font-weight: 500;
 }
 
-/* Stats - now hosts the bento (B3). The old full-brand gradient is gone: with
-   the hero figure sitting on ink, a saturated band behind it fought the
-   composition. The shared .stat-* rules further down are left untouched on
-   purpose - Impact.css, Attendance.css and Dashboard.css also declare them. */
+/* Stats - hosts the four figure cards. The old full-brand gradient is gone, and
+   so is the ink hero cell that replaced it: the section is a light wash under
+   four identical cards now. The shared .stat-* rules further down are left
+   untouched on purpose - Impact.css, Attendance.css and Dashboard.css also
+   declare them. */
 .stats-section {
   background: linear-gradient(180deg, var(--surface) 0%, var(--background) 100%);
   position: relative;

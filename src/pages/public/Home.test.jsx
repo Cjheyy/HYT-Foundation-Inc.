@@ -151,20 +151,21 @@ describe('Home - impact figures bento (B3)', () => {
     expect(screen.getByText('95', { exact: true }).textContent).toBe('95%');
   });
 
-  test('gives the hero figure an explanatory note', () => {
+  test('keeps the explanatory note for the first figure', () => {
     renderHome();
     expect(
-      screen.getByText(/Young people who have completed at least one HYT programme/i)
+      screen.getByText(/young people who have completed at least one HYT programme/i)
     ).toBeInTheDocument();
   });
 
-  test('applies the hero and wide modifiers to the right cells', () => {
+  test('renders four equal cells with no size modifiers', () => {
     renderHome();
     expect(countIn('bento-cell')).toBe(4);
-    // A modifier class has no role-based query, so it is asserted on the
-    // serialised document. `\b` leaves room for anything appended at runtime.
-    expect(markup()).toMatch(/class="bento-cell bento-hero\b/);
-    expect(markup()).toMatch(/class="bento-cell bento-wide\b/);
+    // The hero/wide bento modifiers are gone: with four figures they left one
+    // cell stranded on its own row. Uniform cells is the whole point now, so a
+    // regression that reintroduces either modifier should fail here.
+    expect(markup()).not.toContain('bento-hero');
+    expect(markup()).not.toContain('bento-wide');
   });
 
   test('drops the shared stat-card markup', () => {

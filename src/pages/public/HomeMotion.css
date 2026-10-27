@@ -9,10 +9,10 @@
      0. Design tokens - easing + ink scale
      1. Hero - aurora blobs, cursor spotlight, word mask-reveal, the rotating
         accent word, four added light layers, magnetic buttons
-     2. "What We Do" - pinned horizontal scroll
+     2. "What We Do" - static grid (the pinned slide is gone)
      3. Scroll reveal - the page-wide [data-reveal] system
      4. 8 HYT Thrusts - the floor's CTA (the rail's motion is gone with it)
-     5. Impact figures - bento motion
+     5. Impact figures - deliberately motionless
      6. Ribbon band - link + caption motion
      7. Your Journey - self-drawing SVG path
      8. (removed) the old CTA's rotating conic-glow button
@@ -469,93 +469,44 @@
 }
 
 /* ==========================================================================
-   2. "WHAT WE DO" - pinned horizontal scroll
-   Only active when JS confirms `overflow: clip` is supported, the viewport is
-   wide, and motion is allowed. Otherwise `.wwd-track` stays a normal grid.
+   2. "WHAT WE DO" - static grid
+   This section used to pin itself for 240vh and slide its card track sideways
+   as the page scrolled, with a progress bar as the affordance. Four cards
+   already fit on one row, so the sideways travel revealed nothing that was
+   not visible anyway - it just made the page lurch and, on touch, fought the
+   finger. Plain grid now: 4 -> 2 -> 1, no transform, no scroll listener.
+   The reveal still comes from the page-wide `data-reveal` system.
    ========================================================================== */
 
-.wwd-track {
+.wwd-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
 }
 
-.what-we-do.is-pinned {
-  height: 240vh;
-  padding: 0;
-}
-
-.what-we-do.is-pinned .wwd-pin {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
+/* Grid rows already equalise height; making each card a flex column is what
+   lines the descriptions up instead of leaving them floating mid-card. */
+.wwd-grid .feature-card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-}
-
-.what-we-do.is-pinned .wwd-pin > .container {
-  width: 100%;
-}
-
-.what-we-do.is-pinned .section-header {
-  margin-bottom: 40px;
-}
-
-.what-we-do.is-pinned .wwd-track {
-  display: flex;
-  gap: 32px;
-  will-change: transform;
-}
-
-/* Clips the track to the container and fades its outer edges, so cards dissolve
-   out instead of being sliced mid-word at the viewport edge. Scoped to pinned
-   mode so the plain grid keeps its normal overflow. */
-.what-we-do.is-pinned .wwd-viewport {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0,
-    #000 6%,
-    #000 94%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0,
-    #000 6%,
-    #000 94%,
-    transparent 100%
-  );
-}
-
-.what-we-do.is-pinned .wwd-track .feature-card {
-  flex: 0 0 420px;
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Scroll affordance - only meaningful in pinned mode. */
-.wwd-progress {
-  margin: 36px auto 0;
-  height: 4px;
-  width: 100%;
-  max-width: 320px;
-  border-radius: 4px;
-  background: rgba(31, 41, 55, 0.1);
-  overflow: hidden;
-}
-
-.wwd-progress span {
-  display: block;
   height: 100%;
-  width: 0;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--teal, #279EB6), var(--primary-orange, #D57156));
+}
+
+.wwd-grid .feature-description {
+  margin-top: auto;
+}
+
+@media (max-width: 1024px) {
+  .wwd-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .wwd-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 /* ==========================================================================
@@ -609,42 +560,12 @@
 }
 
 /* ==========================================================================
-   5. IMPACT FIGURES - bento motion
+   5. IMPACT FIGURES - no motion
+   The four cells used to lift on hover, and the old ink hero cell carried its
+   own aurora. Both are gone with the bento: a figure card is a read-out, not a
+   control, so it does not move. Only the border picks up the brand orange, and
+   that transition lives in Home.css with the rest of the card's layout.
    ========================================================================== */
-
-.bento-cell {
-  transition: transform 0.4s var(--e-out), border-color 0.4s var(--e-soft),
-    box-shadow 0.4s var(--e-out);
-}
-
-.bento-cell:not(.bento-hero):hover {
-  transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: 0 20px 44px -24px rgba(16, 24, 40, 0.34);
-}
-
-/* Aurora inside the hero cell, echoing the ribbon band's treatment. */
-.bento-cell.bento-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-      420px 260px at 78% 18%,
-      rgba(39, 158, 182, 0.42),
-      transparent 66%
-    ),
-    radial-gradient(
-      360px 260px at 10% 100%,
-      rgba(213, 113, 86, 0.32),
-      transparent 66%
-    );
-}
-
-.bento-cell.bento-hero > * {
-  position: relative;
-  z-index: 1;
-}
 
 /* ==========================================================================
    6. THE SEAM - deliberately static

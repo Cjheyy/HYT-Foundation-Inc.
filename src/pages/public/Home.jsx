@@ -154,85 +154,6 @@ export function Home() {
   };
 
   /* ---------------------------------------------------------------------
-     "What We Do" pinned horizontal scroll
-     --------------------------------------------------------------------- */
-
-  const wwdSectionRef = useRef(null);
-  const wwdTrackRef = useRef(null);
-  const wwdBarRef = useRef(null);
-  const [pinned, setPinned] = useState(false);
-
-  // Pinned mode depends on three things, so it is decided at runtime rather
-  // than in CSS alone:
-  //   - `overflow: clip` support - without it `.home-page` would fall back to
-  //     `overflow-x: hidden`, which creates a scroll container and silently
-  //     kills `position: sticky`.
-  //   - a wide viewport - below 769px the cards stack and horizontal travel is
-  //     pointless (and would fight touch scrolling).
-  //   - motion being allowed.
-  useEffect(() => {
-    // `matchMedia` is genuinely absent in some environments (jsdom, very old
-    // browsers), and every other motion hook in the codebase guards it. A
-    // missing API falls back to `false`, which keeps the section in its static
-    // stacked layout - the safe default.
-    const query = (mq) => (
-      typeof window.matchMedia === 'function' ? window.matchMedia(mq).matches : false
-    );
-
-    const decide = () => {
-      const supportsClip =
-        typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('overflow', 'clip');
-      const wide = query('(min-width: 769px)');
-      const still = query('(prefers-reduced-motion: reduce)');
-      setPinned(supportsClip && wide && !still);
-    };
-
-    decide();
-    window.addEventListener('resize', decide);
-    return () => window.removeEventListener('resize', decide);
-  }, []);
-
-  // Drive the horizontal translate from how far the sticky section has been
-  // scrolled through. `-rect.top / span` gives 0 at the moment the section
-  // pins and 1 when it is about to release.
-  useEffect(() => {
-    if (!pinned) return undefined;
-
-    // Captured once: the cleanup closure must not read `.current` later, since
-    // by then React may have swapped the node out.
-    const sectionEl = wwdSectionRef.current;
-    const trackEl = wwdTrackRef.current;
-    const barEl = wwdBarRef.current;
-
-    let raf = 0;
-    const tick = () => {
-      if (sectionEl && trackEl) {
-        const rect = sectionEl.getBoundingClientRect();
-        const span = rect.height - window.innerHeight;
-        const progress = span > 0 ? Math.min(1, Math.max(0, -rect.top / span)) : 0;
-
-        const parent = trackEl.parentElement;
-        const travel = Math.max(0, trackEl.scrollWidth - (parent ? parent.clientWidth : 0));
-
-        trackEl.style.transform = `translate3d(${(-progress * travel).toFixed(2)}px, 0, 0)`;
-        if (barEl) {
-          barEl.style.width = `${(progress * 100).toFixed(2)}%`;
-        }
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-      // Leaving pinned mode (e.g. rotated to portrait) must clear the inline
-      // transform, or the grid renders shifted.
-      if (trackEl) trackEl.style.transform = '';
-    };
-  }, [pinned]);
-
-  /* ---------------------------------------------------------------------
      "Your Journey" self-drawing path
      --------------------------------------------------------------------- */
 
@@ -424,40 +345,28 @@ export function Home() {
         galleryItem={selectedGalleryItem}
       />
 
-      {/* What HYT Does - pinned horizontal scroll when the viewport allows it */}
-      <section
-        ref={wwdSectionRef}
-        className={`section what-we-do${pinned ? ' is-pinned' : ''}`}
-      >
-        <div className="wwd-pin">
-          <div className="container">
-            <div className="section-header" data-reveal>
-              <h2 className="section-title">What We Do</h2>
-              <p className="section-subtitle">
-                Empowering youth through comprehensive development programs
-              </p>
-            </div>
+      {/* What HYT Does - four cards on a plain responsive grid.
+          This used to be a 240vh sticky section that translated the track
+          sideways as the page scrolled. It moved the page horizontally to
+          reveal four items that already fit in one row at desktop width, and
+          on a phone it fought the touch scroller. Static grid: 4 -> 2 -> 1. */}
+      <section className="section what-we-do">
+        <div className="container">
+          <div className="section-header" data-reveal>
+            <h2 className="section-title">What We Do</h2>
+            <p className="section-subtitle">
+              Empowering youth through comprehensive development programs
+            </p>
+          </div>
 
-            {/* The viewport clips and edge-fades the track; the track itself
-                carries the transform. Wrapping is what keeps the fade off the
-                section heading. */}
-            <div className="wwd-viewport">
-              <div ref={wwdTrackRef} className="wwd-track">
-                {FEATURES.map((feature) => (
-                  <Card key={feature.title} className="feature-card">
-                    <div className="feature-icon">{feature.icon}</div>
-                    <h3 className="feature-title">{feature.title}</h3>
-                    <p className="feature-description">{feature.description}</p>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {pinned && (
-              <div className="wwd-progress" aria-hidden="true">
-                <span ref={wwdBarRef} />
-              </div>
-            )}
+          <div className="wwd-grid" data-reveal>
+            {FEATURES.map((feature) => (
+              <Card key={feature.title} className="feature-card">
+                <div className="feature-icon">{feature.icon}</div>
+                <h3 className="feature-title">{feature.title}</h3>
+                <p className="feature-description">{feature.description}</p>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -628,41 +537,29 @@ export function Home() {
         </Modal>
       )}
 
-      {/* Impact figures - bento (B3). The first figure becomes a full-height ink
-          hero panel, so the four numbers stop competing at equal weight and the
-          section commits to a hierarchy. */}
+      {/* Impact figures - one uniform row of four.
+          This was a bento: the first cell doubled in height and the last one
+          doubled in width. With only four figures that produced exactly one
+          stranded cell at tablet widths, and the uneven heights read as a
+          broken grid rather than as hierarchy. Equal cells now, 4 -> 2 -> 1. */}
       <section className="section stats-section">
         <div className="container">
           <div className="bento-grid">
             {STATS.map((stat, index) => (
-              <div
-                key={stat.label}
-                data-reveal
-                className={[
-                  'bento-cell',
-                  index === 0 ? 'bento-hero' : '',
-                  index === STATS.length - 1 ? 'bento-wide' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
+              <div key={stat.label} data-reveal className="bento-cell">
                 <div className="bento-index" aria-hidden="true">{pad2(index)}</div>
                 <div className="bento-value">
-                  <CountUp
-                    value={stat.value}
-                    suffix={stat.suffix}
-                    duration={index === 0 ? 1600 : 1400}
-                  />
+                  <CountUp value={stat.value} suffix={stat.suffix} duration={1400} />
                 </div>
                 <div className="bento-label">{stat.label}</div>
-                {index === 0 && (
-                  <p className="bento-note">
-                    Young people who have completed at least one HYT programme.
-                  </p>
-                )}
               </div>
             ))}
           </div>
+          {/* The note used to sit inside the hero cell. It belongs to the first
+              figure, so it stays a footnote to the whole row instead. */}
+          <p className="bento-note" data-reveal>
+            Youth Empowered counts young people who have completed at least one HYT programme.
+          </p>
         </div>
       </section>
 
