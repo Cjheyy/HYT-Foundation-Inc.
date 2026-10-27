@@ -12,7 +12,7 @@ import {
   approveDailyReport, 
   rejectDailyReport 
 } from '../../services/supabaseService';
-import { formatDate } from '../../utils/helpers';
+import { describeError, formatDate } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './Admin.css';
 
@@ -52,8 +52,8 @@ export function ReportApprovals() {
       const data = await getDailyReports();
       setReports(data || []);
     } catch (error) {
-      console.error('Error loading reports:', error);
-      toast.error('Failed to load daily reports');
+      console.error('Error loading reports:', describeError(error), error);
+      toast.error(`Failed to load daily reports: ${describeError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function ReportApprovals() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Approve error:', error);
+      console.error('Approve error:', describeError(error), error);
       toast.error(error.message || 'Failed to approve report');
     } finally {
       setActionLoading(false);
@@ -104,7 +104,7 @@ export function ReportApprovals() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Reject error:', error);
+      console.error('Reject error:', describeError(error), error);
       toast.error(error.message || 'Failed to reject report');
     } finally {
       setActionLoading(false);

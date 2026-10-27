@@ -1537,12 +1537,17 @@ export const getSettings = async () => {
 // coordinates to show WHERE a clock-in happened, and the photo path to show
 // the picture the trainee submitted.  Without them the queue can only say
 // "approved", which is the least useful thing it could say.
+// `!user_id` is not decoration.  `attendance_logs` points at `users` twice -
+// once through `user_id` (who clocked in) and once through `approved_by` (who
+// signed it off) - so a bare `user:users(...)` embed is ambiguous and PostgREST
+// answers PGRST201 ("more than one relationship was found") instead of rows.
+// Naming the foreign key column tells it which one we mean.
 const attendanceUserSelect = `
   id, user_id, date, time_in, time_out, status, rendered_hours, duration_seconds,
   pending_end_time, location_name, admin_note, approved_by, approved_at, created_at,
   requested_at, latitude, longitude, accuracy_meters, location_source,
   photo_in_path, photo_out_path,
-  user:users(id, full_name, email, school, role, required_hours, rendered_hours)
+  user:users!user_id(id, full_name, email, school, role, required_hours, rendered_hours)
 `;
 
 const ATTENDANCE_USER_ID_KEYS = ['userId', 'user_id'];
@@ -1562,8 +1567,8 @@ const rowUserId = (row) => {
  * Used by the attendance queue AND the daily-report feed - anywhere a row
  * carries an owner id but the joined profile may be absent.
  *
- * The embedded `user:users(...)` relation in `attendanceUserSelect` is the fast
- * path, but it is not guaranteed: on a deployment whose
+ * The embedded `user:users!user_id(...)` relation in `attendanceUserSelect` is
+ * the fast path, but it is not guaranteed: on a deployment whose
  * `attendance_logs.user_id → users.id` foreign key is absent - or whose
  * PostgREST schema cache has not picked the relation up - the relation select
  * fails and every caller below falls back to `select('*')`.  That fallback
@@ -2374,9 +2379,14 @@ export const getAbsenceDecisionTone = (request) => {
   return 'PENDING';
 };
 
+// Same disambiguation as `attendanceUserSelect`: `absence_requests` holds
+// `user_id` (who filed it) and `noted_by` (which admin answered it), both
+// pointing at `users`.  Without `!user_id` every read of this table failed with
+// PGRST201, which is what surfaced on the Absence Report page as
+// "Failed to load absence reports".
 const ABSENCE_SELECT = `
   id, user_id, absence_date, reason, status, admin_note, noted_by, noted_at, created_at, updated_at,
-  user:users(id, full_name, first_name, last_name, email, school, role)
+  user:users!user_id(id, full_name, first_name, last_name, email, school, role)
 `;
 
 /**
@@ -2394,17 +2404,30 @@ export const getAbsenceRequests = async (userId = null) => {
     return query;
   };
 
+  const scope = (rows) => (userId
+    ? rows.filter((row) => rowUserId(row) === userId || !rowUserId(row))
+    : rows);
+
   let result = await run(ABSENCE_SELECT);
   if (result.error && isMissingColumnError(result.error)) {
     result = await run('*');
   }
   if (result.error) {
     if (isMissingTableError(result.error)) return [];
-    throw result.error;
+    // The relation select can be refused for reasons that have nothing to do
+    // with the rows themselves - an ambiguous embed (PGRST201), a stale
+    // PostgREST schema cache, or a renamed constraint.  The plain read still
+    // works in all of those cases, so use it and attach the profile in a
+    // second query rather than failing the whole page.
+    const plain = await run('*');
+    if (plain.error) {
+      if (isMissingTableError(plain.error)) return [];
+      throw plain.error;
+    }
+    return scope(await attachUserProfiles(mapRows(plain.data), client));
   }
 
-  const rows = mapRows(result.data);
-  return userId ? rows.filter((row) => rowUserId(row) === userId || !rowUserId(row)) : rows;
+  return scope(await attachUserProfiles(mapRows(result.data), client));
 };
 
 /** The administrator queue: everything not yet acknowledged. */

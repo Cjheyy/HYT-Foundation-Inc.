@@ -16,7 +16,7 @@ import {
   reviewAbsenceRequest
 } from '../../services/supabaseService';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
-import { formatDate, formatRelativeTime } from '../../utils/helpers';
+import { formatDate, formatRelativeTime, describeError } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './Admin.css';
 
@@ -66,8 +66,11 @@ export function AbsenceReview() {
       setRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) return;
-      console.error('Error loading absence requests:', error);
-      toast.error('Failed to load absence reports');
+      // Log the real cause, not "Object": Supabase rejects with a plain
+      // { message, details, hint, code } object, which is unreadable in the
+      // console and useless in a bug report.
+      console.error('Error loading absence requests:', describeError(error), error);
+      toast.error(`Failed to load absence reports: ${describeError(error)}`);
     } finally {
       if (mountedRef.current && loader && requestId === requestIdRef.current) setLoading(false);
     }
@@ -165,8 +168,8 @@ export function AbsenceReview() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Review absence error:', error);
-      toast.error(error.message || 'Failed to save the decision');
+      console.error('Review absence error:', describeError(error), error);
+      toast.error(describeError(error) || 'Failed to save the decision');
     } finally {
       setActionLoading(false);
     }

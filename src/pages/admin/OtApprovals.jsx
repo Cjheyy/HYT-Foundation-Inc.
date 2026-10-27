@@ -12,7 +12,7 @@ import {
   approveOtRequest, 
   rejectOtRequest 
 } from '../../services/supabaseService';
-import { formatDate } from '../../utils/helpers';
+import { describeError, formatDate } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './Admin.css';
 
@@ -52,8 +52,8 @@ export function OtApprovals() {
       const requests = await getOtRequests();
       setOtRequests(requests || []);
     } catch (error) {
-      console.error('Error loading OT requests:', error);
-      toast.error('Failed to load OT requests');
+      console.error('Error loading OT requests:', describeError(error), error);
+      toast.error(`Failed to load OT requests: ${describeError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function OtApprovals() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Approve error:', error);
+      console.error('Approve error:', describeError(error), error);
       toast.error(error.message || 'Failed to approve OT request');
     } finally {
       setActionLoading(false);
@@ -104,7 +104,7 @@ export function OtApprovals() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Reject error:', error);
+      console.error('Reject error:', describeError(error), error);
       toast.error(error.message || 'Failed to reject OT request');
     } finally {
       setActionLoading(false);

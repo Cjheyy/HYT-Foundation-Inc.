@@ -51,8 +51,12 @@ const makeFrom = (handler) => (table) => {
   return builder;
 };
 
+// Matched on the embed alias, not on `users(`: the real select now reads
+// `user:users!user_id(...)` (the foreign-key hint that stops PostgREST
+// answering PGRST201), and a detector keyed to the bare form silently stopped
+// recognising the relation select.
 const relationSelectFailed = (st) =>
-  st.table === 'attendance_logs' && String(st.select || '').includes('users(');
+  st.table === 'attendance_logs' && String(st.select || '').includes('user:users');
 
 const LOG_ROWS = [
   { id: 'log-1', user_id: 'user-a', date: '2026-03-01', status: 'PENDING_CLOCK_IN' },

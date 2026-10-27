@@ -333,3 +333,31 @@ export function formatHours(value) {
   if (!Number.isFinite(hours)) return '0';
   return String(Number(hours.toFixed(2)));
 }
+
+/**
+ * Turn whatever was thrown into a sentence a human can read.
+ *
+ * Supabase does not throw `Error` instances - a failed PostgREST call rejects
+ * with a plain object shaped `{ message, details, hint, code }`.  Passed
+ * straight to `console.error`, that object prints as the word "Object", which
+ * is how a real failure ("more than one relationship was found for
+ * 'absence_requests' and 'users'") reached the console as
+ * `Error loading absence requests: Object` and told nobody anything.
+ *
+ * PostgREST's own `message` is used when present because it is the actual
+ * cause; `code` is appended because it is what makes the problem searchable.
+ */
+export function describeError(error) {
+  if (!error) return 'Unknown error';
+  if (typeof error === 'string') return error;
+
+  const message = error.message || error.error_description || error.error || '';
+  const code = error.code || error.status || '';
+  const details = error.details || error.hint || '';
+
+  const parts = [message || details || 'Unknown error'];
+  if (message && details && details !== message) parts.push(`(${details})`);
+  if (code) parts.push(`[${code}]`);
+  return parts.join(' ');
+}
+

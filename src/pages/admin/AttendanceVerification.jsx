@@ -16,7 +16,7 @@ import {
   resolveAttendanceUserName,
   getAttendancePhotoUrl
 } from '../../services/supabaseService';
-import { formatDate, formatHours, formatTime } from '../../utils/helpers';
+import { describeError, formatDate, formatHours, formatTime } from '../../utils/helpers';
 import { GEOFENCE_TRUSTED_ACCURACY_METERS, nearestOffice } from '../../utils/geofence';
 import { formatMeters, shortOfficeName } from '../../utils/stampLines';
 import { toast } from 'react-toastify';
@@ -242,8 +242,8 @@ export function AttendanceVerification() {
       setLogs(data || []);
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) return;
-      console.error('Error loading attendance logs:', error);
-      toast.error('Failed to load attendance logs');
+      console.error('Error loading attendance logs:', describeError(error), error);
+      toast.error(`Failed to load attendance logs: ${describeError(error)}`);
     } finally {
       if (mountedRef.current && loader && requestId === requestIdRef.current) setLoading(false);
     }
@@ -327,7 +327,7 @@ export function AttendanceVerification() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Approve attendance error:', error);
+      console.error('Approve attendance error:', describeError(error), error);
       if (isAlreadyProcessed(error)) {
         // Another admin already handled it: treat it as the outcome it is.
         toast.info('This request was already processed by another admin.');
@@ -357,7 +357,7 @@ export function AttendanceVerification() {
       await refreshData().catch(() => undefined);
       window.dispatchEvent(new Event(DASHBOARD_DATA_CHANGED_EVENT));
     } catch (error) {
-      console.error('Reject attendance error:', error);
+      console.error('Reject attendance error:', describeError(error), error);
       if (isAlreadyProcessed(error)) {
         toast.info('This request was already processed by another admin.');
         closeModal(true);
