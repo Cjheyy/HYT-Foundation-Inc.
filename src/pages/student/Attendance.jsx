@@ -27,7 +27,7 @@ import {
   normalizeStatus,
   uploadAttendancePhoto
 } from '../../services/supabaseService';
-import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED } from '../../utils/geofence';
+import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED, GEOFENCE_DEV_BYPASS, DEV_BYPASS_FIX, OFFICE_LOCATIONS } from '../../utils/geofence';
 import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
 import { stampPhotoBlob } from '../../utils/attendancePhoto';
 import { buildStampLines } from '../../utils/stampLines';
@@ -363,6 +363,9 @@ export function AttendanceNew() {
    */
   const reminderFiredRef = useRef(false);
 
+  // So the dev-bypass notice is shown once per page load, not on every click.
+  const devBypassNoticedRef = useRef(false);
+
   useEffect(() => {
     if (!currentUser?.id) return undefined;
     const today = new Date();
@@ -412,6 +415,31 @@ export function AttendanceNew() {
    * whether to toast it or let it bubble.
    */
   const resolveCoordinates = async (actionLabel) => {
+    // Localhost only (see GEOFENCE_DEV_BYPASS). A laptop reports a Wi-Fi/IP fix
+    // good to kilometres, so the 20 m fence can never pass here and the camera
+    // and admin flow below could never be exercised. The deployed build has
+    // this branch removed at compile time.
+    if (GEOFENCE_DEV_BYPASS) {
+      if (!devBypassNoticedRef.current) {
+        devBypassNoticedRef.current = true;
+        toast.info(
+          'Dev bypass: geofence skipped on localhost. This request is saved with location_source "dev".',
+          { autoClose: 9000 }
+        );
+      }
+      return {
+        coordinates: { ...DEV_BYPASS_FIX },
+        geofence: {
+          allowed: true,
+          distance: 0,
+          location: OFFICE_LOCATIONS[0].name,
+          accuracy: DEV_BYPASS_FIX.accuracy,
+          reason: 'dev-bypass',
+          bypassed: true
+        }
+      };
+    }
+
     // Strict geofencing: browser fix first, IP fallback automatic. No dev override.
     const coordinates = await getCoordinates();
 

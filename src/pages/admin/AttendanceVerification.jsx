@@ -97,6 +97,11 @@ function describeAttendanceLocation(log) {
     distance: nearest ? nearest.distance : null,
     accuracy: Number.isFinite(accuracy) ? accuracy : null,
     weak: Number.isFinite(accuracy) && accuracy > GEOFENCE_MAX_ACCURACY_METERS,
+    // `location_source = 'dev'` means the record was written from a localhost
+    // development build, where the fence is skipped because a laptop has no
+    // GPS. The coordinates are the office pin, not a measurement, so this must
+    // never be read as evidence that anyone was on site.
+    dev: String(log?.locationSource || '').toLowerCase() === 'dev',
     coordinates: hasCoordinates
       ? { latitude: Number(log.latitude), longitude: Number(log.longitude) }
       : null
@@ -195,6 +200,11 @@ function AttendanceLocationCell({ log }) {
       {info.weak && (
         <span className="av-location-warn" title="This fix is coarser than the fence, so it could not have proven anyone was inside it.">
           Imprecise fix
+        </span>
+      )}
+      {info.dev && (
+        <span className="av-location-warn" title="Written from a localhost development build. The fence was skipped and the coordinates are the office pin, not a measurement.">
+          Dev test
         </span>
       )}
     </span>

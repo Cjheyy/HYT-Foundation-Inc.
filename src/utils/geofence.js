@@ -116,6 +116,51 @@ export const GEOFENCE_REQUIRE_ACCURACY_INSIDE_RADIUS = false;
  */
 export const GEOFENCE_ENFORCEMENT_ENABLED = true;
 
+/**
+ * LOCAL DEVELOPMENT ONLY - false in every production build.
+ *
+ * A laptop has no GPS. Chrome answers `getCurrentPosition` from Wi-Fi or the IP
+ * address, which is good to kilometres, so a 20 m fence can NEVER be satisfied
+ * on localhost. That is not a defect: it is the same rule that stopped the real
+ * off-site clock-in from MOA.
+ *
+ * The tempting fix - switch enforcement off to test - is exactly what reopened
+ * that hole before. So the fence is skipped only when BOTH are true:
+ *   1. the bundle is a development build (`NODE_ENV !== 'production'`), and
+ *   2. the page is served from localhost / 127.0.0.1 / ::1.
+ *
+ * A deployed build on the real domain satisfies neither, and CRA inlines
+ * `process.env.NODE_ENV` at build time, so this branch is dead code that
+ * disappears from `build/`. Jest runs with NODE_ENV=test, which is excluded so
+ * the test suite keeps exercising the real rule.
+ *
+ * Rows written this way carry `location_source = 'dev'`, and the admin table
+ * labels them, so a fabricated fix can never be mistaken for a measured one.
+ */
+export function shouldBypassGeofence({
+  env = process.env.NODE_ENV,
+  host = typeof window !== 'undefined' ? window.location.hostname : ''
+} = {}) {
+  if (env === 'production' || env === 'test') return false;
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
+export const GEOFENCE_DEV_BYPASS = shouldBypassGeofence();
+
+/**
+ * The fix the dev bypass submits: the first office pin, flagged as `dev`.
+ *
+ * It is deliberately a real, valid pair of coordinates with a small accuracy,
+ * because the server applies the same 20 m rule from `request_clock_in` - a
+ * client-only bypass would simply be rejected there instead.
+ */
+export const DEV_BYPASS_FIX = {
+  latitude: OFFICE_LOCATIONS[0].latitude,
+  longitude: OFFICE_LOCATIONS[0].longitude,
+  accuracy: 5,
+  source: 'dev'
+};
+
 export const MAX_SHIFT_SECONDS = 8 * 60 * 60; // 08:00:00 hard cap
 export const SHIFT_WARNING_SECONDS = (7 * 60 + 55) * 60; // 07:55:00 alarm
 
