@@ -17,7 +17,7 @@ import {
   getAttendancePhotoUrl
 } from '../../services/supabaseService';
 import { formatDate, formatTime } from '../../utils/helpers';
-import { GEOFENCE_MAX_ACCURACY_METERS, nearestOffice } from '../../utils/geofence';
+import { GEOFENCE_TRUSTED_ACCURACY_METERS, nearestOffice } from '../../utils/geofence';
 import { formatMeters, shortOfficeName } from '../../utils/stampLines';
 import { toast } from 'react-toastify';
 import { DASHBOARD_DATA_CHANGED_EVENT } from '../../components/AdminDashboardMetrics';
@@ -71,10 +71,12 @@ const processedLabel = (status) => {
  * Where the request came from, in the words an administrator needs.
  *
  * The fence is enforced server-side, so in theory every stored row is inside
- * 20 m and the location is just decoration. It is not: the stored accuracy is
- * the evidence that the fence was measured against something real. A fix good
- * to +/-5000 m came from the network, not GPS, and is worth a second look
- * before hours are credited - that is what `weak` marks.
+ * the fence and the location is just decoration. It is not: the stored accuracy
+ * is the evidence that the fence was measured against something real. A fix
+ * good to +/-5000 m came from the network, not GPS, and is worth a second look
+ * before hours are credited - that is what `weak` marks, at
+ * GEOFENCE_TRUSTED_ACCURACY_METERS rather than at the fence's own ceiling, so a
+ * merely coarse (but accepted) fix is still visible.
  *
  * The distance is recomputed from the stored coordinates rather than trusted
  * from any client field, so the number beside "HYT Building" cannot be a
@@ -96,7 +98,7 @@ function describeAttendanceLocation(log) {
     place: shortOfficeName(log?.locationName) || shortOfficeName(nearest?.name) || null,
     distance: nearest ? nearest.distance : null,
     accuracy: Number.isFinite(accuracy) ? accuracy : null,
-    weak: Number.isFinite(accuracy) && accuracy > GEOFENCE_MAX_ACCURACY_METERS,
+    weak: Number.isFinite(accuracy) && accuracy > GEOFENCE_TRUSTED_ACCURACY_METERS,
     // `location_source = 'dev'` means the record was written from a localhost
     // development build, where the fence is skipped because a laptop has no
     // GPS. The coordinates are the office pin, not a measurement, so this must

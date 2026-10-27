@@ -52,10 +52,12 @@ describe('office centres', () => {
     expect(OFFICE_LOCATIONS[1].longitude).toBeCloseTo(121.05314663304407, 9);
   });
 
-  it('keeps the offices far enough apart that two 20 m fences cannot overlap', () => {
+  it('keeps the offices far enough apart that two fences cannot overlap', () => {
     const [hyt, atlanta] = OFFICE_LOCATIONS;
     const distance = haversineDistanceMeters(hyt.latitude, hyt.longitude, atlanta.latitude, atlanta.longitude);
-    expect(distance).toBeGreaterThan(GEOFENCE_RADIUS_METERS * 100);
+    // ~5.2 km apart. The multiplier is deliberately loose: what matters is that
+    // no point can be inside both circles, not that the gap is a round number.
+    expect(distance).toBeGreaterThan(GEOFENCE_RADIUS_METERS * 20);
   });
 });
 
@@ -145,8 +147,9 @@ describe('checkGeofence - enforced', () => {
   });
 
   it('refuses a fix too vague to judge, even when the distance looks fine', () => {
-    // Standing at the door, but the phone only knows where it is to within 45 m.
-    const result = atOffice(0, 45);
+    // Standing at the door, but the phone only knows where it is to within
+    // 240 m - wider than the fence, so the point proves nothing either way.
+    const result = atOffice(0, GEOFENCE_MAX_ACCURACY_METERS + 140);
     expect(result.allowed).toBe(false);
     expect(result.reason).toBe('imprecise');
   });
@@ -157,16 +160,25 @@ describe('checkGeofence - enforced', () => {
   });
 
   it('never lets the accuracy ceiling exceed the fence it is judging', () => {
-    // The ceiling used to be 30 against a 20 m radius, which cannot be right:
-    // a fix good to +/-30 m cannot prove someone is inside a 20 m circle.
+    // A fix good to +/-N m cannot prove someone is inside an N m circle.
     expect(GEOFENCE_MAX_ACCURACY_METERS).toBeLessThanOrEqual(GEOFENCE_RADIUS_METERS);
   });
 
-  it('refuses a 30 m fix at a 20 m fence, however good the distance looks', () => {
-    // Standing on the pin, but the phone is only sure to within 30 m.
-    const result = atOffice(0, 30);
+  it('admits an ordinary indoor phone fix', () => {
+    // The field failure this replaced: a real phone indoors reported 29 m, the
+    // 20 m accuracy gate refused it before the distance was measured, and a
+    // trainee standing inside the building was told to go outside.
+    const result = atOffice(0, 29);
+    expect(result.allowed).toBe(true);
+    expect(result.reason).toBe('inside');
+  });
+
+  it('still refuses the off-site clock-in this fence exists for', () => {
+    // MOA to the HYT entrance is ~6.4 km. Nothing about the wider radius may
+    // make that pass.
+    const result = atOffice(6444, 10);
     expect(result.allowed).toBe(false);
-    expect(result.reason).toBe('imprecise');
+    expect(result.reason).toBe('outside');
   });
 
   it('judges the distance when no accuracy is supplied at all', () => {
@@ -197,8 +209,8 @@ describe('describeGeofenceFailure', () => {
   });
 
   it('does not claim a distance when the fix is merely vague', () => {
-    const message = describeGeofenceFailure(atOffice(0, 45), { action: 'clock in' });
-    expect(message).toMatch(/accurate to about 45 meters/i);
+    const message = describeGeofenceFailure(atOffice(0, GEOFENCE_MAX_ACCURACY_METERS + 140), { action: 'clock in' });
+    expect(message).toMatch(/accurate to about 240 meters/i);
     expect(message).not.toMatch(/meters away/);
   });
 
