@@ -40,7 +40,7 @@ const atOffice = (metres = 0, accuracy = 5) => {
 
 describe('office centres', () => {
   // Pinned to the pins measured at each entrance. If these ever change, the
-  // matching literals inside `request_clock_in` (see UPDATE_GEOFENCE_RADIUS_20M.sql)
+  // matching literals inside `request_clock_in` (see db/patches/UPDATE_GEOFENCE_RADIUS_20M.sql)
   // have to change with them - a client and a server with different centres
   // judge the same student differently, which is the bug this replaced.
   it('HYT Building sits on its measured pin', () => {

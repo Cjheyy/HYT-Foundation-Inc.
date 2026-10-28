@@ -18,8 +18,8 @@ import { CLOCK_OUT_CUTOFF_MINUTES, CLOCK_OUT_REMINDER_LEAD_MINUTES } from '../ut
 const ROOT = process.cwd();
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
-const CUTOFF_SQL = read('PATCH_CLOCKOUT_CUTOFF.sql');
-const ABSENCE_SQL = read('PATCH_ABSENCE_REVIEW.sql');
+const CUTOFF_SQL = read('db/patches/PATCH_CLOCKOUT_CUTOFF.sql');
+const ABSENCE_SQL = read('db/patches/PATCH_ABSENCE_REVIEW.sql');
 
 describe('the clock-out cutoff is enforced by the database, not just the browser', () => {
   test('the RPC is rebuilt in the migration', () => {
@@ -59,7 +59,7 @@ describe('the clock-out cutoff is enforced by the database, not just the browser
   });
 
   test('verification lives in its own file, so a typo cannot roll back the migration', () => {
-    const verify = read('VERIFY_CLOCKOUT_CUTOFF.sql');
+    const verify = read('db/verify/VERIFY_CLOCKOUT_CUTOFF.sql');
     expect(verify).toMatch(/SELECT/i);
     expect(verify).not.toMatch(/CREATE OR REPLACE FUNCTION/i);
     expect(verify).not.toMatch(/ALTER TABLE/i);

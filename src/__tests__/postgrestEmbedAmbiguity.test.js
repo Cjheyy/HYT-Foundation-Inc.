@@ -27,8 +27,8 @@ import path from 'path';
 
 const ROOT = process.cwd();
 const SERVICE = fs.readFileSync(path.join(ROOT, 'src/services/supabaseService.js'), 'utf8');
-const ABSENCE_MIGRATION = fs.readFileSync(path.join(ROOT, 'ABSENCE_REQUESTS_MIGRATION.sql'), 'utf8');
-const TIMER_MIGRATION = fs.readFileSync(path.join(ROOT, 'TIMER_STATE_MACHINE_MIGRATION.sql'), 'utf8');
+const ABSENCE_MIGRATION = fs.readFileSync(path.join(ROOT, 'db/migrations/ABSENCE_REQUESTS_MIGRATION.sql'), 'utf8');
+const TIMER_MIGRATION = fs.readFileSync(path.join(ROOT, 'db/migrations/TIMER_STATE_MACHINE_MIGRATION.sql'), 'utf8');
 
 const stripComments = (text) => text
   .replace(/\/\*[\s\S]*?\*\//g, '')

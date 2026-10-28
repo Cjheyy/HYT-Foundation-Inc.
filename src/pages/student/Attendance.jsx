@@ -79,7 +79,7 @@ export { hasApprovedPlacement };
 // window never was.
 //
 // NOTE: the database now enforces the 6:30 PM cutoff too, inside
-// request_clock_out (see PATCH_CLOCKOUT_CUTOFF.sql). This block is the friendly
+// request_clock_out (see db/patches/PATCH_CLOCKOUT_CUTOFF.sql). This block is the friendly
 // half - it can say no before the button is pressed. The database is the
 // authority, and it cannot be bypassed from the browser or by changing the
 // system clock.

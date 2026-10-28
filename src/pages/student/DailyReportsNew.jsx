@@ -211,7 +211,7 @@ export function DailyReportsNew() {
       {!slotsReady && (
         <Card className="report-slot-warning">
           <strong>The database setup is incomplete.</strong> Run
-          {' '}<code>ADD_REPORT_SLOTS.sql</code> in the Supabase SQL Editor before
+          {' '}<code>db/migrations/ADD_REPORT_SLOTS.sql</code> in the Supabase SQL Editor before
           sending a three-slot report. The old one-report-per-day form is no
           longer used.
         </Card>

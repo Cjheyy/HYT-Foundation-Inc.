@@ -10,7 +10,7 @@
  *
  * The SERVER has its own copy of both the radius and the two centres, inside
  * `hyt_location_is_valid` and the two `request_clock_*` RPCs. Changing this file
- * alone does not move the server: `PATCH_GEOFENCE_100M_AND_PLACES.sql` has to be
+ * alone does not move the server: `db/patches/PATCH_GEOFENCE_100M_AND_PLACES.sql` has to be
  * run too, or the client and the RPC will disagree about the same student.
  *
  * ## Why 100 m
@@ -22,7 +22,7 @@
  * this exists for - a 6.4 km clock-in from MOA - and the two sites are 5.2 km
  * apart, so the circles cannot overlap.
  *
- * Order: run `PATCH_GEOFENCE_100M_AND_PLACES.sql`, then flip
+ * Order: run `db/patches/PATCH_GEOFENCE_100M_AND_PLACES.sql`, then flip
  * `GEOFENCE_ENFORCEMENT_ENABLED` and the `geofence_enforcement_enabled` setting.
  *
  * ## Accuracy is part of the decision
@@ -49,7 +49,7 @@
  *
  * These coordinates are the authoritative centres. `supabaseService.clockIn`
  * imports this list rather than keeping its own copy, and the RPCs in Postgres
- * carry the same two pairs - see PATCH_GEOFENCE_100M_AND_PLACES.sql.
+ * carry the same two pairs - see db/patches/PATCH_GEOFENCE_100M_AND_PLACES.sql.
  */
 export const OFFICE_LOCATIONS = [
   {

@@ -7,7 +7,7 @@
  * any more - that made an early finish impossible and is not what a DTR means.
  *
  * The same cutoff is enforced again inside `request_clock_out`
- * (PATCH_CLOCKOUT_CUTOFF.sql).  This file is the friendly half: it can tell the
+ * (db/patches/PATCH_CLOCKOUT_CUTOFF.sql).  This file is the friendly half: it can tell the
  * trainee *before* they tap the button, and it can warn them five minutes
  * before the door shuts.  The database is the authority - if the two ever
  * disagree, the database wins and the request is refused.

@@ -334,7 +334,7 @@ const normalizeEventForWrite = (event = {}, kind = 'program') => {
 };
 
 const attendanceMigrationRequired = () => new Error(
-  'Attendance workflow migration is required. Run OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase before using Clock In/Clock Out.'
+  'Attendance workflow migration is required. Run db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase before using Clock In/Clock Out.'
 );
 
 const getCurrentAuthUserId = async () => {
@@ -498,7 +498,7 @@ export const createProgram = async (programData) => {
     .single();
 
   // Same guard as createOpportunity: a deployment without
-  // PATCH_LISTING_DETAILS.sql must still be able to save a programme.
+  // db/patches/PATCH_LISTING_DETAILS.sql must still be able to save a programme.
   if (result.error && isMissingColumnError(result.error)) {
     const withoutNewColumns = { ...payload };
     delete withoutNewColumns.position;
@@ -666,7 +666,7 @@ export const createOpportunity = async (opportunityData) => {
     .select()
     .single();
 
-  // A deployment that has not run PATCH_LISTING_DETAILS.sql has no `position`
+  // A deployment that has not run db/patches/PATCH_LISTING_DETAILS.sql has no `position`
   // or `schedule_*` columns. Retry WITHOUT those three only, so the posting
   // still saves with its slots, hours and deadline instead of falling all the
   // way back to the three-column minimum below.
@@ -1246,7 +1246,7 @@ export const approveUserApplication = async (targetUserId, adminUserId = null, n
   // Compatibility fallback for projects that have not deployed the RPC yet.
   if (!isMissingFunctionError(error)) throw error;
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('Account approval migration is required. Run OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
+    throw new Error('Account approval migration is required. Run db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
   }
   let updateResult = await client
     .from('users')
@@ -1304,7 +1304,7 @@ export const rejectUserApplication = async (targetUserId, adminUserId = null, re
 
   if (!isMissingFunctionError(error)) throw error;
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('Account approval migration is required. Run OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
+    throw new Error('Account approval migration is required. Run db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
   }
   let updateResult = await client
     .from('users')
@@ -1721,7 +1721,7 @@ export const updateAttendanceLog = async (attendanceId, updates) => {
 // The bucket is PRIVATE. These are photographs of people's faces attached to
 // their attendance record; a public bucket would make every one of them
 // readable by anyone who ever saw a URL. Readers get a short-lived signed URL
-// instead, and the storage policies in PATCH_ATTENDANCE_PHOTOS.sql decide who
+// instead, and the storage policies in db/patches/PATCH_ATTENDANCE_PHOTOS.sql decide who
 // may ask for one: the owner, or an administrator.
 //
 // The path is stored on the attendance row (not a URL), because a signed URL
@@ -1746,7 +1746,7 @@ const normalizePhotoStage = (stage) => (String(stage || '').toLowerCase().includ
  *
  * Returns `{ path, recorded }`. `recorded: false` means the file reached
  * storage but the row could not be pointed at it - which happens on a database
- * that has not run `PATCH_ATTENDANCE_PHOTOS.sql` yet. That is reported, not
+ * that has not run `db/patches/PATCH_ATTENDANCE_PHOTOS.sql` yet. That is reported, not
  * thrown: the clock-in itself has already succeeded by this point, and failing
  * the whole action over a missing photo would tell the trainee their
  * attendance was not recorded when it was.
@@ -1825,7 +1825,7 @@ export const __resetAttendancePhotoUrlCache = () => attendancePhotoUrlCache.clea
  * Submit a clock-in request.  The timer must not start here.  The database
  * sets time_in only when an administrator approves PENDING_CLOCK_IN.
  * RPC-ONLY: attendance_logs carries no INSERT/UPDATE grant for `authenticated`
- * (see OJT_TRACKING_PRODUCTION_MIGRATION.sql), so the only legal way to open a
+ * (see db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql), so the only legal way to open a
  * request is the SECURITY DEFINER function request_clock_in.  A direct client
  * write fails with exactly "permission denied for table attendance_logs".
  *
@@ -2318,8 +2318,8 @@ export const rejectOtRequest = async (otRequestId, adminNote) => {
 // stands and the projected end date moves out) or Rejected (the day is
 // expected as normal).  Nothing here credits or removes hours.
 //
-// Requires the absence_requests table - see ABSENCE_REQUESTS_MIGRATION.sql -
-// and the three-state CHECK from PATCH_ABSENCE_REVIEW.sql.  Every reader
+// Requires the absence_requests table - see db/migrations/ABSENCE_REQUESTS_MIGRATION.sql -
+// and the three-state CHECK from db/patches/PATCH_ABSENCE_REVIEW.sql.  Every reader
 // degrades to an empty list when the table has not been created yet, so the
 // attendance page still loads on an older database.
 // ==========================================================================
@@ -2331,7 +2331,7 @@ export const ABSENCE_STATUS_REJECTED = 'Rejected';
 /**
  * `Noted` is the pre-review acknowledgement.  It is kept as a status the
  * readers understand (and counted as accepted) so a database that has not run
- * PATCH_ABSENCE_REVIEW.sql still behaves sensibly instead of treating every
+ * db/patches/PATCH_ABSENCE_REVIEW.sql still behaves sensibly instead of treating every
  * acknowledged absence as pending again.
  */
 export const ABSENCE_STATUS_NOTED = 'Noted';
@@ -2457,7 +2457,7 @@ export const createAbsenceRequest = async ({ userId, absenceDate, reason }) => {
 
   if (error) {
     if (isMissingTableError(error)) {
-      throw new Error('Absence requests are not enabled on this database yet. Please ask an administrator to run ABSENCE_REQUESTS_MIGRATION.sql.');
+      throw new Error('Absence requests are not enabled on this database yet. Please ask an administrator to run db/migrations/ABSENCE_REQUESTS_MIGRATION.sql.');
     }
     throw error;
   }
@@ -2473,7 +2473,7 @@ export const createAbsenceRequest = async ({ userId, absenceDate, reason }) => {
  *
  * The write is a single UPDATE of status + admin_note + the review stamp.  RLS
  * allows it only for an administrator, and `hyt_guard_absence_status` repeats
- * that check at the row level (PATCH_ABSENCE_REVIEW.sql).
+ * that check at the row level (db/patches/PATCH_ABSENCE_REVIEW.sql).
  */
 export const reviewAbsenceRequest = async ({
   requestId,
@@ -2512,10 +2512,10 @@ export const reviewAbsenceRequest = async ({
 
   if (error) {
     // 23514 = CHECK violation.  The usual cause is a database that has not run
-    // PATCH_ABSENCE_REVIEW.sql yet, where the only legal values are
+    // db/patches/PATCH_ABSENCE_REVIEW.sql yet, where the only legal values are
     // Submitted/Noted.  Say so instead of surfacing a constraint name.
     if (String(error.code) === '23514') {
-      throw new Error('This database does not accept absence decisions yet. Ask an administrator to run PATCH_ABSENCE_REVIEW.sql.');
+      throw new Error('This database does not accept absence decisions yet. Ask an administrator to run db/patches/PATCH_ABSENCE_REVIEW.sql.');
     }
     throw error;
   }
@@ -2687,7 +2687,7 @@ export const submitReportSlot = async ({ userId, studentId, reportDate, slot, en
   const probe = await client.from('daily_reports').select('slot_entries').limit(1);
   if (probe.error && isMissingColumnError(probe.error)) {
     throw new Error(
-      'The `slot_entries` column is missing from the database. Run ADD_REPORT_SLOTS.sql in the Supabase SQL Editor.'
+      'The `slot_entries` column is missing from the database. Run db/migrations/ADD_REPORT_SLOTS.sql in the Supabase SQL Editor.'
     );
   }
 
@@ -2750,7 +2750,7 @@ export const approveDailyReport = async (reportId, adminNote = '') => {
   });
   if (!error) return getDailyReports().then((rows) => rows.find((row) => row.id === reportId));
   if (!isMissingFunctionError(error)) throw error;
-  if (process.env.NODE_ENV === 'production') throw new Error('Daily report review migration is required. Run OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
+  if (process.env.NODE_ENV === 'production') throw new Error('Daily report review migration is required. Run db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
 
   const report = await getDailyReports().then((rows) => rows.find((row) => row.id === reportId));
   if (report && !isPendingReportStatus(report.status) && normalizeStatus(report.status) !== 'APPROVED') {
@@ -2776,7 +2776,7 @@ export const rejectDailyReport = async (reportId, adminNote) => {
   });
   if (!error) return getDailyReports().then((rows) => rows.find((row) => row.id === reportId));
   if (!isMissingFunctionError(error)) throw error;
-  if (process.env.NODE_ENV === 'production') throw new Error('Daily report review migration is required. Run OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
+  if (process.env.NODE_ENV === 'production') throw new Error('Daily report review migration is required. Run db/migrations/OJT_TRACKING_PRODUCTION_MIGRATION.sql in Supabase.');
 
   return updateDailyReport(reportId, {
     status: 'REJECTED',

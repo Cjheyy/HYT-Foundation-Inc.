@@ -12,12 +12,12 @@ import path from 'path';
  */
 
 const ROOT = process.cwd();
-const SQL = fs.readFileSync(path.join(ROOT, 'PATCH_ATTENDANCE_PHOTOS.sql'), 'utf8');
+const SQL = fs.readFileSync(path.join(ROOT, 'db/patches/PATCH_ATTENDANCE_PHOTOS.sql'), 'utf8');
 const SERVICE = fs.readFileSync(path.join(ROOT, 'src/services/supabaseService.js'), 'utf8');
 
 const stripComments = (sql) => sql.replace(/--[^\n]*/g, '');
 
-describe('PATCH_ATTENDANCE_PHOTOS.sql', () => {
+describe('db/patches/PATCH_ATTENDANCE_PHOTOS.sql', () => {
   it('adds both photo columns, idempotently', () => {
     expect(SQL).toMatch(/ADD COLUMN IF NOT EXISTS photo_in_path TEXT/i);
     expect(SQL).toMatch(/ADD COLUMN IF NOT EXISTS photo_out_path TEXT/i);
