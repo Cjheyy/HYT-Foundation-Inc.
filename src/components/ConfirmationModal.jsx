@@ -36,7 +36,7 @@ export function ConfirmationModal({
       // Geolocation timeouts on desktops are surfaced here as a friendly
       // permission hint instead of a raw GeolocationPositionError.
       if (isGeolocationError(error)) {
-        toast.error(error?.message || 'Please enable location permission on your browser to clock in.');
+        toast.error(error?.message || 'Please enable location permission on your browser to clock in.', { autoClose: 8000 });
       }
     } finally {
       setSubmitting(false);

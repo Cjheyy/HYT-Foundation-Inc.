@@ -490,9 +490,12 @@ export function AttendanceNew() {
       setPendingCoordinates(resolved);
       setCameraAction(action);
     } catch (error) {
+      // 3 s is the app-wide default, which is not enough time to read an
+      // instruction ("turn on Location, then try again") - the old toast
+      // vanished before it could be acted on.
       toast.error(isGeolocationError(error)
         ? describeLocationError(error)
-        : error.message || 'Could not confirm your location.');
+        : error.message || 'Could not confirm your location.', { autoClose: 8000 });
     } finally {
       setActionLoading(false);
     }
