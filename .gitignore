@@ -10,6 +10,10 @@
 
 # production
 /build
+# Every throwaway build used to verify a change (`build-verify12`, `build-exp3`,
+# ...). 41 of these were committed, 1,235 files and 318 MB of them. They are
+# build output, nothing imports them, and Vercel builds into /build anyway.
+/build-*
 
 # misc
 .DS_Store
