@@ -9,6 +9,7 @@
  */
 import {
   describeGeolocationError,
+  describeProviderBlock,
   fetchIpCoordinates,
   getCoordinatesWithFallback,
   isGeolocationError
@@ -91,6 +92,27 @@ describe('describeGeolocationError', () => {
   });
 });
 
+describe('describeProviderBlock', () => {
+  it('names the app-level switch on a phone, not the system one', () => {
+    // The third report, and the one that finally said the useful thing: "it
+    // does not even ask for location". No prompt + a failure = the browser app
+    // is not allowed to use Location by the OS, so the request dies before the
+    // site can be asked. Telling this person to "turn on Location" is what made
+    // them report the same bug three times.
+    const text = describeProviderBlock({ device: 'phone' });
+    expect(text).toMatch(/did not ask you for permission/i);
+    expect(text).toMatch(/settings > apps > chrome/i);
+    expect(text).toMatch(/different switch/i);
+  });
+
+  it('names the Geolocation Service on a laptop', () => {
+    const text = describeProviderBlock({ device: 'desktop' });
+    expect(text).toMatch(/geolocation service/i);
+    expect(text).toMatch(/windows/i);
+    expect(text).not.toMatch(/settings > apps > chrome/i);
+  });
+});
+
 describe('isGeolocationError recognises the new wording', () => {
   it('matches by code', () => {
     expect(isGeolocationError(geoError(1))).toBe(true);
@@ -113,6 +135,7 @@ describe('isGeolocationError recognises the new wording', () => {
 
 describe('getCoordinatesWithFallback', () => {
   const originalGeolocation = navigator.geolocation;
+  const originalPermissions = navigator.permissions;
   let originalFetch;
 
   beforeEach(() => {
@@ -127,7 +150,20 @@ describe('getCoordinatesWithFallback', () => {
       configurable: true,
       writable: true
     });
+    Object.defineProperty(window.navigator, 'permissions', {
+      value: originalPermissions,
+      configurable: true,
+      writable: true
+    });
   });
+
+  const stubPermission = (state) => {
+    Object.defineProperty(window.navigator, 'permissions', {
+      value: { query: () => Promise.resolve({ state }) },
+      configurable: true,
+      writable: true
+    });
+  };
 
   const stubGeolocation = (results) => {
     // Each call consumes the next result: { position } or { error }.
@@ -148,6 +184,7 @@ describe('getCoordinatesWithFallback', () => {
   it('retries coarse when the precise fix says POSITION_UNAVAILABLE', async () => {
     // The Android case: high-accuracy indoors returns code 2. The coarse retry
     // is exactly what used to be skipped, because only code 3 was retried.
+    stubPermission('granted');
     const getCurrentPosition = stubGeolocation([
       { error: geoError(2) },
       { position: { coords: { latitude: 14.6, longitude: 121.0, accuracy: 40 } } }
@@ -178,6 +215,28 @@ describe('getCoordinatesWithFallback', () => {
 
     await expect(getCoordinatesWithFallback()).rejects.toMatchObject({ code: 2 });
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('explains an app-level block when the site was never refused and no prompt appeared', async () => {
+    // The phone report: Location on, and the browser never asked. A failure
+    // with the site permission still 'prompt' means the request died before
+    // the prompt could be shown - the browser app is blocked by the OS.
+    stubPermission('prompt');
+    stubGeolocation([{ error: geoError(2) }, { error: geoError(2) }]);
+
+    await expect(getCoordinatesWithFallback()).rejects.toThrow(/did not ask you for permission/i);
+  });
+
+  it('leaves a genuine timeout alone, because the provider was reachable', async () => {
+    // A timeout means the request ran its full course. Rewriting that into
+    // "Chrome is blocked" would send the person to the wrong setting.
+    stubPermission('granted');
+    stubGeolocation([{ error: geoError(3) }, { error: geoError(3) }]);
+
+    const error = await getCoordinatesWithFallback().catch((thrown) => thrown);
+
+    expect(error.message).not.toMatch(/did not ask you for permission/i);
+    expect(error.code).toBe(3);
   });
 });
 

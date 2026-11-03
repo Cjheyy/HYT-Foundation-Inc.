@@ -538,6 +538,7 @@ export function AttendanceNew() {
       console.warn('[attendance] location failed', {
         code: error?.code,
         name: error?.name,
+        permission: error?.permission,
         message: error?.message
       });
       setLocationRetry({ action, actionLabel });
