@@ -63,6 +63,20 @@ const getCoordinates = () => (GEOFENCE_ENFORCEMENT_ENABLED
   ? getCoordinatesWithFallback()
   : getQuickCoordinates());
 
+/**
+ * Which `source` values are an actual measurement by this device.
+ *
+ *   'gps'    - a high-accuracy browser fix
+ *   'coarse' - a network-assisted browser fix (still a fix, just vague)
+ *   'dev'    - the opt-in localhost bypass; only reachable in a dev bundle
+ *
+ * Everything else is a guess ABOUT the device rather than a reading FROM it:
+ * 'ip' is city-level, and 'fallback' is the office pin written down in
+ * getQuickCoordinates. Neither may answer "are you on site" while the fence is
+ * on, which is why the check below is a whitelist and not a list of bad values.
+ */
+const MEASURED_SOURCES = new Set(['gps', 'coarse', 'dev']);
+
 // Re-exported for unit tests and shared callers.  The rule itself now lives in
 // utils/experience so the Daily Reports page can gate on exactly the same thing
 // without importing this page.
@@ -412,10 +426,13 @@ export function AttendanceNew() {
    * whether to toast it or let it bubble.
    */
   const resolveCoordinates = async (actionLabel) => {
-    // Localhost only (see GEOFENCE_DEV_BYPASS). A laptop reports a Wi-Fi/IP fix
-    // good to kilometres, so the fence cannot pass reliably here and the camera
-    // and admin flow below could never be exercised. The deployed build has
-    // this branch removed at compile time.
+    // Opt-in localhost only - see shouldBypassGeofence in utils/geofence.js.
+    // THREE conditions now, the first of which (`NODE_ENV === 'development'`)
+    // is inlined at build time and is therefore impossible in anything that is
+    // deployed. It used to be two, and `npm start` satisfied both by accident:
+    // every Clock In pressed at home then submitted the office pin as if it
+    // were a measurement, and the fence had nothing left to refuse. That was
+    // the bug - not the radius, not the server.
     //
     // The office is SNAPPED to the nearest one rather than fixed to the first:
     // this used to always submit the HYT pin, so a developer testing from
@@ -459,12 +476,17 @@ export function AttendanceNew() {
     if (coordinates.source !== 'ip' && coordinates.accuracy > GEOFENCE_MAX_ACCURACY_METERS) {
       toast.warning(`Location accuracy is ${Math.round(coordinates.accuracy)} meters.`);
     }
-    // An IP lookup is a city-level guess (kilometres, not metres). It can
-    // never satisfy a 20 m fence honestly, so it is refused outright instead
-    // of being run through the distance check and passing by luck.
-    if (GEOFENCE_ENFORCEMENT_ENABLED && coordinates.source === 'ip') {
+    // Whitelist, not a blacklist: only a fix this device actually measured can
+    // answer "are you on site". An IP lookup is a city-level guess (kilometres,
+    // not metres) and the 'fallback' source is the office pin written down in
+    // getQuickCoordinates - a position the device never measured. Either one
+    // would sail through the distance check with "0 meters away", which is
+    // exactly how an off-site clock-in used to be accepted.
+    if (GEOFENCE_ENFORCEMENT_ENABLED && !MEASURED_SOURCES.has(coordinates.source)) {
       throw new Error(
-        'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
+        coordinates.source === 'ip'
+          ? 'We could only estimate your location from your network, which is not precise enough to confirm you are on site. Turn on location services (GPS) and try again.'
+          : 'This device did not report a real position, so we cannot confirm you are on site. Turn on location services (GPS) and try again.'
       );
     }
     const geofence = checkGeofence(

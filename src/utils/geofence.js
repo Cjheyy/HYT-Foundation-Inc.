@@ -151,32 +151,56 @@ export const GEOFENCE_REQUIRE_ACCURACY_INSIDE_RADIUS = false;
 export const GEOFENCE_ENFORCEMENT_ENABLED = true;
 
 /**
- * LOCAL DEVELOPMENT ONLY - false in every production build.
+ * LOCAL DEVELOPMENT ONLY - false in every deployed build, and false by default
+ * on a developer's own machine too.
  *
  * A laptop has no GPS. Chrome answers `getCurrentPosition` from Wi-Fi or the IP
  * address, which is good to kilometres, so the fence can never be satisfied
  * reliably on localhost. That is not a defect: it is the same rule that stopped
  * the real off-site clock-in from MOA.
  *
- * The tempting fix - switch enforcement off to test - is exactly what reopened
- * that hole before. So the fence is skipped only when BOTH are true:
- *   1. the bundle is a development build (`NODE_ENV !== 'production'`), and
- *   2. the page is served from localhost / 127.0.0.1 / ::1.
+ * ## Why this now needs THREE conditions instead of two
  *
- * A deployed build on the real domain satisfies neither, and CRA inlines
- * `process.env.NODE_ENV` at build time, so this branch is dead code that
- * disappears from `build/`. Jest runs with NODE_ENV=test, which is excluded so
- * the test suite keeps exercising the real rule.
+ * It used to be `NODE_ENV !== 'production'` AND localhost. That was enough to
+ * keep the branch out of `build/`, but it was NOT enough to keep it out of the
+ * way: `npm start` on the developer's own laptop satisfied both conditions
+ * automatically, with no intent and no warning. Every Clock In pressed at home
+ * then submitted a FABRICATED fix sitting exactly on the office pin, the local
+ * fence answered "0 meters, inside", and the server - which only ever sees the
+ * coordinates - agreed. That is the "nakaka-time in kahit nasa bahay" report:
+ * the fence was working perfectly, on a location nobody had measured.
+ *
+ * So the fabrication must now also be asked for, in `.env.local`:
+ *
+ *     REACT_APP_GEOFENCE_DEV_BYPASS=true
+ *
+ * All three are required:
+ *   1. `NODE_ENV === 'development'`. CRA inlines this at build time, so
+ *      `npm run build` - and therefore every Vercel deployment - inlines
+ *      'production' and this branch is unreachable there. This is the lock;
+ *      conditions 2 and 3 are convenience on top of it.
+ *   2. The page is served from this machine (localhost / 127.0.0.1 / ::1).
+ *   3. `REACT_APP_GEOFENCE_DEV_BYPASS` is exactly 'true'.
+ *
+ * Jest runs with NODE_ENV=test, which fails condition 1, so the suite keeps
+ * exercising the real rule rather than the bypass.
  *
  * Rows written this way carry `location_source = 'dev'`, and the admin table
  * labels them, so a fabricated fix can never be mistaken for a measured one.
  */
+const DEV_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]'];
+
 export function shouldBypassGeofence({
   env = process.env.NODE_ENV,
-  host = typeof window !== 'undefined' ? window.location.hostname : ''
+  host = typeof window !== 'undefined' ? window.location.hostname : '',
+  optIn = process.env.REACT_APP_GEOFENCE_DEV_BYPASS
 } = {}) {
-  if (env === 'production' || env === 'test') return false;
-  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  // 1. A development bundle - and only a development bundle.
+  if (env !== 'development') return false;
+  // 2. Served from this machine.
+  if (!DEV_HOSTS.includes(String(host || '').toLowerCase())) return false;
+  // 3. Deliberately switched on, by the person running it.
+  return String(optIn || '').toLowerCase() === 'true';
 }
 
 export const GEOFENCE_DEV_BYPASS = shouldBypassGeofence();
@@ -313,16 +337,30 @@ export function checkGeofence(
 }
 
 /**
+ * "HYT Building or Atlanta San Juan Building", built from the list itself.
+ *
+ * Written once and derived from OFFICE_LOCATIONS rather than typed into each
+ * sentence: a third site, or a renamed one, would otherwise leave the refusal
+ * copy pointing at a place that no longer exists.
+ */
+export const APPROVED_SITE_NAMES = OFFICE_LOCATIONS.map((office) => office.name).join(' or ');
+
+/**
  * The sentence the student actually reads when the fence says no.
  *
  * Kept here rather than in the page because clock-in and clock-out both need
  * it, and because the wording has to carry the real number: "within 100 meters"
  * was hard-coded in two places and would have kept saying 100 after the radius
  * changed to 20.
+ *
+ * The names of the two approved sites are in every sentence. "An approved HYT
+ * location" left the person guessing which ones counted, and the honest answer
+ * - "you are 6.4 km from the nearest one" - is much easier to act on when it
+ * also says where the nearest one is.
  */
 export function describeGeofenceFailure(result, { action = 'clock in' } = {}) {
   const radius = GEOFENCE_RADIUS_METERS;
-  if (!result) return `You must be within ${radius} meters of an approved HYT location to ${action}.`;
+  if (!result) return `You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
 
   if (result.reason === 'imprecise') {
     const accuracy = result.accuracy != null ? Math.round(result.accuracy) : null;
@@ -336,8 +374,8 @@ export function describeGeofenceFailure(result, { action = 'clock in' } = {}) {
   }
 
   if (result.distance != null) {
-    return `You are currently ${Math.round(result.distance)} meters away from the nearest approved office. You must be within ${radius} meters to ${action}.`;
+    return `You are currently ${Math.round(result.distance)} meters away from the nearest approved office. You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
   }
 
-  return `You must be within ${radius} meters of an approved HYT location to ${action}.`;
+  return `You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
 }

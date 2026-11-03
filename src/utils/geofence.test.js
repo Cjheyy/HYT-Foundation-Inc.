@@ -228,33 +228,50 @@ describe('describeGeofenceFailure', () => {
 /**
  * The localhost development pass.
  *
- * This exists because a laptop cannot satisfy a 20 m fence: Chrome answers from
- * Wi-Fi or the IP address, good to kilometres. The risk it introduces is that
- * it leaks into a deployed build, so the two things worth testing are that it
- * is OFF for production and OFF under Jest, and that the fix it submits would
- * actually pass the server's own rule (a valid point inside the fence with an
- * accuracy below the radius) - a client-only bypass would be refused by
- * `request_clock_in` instead.
+ * This exists because a laptop cannot satisfy a 100 m fence: Chrome answers
+ * from Wi-Fi or the IP address, good to kilometres. The risk it introduces is
+ * that it leaks into a deployed build - or, worse, that it switches itself on
+ * for an ordinary `npm start`, which is precisely what happened. Two conditions
+ * used to be enough (`NODE_ENV !== 'production'` + localhost) and both were
+ * true by accident on the developer's own laptop, so every Clock In pressed at
+ * home submitted the office pin as a measurement and the fence had nothing to
+ * refuse.
+ *
+ * So the tests that matter are: it is OFF unless it is explicitly asked for,
+ * OFF for any production bundle, and OFF under Jest - and the fix it submits
+ * would still satisfy the server's own rule.
  */
 describe('shouldBypassGeofence', () => {
-  it('is on for a development build served from localhost', () => {
-    expect(shouldBypassGeofence({ env: 'development', host: 'localhost' })).toBe(true);
-    expect(shouldBypassGeofence({ env: 'development', host: '127.0.0.1' })).toBe(true);
-    expect(shouldBypassGeofence({ env: 'development', host: '::1' })).toBe(true);
+  const dev = { env: 'development', host: 'localhost', optIn: 'true' };
+
+  it('is on only when the developer opts in on a dev build served from localhost', () => {
+    expect(shouldBypassGeofence(dev)).toBe(true);
+    expect(shouldBypassGeofence({ ...dev, host: '127.0.0.1' })).toBe(true);
+    expect(shouldBypassGeofence({ ...dev, host: '::1' })).toBe(true);
   });
 
-  it('is off for ANY production build, including one served on localhost', () => {
-    expect(shouldBypassGeofence({ env: 'production', host: 'localhost' })).toBe(false);
-    expect(shouldBypassGeofence({ env: 'production', host: '127.0.0.1' })).toBe(false);
+  it('is OFF by default on a developer machine, which is the bug this fixes', () => {
+    // `npm start` used to be enough on its own. It must not be any more.
+    expect(shouldBypassGeofence({ env: 'development', host: 'localhost' })).toBe(false);
+    expect(shouldBypassGeofence({ env: 'development', host: 'localhost', optIn: '' })).toBe(false);
+    expect(shouldBypassGeofence({ env: 'development', host: 'localhost', optIn: 'false' })).toBe(false);
+    expect(shouldBypassGeofence({ env: 'development', host: 'localhost', optIn: 'yes' })).toBe(false);
+  });
+
+  it('is off for ANY production build, even with the opt-in set and on localhost', () => {
+    // The NODE_ENV check is the lock: CRA inlines it at build time, so a
+    // deployed bundle can never reach the bypass whatever the env file says.
+    expect(shouldBypassGeofence({ ...dev, env: 'production' })).toBe(false);
+    expect(shouldBypassGeofence({ ...dev, env: 'production', host: '127.0.0.1' })).toBe(false);
   });
 
   it('is off for a development build reached over the network', () => {
-    expect(shouldBypassGeofence({ env: 'development', host: '192.168.1.20' })).toBe(false);
-    expect(shouldBypassGeofence({ env: 'development', host: 'hyt-foundation.vercel.app' })).toBe(false);
+    expect(shouldBypassGeofence({ ...dev, host: '192.168.1.20' })).toBe(false);
+    expect(shouldBypassGeofence({ ...dev, host: 'hyt-foundation.vercel.app' })).toBe(false);
   });
 
   it('is off under Jest, so the suite keeps exercising the real rule', () => {
-    expect(shouldBypassGeofence({ env: 'test', host: 'localhost' })).toBe(false);
+    expect(shouldBypassGeofence({ ...dev, env: 'test' })).toBe(false);
   });
 
   it('ships the fix the server will actually accept', () => {

@@ -8,7 +8,7 @@
  * Permission denial (code 1) still surfaces its own message immediately.
  */
 
-import { GEOFENCE_ENFORCEMENT_ENABLED, OFFICE_LOCATIONS } from './geofence';
+import { GEOFENCE_ENFORCEMENT_ENABLED } from './geofence';
 
 export const GEOLOCATION_PRIMARY_OPTIONS = {
   enableHighAccuracy: true,
@@ -226,17 +226,26 @@ export const getCoordinatesWithFallback = async (
 
 /**
  * Fast coordinates for when the geofence is not enforced: one short coarse
- * attempt, then a short IP lookup, then the registered office as a last resort.
+ * attempt, then a short IP lookup.
  *
- * Always resolves.  With enforcement off the server records the coordinates but
- * does not act on them, so blocking a trainee because GPS *and* the IP service
- * were both unavailable would be a self-inflicted failure.
+ * ## The fabricated fallback is gone, on purpose
  *
- * The office fallback is a FABRICATION - it reports a position the device never
- * measured - so it is only legal while enforcement is off. With enforcement on
- * it would hand the fence a perfect "standing on the pin" fix (distance 0) from
- * a device that knows nothing, and clock-ins would be approved from anywhere.
- * In that mode it throws instead, and the caller shows the location error.
+ * This used to end with `{ ...OFFICE_LOCATIONS[0], accuracy: null,
+ * source: 'fallback' }` - the office pin, reported for a device that had
+ * measured nothing. It was guarded by `if (GEOFENCE_ENFORCEMENT_ENABLED)`, so
+ * it was only reachable with the fence off, which made it look harmless.
+ *
+ * It was not harmless. It was the same class of bug as the localhost bypass: a
+ * fabricated position is indistinguishable from a measured one once it reaches
+ * the fence, because the fence only ever sees numbers. `distance: 0` from a
+ * device with no idea where it is looks exactly like `distance: 0` from someone
+ * standing at the door. Any future flip of the enforcement flag - or any
+ * caller that forgets to check it - turned every clock-in into an on-site one.
+ *
+ * So this now never invents a position. If the browser cannot produce a fix and
+ * the IP lookup cannot either, the caller gets an error and the trainee is told
+ * to turn location services on. That is the honest answer, and it is the only
+ * one that keeps the fence meaningful.
  */
 export const getQuickCoordinates = async () => {
   try {
@@ -245,18 +254,10 @@ export const getQuickCoordinates = async () => {
     try {
       return await fetchIpCoordinates(IP_FETCH_TIMEOUT_QUICK_MS);
     } catch (ipError) {
-      if (GEOFENCE_ENFORCEMENT_ENABLED) {
-        throw Object.assign(
-          new Error(describeGeolocationError(browserError)),
-          { code: browserError?.code || 2, cause: ipError }
-        );
-      }
-      return {
-        latitude: OFFICE_LOCATIONS[0].latitude,
-        longitude: OFFICE_LOCATIONS[0].longitude,
-        accuracy: null,
-        source: 'fallback'
-      };
+      throw Object.assign(
+        new Error(describeGeolocationError(browserError)),
+        { code: browserError?.code || 2, cause: ipError }
+      );
     }
   }
 };
