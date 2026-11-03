@@ -530,7 +530,19 @@ export function AttendanceNew() {
       const message = isGeolocationError(error)
         ? describeLocationError(error)
         : error.message || 'Could not confirm your location.';
-      setLocationError(message);
+      setLocationError({
+        message,
+        // Deliberately visible, and deliberately temporary. Every branch of the
+        // message is chosen from `code`, and the reports so far have all landed
+        // in the branch for codes we do not recognise - which is impossible to
+        // diagnose from a description of the sentence alone. This line is what
+        // turns "still not working" into an actual value.
+        detail: [
+          `code=${error?.code ?? 'none'}`,
+          `permission=${error?.permission ?? 'unknown'}`,
+          error?.syncThrow ? 'syncThrow' : null
+        ].filter(Boolean).join(' · ')
+      });
       // The raw code, kept out of the sentence. Every branch above is chosen
       // from `code`, and a browser that reports one we do not recognise lands
       // in the generic wording - which is exactly the case that is impossible
@@ -961,7 +973,10 @@ export function AttendanceNew() {
             {locationError && (
               <div className="attendance-notice location-notice" role="alert">
                 <strong>We could not confirm your location</strong>
-                <div>{locationError}</div>
+                <div>{locationError.message}</div>
+                {locationError.detail && (
+                  <div className="location-detail">{locationError.detail}</div>
+                )}
                 {locationRetry && (
                   <Button
                     variant="secondary"

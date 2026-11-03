@@ -134,27 +134,18 @@ export const describeGeolocationError = (error, { device = detectDeviceKind() } 
 /**
  * The sentence for the case that cannot be explained by the error code.
  *
- * A request that fails with POSITION_UNAVAILABLE (or a code we do not know)
- * while the site permission is 'prompt' or 'granted' has one signature: **no
- * prompt ever appeared**. If Chrome were willing to ask, it would have asked;
- * if the site were blocked, the state would be 'denied'. So the refusal is
- * happening one layer below the browser - the browser APP itself is not allowed
- * to use Location by the operating system, and it fails the request before any
- * prompt can be shown.
+ * REMOVED ON PURPOSE. This used to claim "Chrome did not ask you for
+ * permission, so the browser app must be blocked by the OS" whenever a request
+ * failed with a code it did not recognise. It was a guess, it was printed as a
+ * fact, and it was wrong: Google Maps, in the same Chrome, on the same phone,
+ * located the person perfectly at the same minute.
  *
- * That is why "turn on Location" never fixes it. On Android the system Location
- * switch and the Chrome app's own permission are different switches, and the
- * second one is in Settings > Apps. On Windows the equivalent layer is the
- * Geolocation Service (`lfsvc`), which ships disabled on many machines.
- *
- * Saying this out loud is the whole point: the generic wording sent the same
- * person back to the same setting twice.
+ * A wrong diagnosis is worse than none - it sends someone to a setting that was
+ * never the problem and makes the real fault harder to find. What replaced it
+ * is `withDiagnostics` below: the raw code and permission state travel with the
+ * error so they can be read from the console, and the sentence shown to the
+ * person says only what is known.
  */
-export const describeProviderBlock = ({ device = detectDeviceKind() } = {}) => (
-  device === 'phone'
-    ? 'Chrome did not ask you for permission and did not give a position. That means Chrome itself is not allowed to use Location by the phone - a different switch from Settings > Location. Open Settings > Apps > Chrome > Permissions > Location, set it to Allow, then try again.'
-    : 'Chrome did not ask you for permission and did not give a position. That means Windows is not letting Chrome use Location - a different switch from the site permission. Turn on Settings > Privacy & security > Location, then check that the "Geolocation Service" is running in services.msc, then try again.'
-);
 
 /**
  * What the browser already knows about our permission, WITHOUT asking.
@@ -182,39 +173,21 @@ export const getGeolocationPermission = async () => {
 };
 
 /**
- * Throws the PERMISSION_DENIED sentence when the site is already blocked,
- * otherwise hands the permission state back so the caller can explain a
- * failure that the error code does not explain.
- */
-const assertNotBlocked = async () => {
-  const permission = await getGeolocationPermission();
-  if (permission === 'denied') {
-    throw Object.assign(
-      new Error(describeGeolocationError({ code: 1 })),
-      { code: 1, permission }
-    );
-  }
-  return permission;
-};
-
-/**
- * A failed request, re-worded when the code cannot account for it.
+ * A failed request, re-worded only when we can name the cause with certainty.
  *
  * Left alone: PERMISSION_DENIED (the site is blocked, and the padlock sentence
  * is the right one) and TIMEOUT (the request ran its full course, so the
- * provider was reachable and merely slow). Everything else - POSITION_
- * UNAVAILABLE, or a code we do not recognise - with the site NOT refused means
- * no prompt ever appeared, which is the app-level block above.
+ * provider was reachable and merely slow).
+ *
+ * Everything else is passed through unchanged. An earlier version of this
+ * function guessed "the browser app must be blocked by the OS" from a code-2
+ * failure, and it was WRONG: the same browser located the same person
+ * perfectly on Google Maps a minute later. A guess printed as fact is worse
+ * than no guess at all - it sends the person to a setting that was never the
+ * problem. So the code and the permission state travel with the error for the
+ * console, and the sentence stays honest.
  */
-const explainProviderBlock = (error, permission) => {
-  const code = Number(error?.code);
-  if (code === 1 || code === 3) return error;
-  if (permission !== 'prompt' && permission !== 'granted') return error;
-  return Object.assign(
-    new Error(describeProviderBlock()),
-    { code, name: error?.name, permission, cause: error }
-  );
-};
+const withDiagnostics = (error, permission) => Object.assign(error, { permission });
 
 /**
  * True only for real geolocation failures.
@@ -251,16 +224,36 @@ const requestBrowserPosition = (options) => new Promise((resolve, reject) => {
     ));
     return;
   }
-  navigator.geolocation.getCurrentPosition(
-    (position) => resolve({
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy,
-      source: options.enableHighAccuracy ? 'gps' : 'coarse'
-    }),
-    (geoError) => reject(Object.assign(new Error(describeGeolocationError(geoError)), { code: geoError?.code })),
-    options
-  );
+  const onPosition = (position) => resolve({
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+    source: options.enableHighAccuracy ? 'gps' : 'coarse'
+  });
+  const onFailure = (geoError) => reject(Object.assign(
+    new Error(describeGeolocationError(geoError)),
+    { code: geoError?.code, geoName: geoError?.name }
+  ));
+
+  try {
+    navigator.geolocation.getCurrentPosition(onPosition, onFailure, options);
+  } catch (thrown) {
+    // A synchronous throw is NOT a GeolocationPositionError. It means the
+    // browser refused to make the call at all - a detached method, an options
+    // object it will not accept, or a policy that blocks the API outright -
+    // and its own message is the only clue there is.
+    //
+    // It used to be swallowed: the throw escaped the executor, the promise
+    // rejected with a bare TypeError, and the page then re-described it as "we
+    // could not determine your location". That turned the one useful sentence
+    // into the same generic one, and hid the fault behind a location problem
+    // that did not exist.
+    const detail = thrown?.message ? ` ${thrown.message}` : '';
+    reject(Object.assign(
+      new Error(`The browser refused the location request.${detail}`),
+      { syncThrow: true, cause: thrown }
+    ));
+  }
 });
 
 const fetchWithTimeout = async (url, timeoutMs) => {
@@ -318,12 +311,14 @@ export const getCoordinatesWithFallback = async (
   primaryOptions = GEOLOCATION_PRIMARY_OPTIONS,
   fallbackOptions = GEOLOCATION_FALLBACK_OPTIONS
 ) => {
-  // A blocked site is known before a single request is made. Asking anyway
-  // costs nothing when the answer is instant, but the case this exists for is
-  // the one where Windows has no location provider: then BOTH attempts run to
-  // their 15 s timeout and the person waits half a minute to be told something
-  // the Permissions API could have said immediately.
-  const permission = await assertNotBlocked();
+  // NOTHING is awaited before the first `getCurrentPosition`. The permission
+  // prompt is tied to the click that started this, and an `await` in between -
+  // a Permissions API query, for instance - moves the request into a later
+  // task. Chrome will then sometimes fail the request instead of prompting,
+  // which looks exactly like a blocked site. The permission state is only
+  // wanted for the error message, so it is fetched in parallel and read in the
+  // catch, where being late costs nothing.
+  const permissionPromise = getGeolocationPermission();
   try {
     return await requestBrowserPosition(primaryOptions);
   } catch (error) {
@@ -336,7 +331,9 @@ export const getCoordinatesWithFallback = async (
       // city-level accuracy and can never prove 100 m - so spending another
       // 10-20 s on two lookups only delays the error and then blames the
       // network for it. Fail now, with the real reason.
-      if (GEOFENCE_ENFORCEMENT_ENABLED) throw explainProviderBlock(retryError, permission);
+      if (GEOFENCE_ENFORCEMENT_ENABLED) {
+        throw withDiagnostics(retryError, await permissionPromise);
+      }
       return fetchIpCoordinates();
     }
   }
@@ -366,7 +363,6 @@ export const getCoordinatesWithFallback = async (
  * one that keeps the fence meaningful.
  */
 export const getQuickCoordinates = async () => {
-  await assertNotBlocked();
   try {
     return await requestBrowserPosition(GEOLOCATION_QUICK_OPTIONS);
   } catch (browserError) {

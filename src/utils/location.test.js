@@ -9,7 +9,6 @@
  */
 import {
   describeGeolocationError,
-  describeProviderBlock,
   fetchIpCoordinates,
   getCoordinatesWithFallback,
   isGeolocationError
@@ -89,27 +88,6 @@ describe('describeGeolocationError', () => {
 
   it('reads a stringified code, because some browsers hand one over', () => {
     expect(describeGeolocationError({ code: '2' }, { device: 'phone' })).toMatch(/allow chrome/i);
-  });
-});
-
-describe('describeProviderBlock', () => {
-  it('names the app-level switch on a phone, not the system one', () => {
-    // The third report, and the one that finally said the useful thing: "it
-    // does not even ask for location". No prompt + a failure = the browser app
-    // is not allowed to use Location by the OS, so the request dies before the
-    // site can be asked. Telling this person to "turn on Location" is what made
-    // them report the same bug three times.
-    const text = describeProviderBlock({ device: 'phone' });
-    expect(text).toMatch(/did not ask you for permission/i);
-    expect(text).toMatch(/settings > apps > chrome/i);
-    expect(text).toMatch(/different switch/i);
-  });
-
-  it('names the Geolocation Service on a laptop', () => {
-    const text = describeProviderBlock({ device: 'desktop' });
-    expect(text).toMatch(/geolocation service/i);
-    expect(text).toMatch(/windows/i);
-    expect(text).not.toMatch(/settings > apps > chrome/i);
   });
 });
 
@@ -217,29 +195,41 @@ describe('getCoordinatesWithFallback', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('explains an app-level block when the site was never refused and no prompt appeared', async () => {
-    // The phone report: Location on, and the browser never asked. A failure
-    // with the site permission still 'prompt' means the request died before
-    // the prompt could be shown - the browser app is blocked by the OS.
-    stubPermission('prompt');
-    stubGeolocation([{ error: geoError(2) }, { error: geoError(2) }]);
+  it('keeps a synchronous throw instead of overwriting it', async () => {
+    // The failure that hid itself: a browser refusing to make the call at all
+    // used to reject with a bare TypeError, which the page then re-described as
+    // "we could not determine your location" - the one generic sentence, for a
+    // fault that had nothing to do with location settings. Its own words have
+    // to survive.
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: () => {
+          throw new TypeError('Illegal invocation');
+        }
+      },
+      configurable: true,
+      writable: true
+    });
 
-    await expect(getCoordinatesWithFallback()).rejects.toThrow(/did not ask you for permission/i);
+    const error = await getCoordinatesWithFallback().catch((thrown) => thrown);
+
+    expect(error.message).toMatch(/illegal invocation/i);
+    expect(error.syncThrow).toBe(true);
+    expect(isGeolocationError(error)).toBe(false);
   });
 
   it('leaves a genuine timeout alone, because the provider was reachable', async () => {
-    // A timeout means the request ran its full course. Rewriting that into
-    // "Chrome is blocked" would send the person to the wrong setting.
+    // A timeout means the request ran its full course. Re-wording that as a
+    // permission or provider problem would send the person to the wrong setting.
     stubPermission('granted');
     stubGeolocation([{ error: geoError(3) }, { error: geoError(3) }]);
 
     const error = await getCoordinatesWithFallback().catch((thrown) => thrown);
 
-    expect(error.message).not.toMatch(/did not ask you for permission/i);
     expect(error.code).toBe(3);
+    expect(error.message).toMatch(/took too long|could not get a position in time/i);
   });
 });
-
 describe('fetchIpCoordinates', () => {
   const originalFetch = global.fetch;
 

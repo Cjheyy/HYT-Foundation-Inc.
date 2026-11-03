@@ -150,6 +150,17 @@
   margin-top: 10px;
 }
 
+/* The raw code, permission state and whether the call threw synchronously.
+   Small and quiet: it is not for the trainee, it is the only way a screenshot
+   of this card can tell us which branch produced the sentence above. */
+.location-detail {
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  opacity: 0.75;
+}
+
 .attendance-locked-message {
   display: flex;
   flex-direction: column;
