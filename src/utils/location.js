@@ -78,6 +78,26 @@ const POSITION_HINT = {
   desktop: 'Keep Wi-Fi on and allow this site to use your location - a laptop has no GPS and locates itself from nearby networks.'
 };
 
+/**
+ * What to do after a TIMEOUT (code 3), per platform.
+ *
+ * This used to be one sentence - "Move near a window or step outside, then try
+ * again" - printed on every device. On a phone that is correct advice: no
+ * satellite fix indoors is the usual cause. On a laptop it is nonsense, and
+ * expensive nonsense: a laptop has no GPS receiver, so walking it to a window
+ * changes nothing, while the thing that actually failed (Windows Location
+ * Services, or Chrome's permission for it) stays off. The person follows the
+ * advice, fails again, and concludes the app is broken.
+ *
+ * A Windows laptop gets its position from Windows Location Services, which is
+ * off by default on many machines and is a separate switch from the browser
+ * permission. Naming that switch is the whole fix.
+ */
+const TIMEOUT_HINT = {
+  phone: 'Getting your location took too long. Move near a window or step outside, then try again.',
+  desktop: 'This laptop could not get a position in time, so we cannot confirm you are on site. A laptop has no GPS - it locates itself from Wi-Fi and from Windows Location Services. Turn on Settings > Privacy & security > Location, allow Chrome to use it, keep Wi-Fi on, then try again.'
+};
+
 const positionHint = () => POSITION_HINT[detectDeviceKind()] || POSITION_HINT.desktop;
 
 /**
@@ -92,6 +112,7 @@ const positionHint = () => POSITION_HINT[detectDeviceKind()] || POSITION_HINT.de
 export const describeGeolocationError = (error, { device = detectDeviceKind() } = {}) => {
   const code = Number(error?.code);
   const hint = POSITION_HINT[device] || POSITION_HINT.desktop;
+  const slowHint = TIMEOUT_HINT[device] || TIMEOUT_HINT.desktop;
   // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
   if (code === 1) {
     return 'Location is blocked for this site. Open the padlock (or the info icon) in the address bar, set Location to Allow, then try again.';
@@ -100,9 +121,43 @@ export const describeGeolocationError = (error, { device = detectDeviceKind() } 
     return `This device could not get a position. ${hint}`;
   }
   if (code === 3) {
-    return 'Getting your location took too long. Move near a window or step outside, then try again.';
+    return slowHint;
   }
   return `We could not determine your location. ${hint}`;
+};
+
+/**
+ * What the browser already knows about our permission, WITHOUT asking.
+ *
+ * `getCurrentPosition` is the expensive way to discover that the site has been
+ * blocked: Chrome answers a blocked request with PERMISSION_DENIED immediately,
+ * but a request that merely cannot be resolved (Windows Location Services off,
+ * no Wi-Fi scan yet) runs to the full timeout - twice, because the page retries
+ * coarse, so 30 s of a spinner before the person is told anything.
+ *
+ * The Permissions API answers the "is this blocked?" half in a millisecond. It
+ * is not a substitute for the real request: 'granted' and 'prompt' both still
+ * need `getCurrentPosition`, and a browser without the API returns 'unknown',
+ * which the caller treats as "carry on".
+ */
+export const getGeolocationPermission = async () => {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.permissions?.query) return 'unknown';
+    const status = await navigator.permissions.query({ name: 'geolocation' });
+    return status?.state || 'unknown';
+  } catch (error) {
+    // Firefox throws on some permission names; Safari has no query() at all.
+    return 'unknown';
+  }
+};
+
+/** Throws the PERMISSION_DENIED sentence when the site is already blocked. */
+const rejectWhenBlocked = async () => {
+  if (await getGeolocationPermission() !== 'denied') return;
+  throw Object.assign(
+    new Error(describeGeolocationError({ code: 1 })),
+    { code: 1 }
+  );
 };
 
 /**
@@ -206,6 +261,12 @@ export const getCoordinatesWithFallback = async (
   primaryOptions = GEOLOCATION_PRIMARY_OPTIONS,
   fallbackOptions = GEOLOCATION_FALLBACK_OPTIONS
 ) => {
+  // A blocked site is known before a single request is made. Asking anyway
+  // costs nothing when the answer is instant, but the case this exists for is
+  // the one where Windows has no location provider: then BOTH attempts run to
+  // their 15 s timeout and the person waits half a minute to be told something
+  // the Permissions API could have said immediately.
+  await rejectWhenBlocked();
   try {
     return await requestBrowserPosition(primaryOptions);
   } catch (error) {
@@ -248,6 +309,7 @@ export const getCoordinatesWithFallback = async (
  * one that keeps the fence meaningful.
  */
 export const getQuickCoordinates = async () => {
+  await rejectWhenBlocked();
   try {
     return await requestBrowserPosition(GEOLOCATION_QUICK_OPTIONS);
   } catch (browserError) {

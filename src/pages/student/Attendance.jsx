@@ -150,6 +150,11 @@ export function AttendanceNew() {
   const [absenceErrors, setAbsenceErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  // The last reason a clock-in/clock-out could not get a location. Kept on the
+  // page rather than only in a toast: the desktop message names a Windows
+  // setting, and a sentence that disappears after eight seconds cannot be
+  // followed by someone who is alt-tabbing to Settings.
+  const [locationError, setLocationError] = useState(null);
   // Which request the camera is currently collecting a photo for.  `null` means
   // the dialog is closed.  The coordinates are resolved BEFORE the camera opens
   // so an off-site attempt is refused without asking for a selfie first.
@@ -507,6 +512,7 @@ export function AttendanceNew() {
 
   const openCamera = async (action, actionLabel) => {
     setActionLoading(true);
+    setLocationError(null);
     try {
       const resolved = await resolveCoordinates(actionLabel);
       setPendingCoordinates(resolved);
@@ -514,10 +520,14 @@ export function AttendanceNew() {
     } catch (error) {
       // 3 s is the app-wide default, which is not enough time to read an
       // instruction ("turn on Location, then try again") - the old toast
-      // vanished before it could be acted on.
-      toast.error(isGeolocationError(error)
+      // vanished before it could be acted on. 15 s is still not enough for the
+      // desktop message, which names a Windows setting, so the same sentence is
+      // also pinned inside the card until the next attempt.
+      const message = isGeolocationError(error)
         ? describeLocationError(error)
-        : error.message || 'Could not confirm your location.', { autoClose: 8000 });
+        : error.message || 'Could not confirm your location.';
+      setLocationError(message);
+      toast.error(message, { autoClose: 15000 });
     } finally {
       setActionLoading(false);
     }
@@ -932,6 +942,13 @@ export function AttendanceNew() {
                 )}
               </div>
             ) : <p className="no-attendance">No attendance request submitted today.</p>}
+
+            {locationError && (
+              <div className="attendance-notice location-notice" role="alert">
+                <strong>We could not confirm your location</strong>
+                <div>{locationError}</div>
+              </div>
+            )}
 
             <div className="attendance-actions">
               {!approvedPlacement ? (

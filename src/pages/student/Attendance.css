@@ -131,6 +131,19 @@
   color: var(--danger-text);
 }
 
+/*
+ * A location that could not be read is not a rejection - nothing was submitted
+ * and the person can retry - so it borrows the amber "action needed" tokens
+ * rather than the red ones. It sits inside the card and stays there until the
+ * next attempt, because the desktop copy names a Windows setting and a toast
+ * cannot be read while you are alt-tabbing to Settings.
+ */
+.location-notice {
+  border-color: #f59e0b;
+  background: var(--warning-surface);
+  color: var(--warning-text);
+}
+
 .attendance-locked-message {
   display: flex;
   flex-direction: column;

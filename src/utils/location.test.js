@@ -60,6 +60,23 @@ describe('describeGeolocationError', () => {
     expect(describeGeolocationError(geoError(3), { device: 'phone' })).toMatch(/took too long/i);
   });
 
+  it('tells a laptop where its position actually comes from on timeout', () => {
+    // The reported failure: a Windows laptop timed out and was told to "move
+    // near a window or step outside". A laptop has no GPS receiver, so that
+    // advice cannot work - the switch that is actually off is Windows Location
+    // Services. Sending someone to a window instead of to that setting is how a
+    // location bug gets reported twice.
+    const text = describeGeolocationError(geoError(3), { device: 'desktop' });
+    expect(text).toMatch(/windows location services/i);
+    expect(text).not.toMatch(/move near a window|step outside/i);
+  });
+
+  it('keeps the window advice for a phone, where it is true', () => {
+    const text = describeGeolocationError(geoError(3), { device: 'phone' });
+    expect(text).toMatch(/window|outside/i);
+    expect(text).not.toMatch(/windows location services/i);
+  });
+
   it('has a fallback for an error with no code at all', () => {
     expect(describeGeolocationError(null, { device: 'phone' })).toMatch(/could not determine your location/i);
     expect(describeGeolocationError({}, { device: 'phone' })).toMatch(/could not determine your location/i);
