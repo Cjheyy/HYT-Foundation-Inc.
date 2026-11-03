@@ -25,10 +25,14 @@ describe('describeGeolocationError', () => {
     expect(text).not.toMatch(/wi-fi/i);
   });
 
-  it('tells a PHONE to turn on GPS, and does not mention Wi-Fi', () => {
-    // This is the exact case from the report: Wi-Fi connected, Location off.
+  it('tells a PHONE to allow Chrome itself, not just Location, and never blames Wi-Fi', () => {
+    // The second report: Location was already switched on and the message still
+    // said "Turn on Location (GPS) on your phone". On Android the site
+    // permission and the Chrome APP's own permission are different switches, so
+    // advice that only names the first one sends the person in a circle.
     const text = describeGeolocationError(geoError(2), { device: 'phone' });
-    expect(text).toMatch(/turn on location \(gps\)/i);
+    expect(text).toMatch(/allow chrome/i);
+    expect(text).toMatch(/settings > apps > chrome/i);
     expect(text).not.toMatch(/wi-fi/i);
   });
 
@@ -36,7 +40,7 @@ describe('describeGeolocationError', () => {
     const text = describeGeolocationError(geoError(2), { device: 'desktop' });
     expect(text).toMatch(/wi-fi/i);
     expect(text).toMatch(/laptop/i);
-    expect(text).not.toMatch(/turn on location \(gps\) on your phone/i);
+    expect(text).not.toMatch(/settings > apps > chrome/i);
   });
 
   it('detects the device when no hint is passed', () => {
@@ -83,7 +87,7 @@ describe('describeGeolocationError', () => {
   });
 
   it('reads a stringified code, because some browsers hand one over', () => {
-    expect(describeGeolocationError({ code: '2' }, { device: 'phone' })).toMatch(/turn on location \(gps\)/i);
+    expect(describeGeolocationError({ code: '2' }, { device: 'phone' })).toMatch(/allow chrome/i);
   });
 });
 

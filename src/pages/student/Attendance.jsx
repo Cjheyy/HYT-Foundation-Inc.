@@ -155,6 +155,9 @@ export function AttendanceNew() {
   // setting, and a sentence that disappears after eight seconds cannot be
   // followed by someone who is alt-tabbing to Settings.
   const [locationError, setLocationError] = useState(null);
+  // Which attempt failed, so the notice can offer the same action again instead
+  // of making the person hunt for the button they just pressed.
+  const [locationRetry, setLocationRetry] = useState(null);
   // Which request the camera is currently collecting a photo for.  `null` means
   // the dialog is closed.  The coordinates are resolved BEFORE the camera opens
   // so an off-site attempt is refused without asking for a selfie first.
@@ -517,6 +520,7 @@ export function AttendanceNew() {
       const resolved = await resolveCoordinates(actionLabel);
       setPendingCoordinates(resolved);
       setCameraAction(action);
+      setLocationRetry(null);
     } catch (error) {
       // 3 s is the app-wide default, which is not enough time to read an
       // instruction ("turn on Location, then try again") - the old toast
@@ -527,6 +531,16 @@ export function AttendanceNew() {
         ? describeLocationError(error)
         : error.message || 'Could not confirm your location.';
       setLocationError(message);
+      // The raw code, kept out of the sentence. Every branch above is chosen
+      // from `code`, and a browser that reports one we do not recognise lands
+      // in the generic wording - which is exactly the case that is impossible
+      // to diagnose from a screenshot. This is the only place it survives.
+      console.warn('[attendance] location failed', {
+        code: error?.code,
+        name: error?.name,
+        message: error?.message
+      });
+      setLocationRetry({ action, actionLabel });
       toast.error(message, { autoClose: 15000 });
     } finally {
       setActionLoading(false);
@@ -947,6 +961,17 @@ export function AttendanceNew() {
               <div className="attendance-notice location-notice" role="alert">
                 <strong>We could not confirm your location</strong>
                 <div>{locationError}</div>
+                {locationRetry && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="location-retry"
+                    onClick={() => openCamera(locationRetry.action, locationRetry.actionLabel)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Checking…' : 'Try again'}
+                  </Button>
+                )}
               </div>
             )}
 

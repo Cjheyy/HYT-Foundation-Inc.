@@ -74,7 +74,12 @@ const detectDeviceKind = () => {
 };
 
 const POSITION_HINT = {
-  phone: 'Turn on Location (GPS) on your phone, then try again.',
+  // "Turn on Location (GPS)" was the whole advice, and it is not enough on
+  // Android: the site permission and the Chrome APP's own permission are two
+  // different switches, and the second one lives in Settings > Apps. Someone
+  // who has already switched Location on - and still gets this message - has
+  // hit the second switch, so it has to be named.
+  phone: 'Allow Chrome itself to use Location - Settings > Apps > Chrome > Permissions > Location - and make sure Location is switched on. Then try again.',
   desktop: 'Keep Wi-Fi on and allow this site to use your location - a laptop has no GPS and locates itself from nearby networks.'
 };
 
