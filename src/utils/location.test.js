@@ -229,7 +229,86 @@ describe('getCoordinatesWithFallback', () => {
     expect(error.code).toBe(3);
     expect(error.message).toMatch(/took too long|could not get a position in time/i);
   });
+
+  it('falls back to watchPosition when both single-shot requests fail', async () => {
+    // Reported as "walang GPS". A single `getCurrentPosition` closes its own
+    // request at `timeout` and reports TIMEOUT even when a fix is a few seconds
+    // away - ordinary on a phone indoors. Watching keeps the search open, so a
+    // late fix is still used, and it goes through the same accuracy gate.
+    stubPermission('granted');
+    const watchPosition = jest.fn((success) => {
+      success({ coords: { latitude: 14.6426, longitude: 121.0245, accuracy: 18 } });
+      return 7;
+    });
+    const clearWatch = jest.fn();
+
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: jest.fn((success, failure) => failure(geoError(3))),
+        watchPosition,
+        clearWatch
+      },
+      configurable: true,
+      writable: true
+    });
+
+    const fix = await getCoordinatesWithFallback();
+
+    expect(watchPosition).toHaveBeenCalledTimes(1);
+    expect(fix).toMatchObject({ latitude: 14.6426, source: 'gps' });
+    // The watch must be released, or the GPS stays awake after the request.
+    expect(clearWatch).toHaveBeenCalledWith(7);
+  });
+
+  it('does not invent a position when the browser has no watchPosition', async () => {
+    // A stub, an old WebView, or any browser without the API must still report
+    // the real reason rather than a manufactured "cannot report a position".
+    stubPermission('granted');
+    stubGeolocation([{ error: geoError(2) }, { error: geoError(2) }]);
+
+    const error = await getCoordinatesWithFallback().catch((thrown) => thrown);
+
+    expect(error.code).toBe(2);
+    expect(error.message).toMatch(/could not get a position/i);
+  });
 });
+describe('in-app browsers', () => {
+  const originalUserAgent = navigator.userAgent;
+
+  afterEach(() => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: originalUserAgent,
+      configurable: true
+    });
+  });
+
+  const withUserAgent = (ua) => Object.defineProperty(window.navigator, 'userAgent', {
+    value: ua,
+    configurable: true
+  });
+
+  it('tells a Messenger user to open the page in Chrome', () => {
+    // The case that looks like a broken phone: the Facebook/Messenger WebView
+    // fails with POSITION_UNAVAILABLE and no prompt, so "turn on Location" is
+    // advice for a setting that was never the problem.
+    withUserAgent('Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 [FBAN/FB4A;FBAV/400.0.0.1]');
+
+    const text = describeGeolocationError({ code: 2 });
+
+    expect(text).toMatch(/open in chrome/i);
+    expect(text).not.toMatch(/settings > apps > chrome/i);
+  });
+
+  it('leaves ordinary Chrome on Android with the app-permission advice', () => {
+    withUserAgent('Mozilla/5.0 (Linux; Android 13; SM-A536E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36');
+
+    const text = describeGeolocationError({ code: 2 });
+
+    expect(text).toMatch(/settings > apps > chrome/i);
+    expect(text).not.toMatch(/open in chrome/i);
+  });
+});
+
 describe('fetchIpCoordinates', () => {
   const originalFetch = global.fetch;
 

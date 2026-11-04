@@ -36,6 +36,19 @@ export const GEOLOCATION_QUICK_OPTIONS = {
   maximumAge: 300000
 };
 
+/**
+ * Third attempt, used only after both single-shot requests failed.
+ *
+ * `timeout` is deliberately generous here: this attempt exists because the
+ * device was still acquiring a fix when the first two gave up, so cutting it
+ * short would defeat the point. The wall-clock cap lives in `watchForPosition`.
+ */
+export const GEOLOCATION_WATCH_OPTIONS = {
+  enableHighAccuracy: true,
+  timeout: 20000,
+  maximumAge: 0
+};
+
 // Kept for callers importing the previous names.
 export const GEOLOCATION_PRECISE_OPTIONS = GEOLOCATION_PRIMARY_OPTIONS;
 export const GEOLOCATION_COARSE_OPTIONS = GEOLOCATION_FALLBACK_OPTIONS;
@@ -103,7 +116,32 @@ const TIMEOUT_HINT = {
   desktop: 'This laptop could not get a position in time, so we cannot confirm you are on site. A laptop has no GPS - it locates itself from Wi-Fi and from Windows Location Services. Turn on Settings > Privacy & security > Location, allow Chrome to use it, keep Wi-Fi on, then try again.'
 };
 
-const positionHint = () => POSITION_HINT[detectDeviceKind()] || POSITION_HINT.desktop;
+/**
+ * True when the page is running inside another app's embedded browser.
+ *
+ * This is the case that looks exactly like a broken device and is not: the
+ * Facebook, Messenger, Instagram, Viber and TikTok in-app browsers ship a
+ * WebView whose geolocation is either disabled outright or fails with
+ * POSITION_UNAVAILABLE and no prompt at all. The page cannot tell the
+ * difference from inside - it only sees a failed request - so the advice
+ * "turn on Location" is useless, and the person is sent to a setting that was
+ * never the problem.
+ *
+ * The tell is the user-agent: an in-app browser appends its own token.
+ * `; wv)` marks an Android WebView, which covers most of them even when the
+ * host app does not identify itself.
+ */
+const detectInAppBrowser = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = String(navigator.userAgent || '');
+  return /FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|Viber|musical_ly|BytedanceWebview|; wv\)/i.test(ua);
+};
+
+const IN_APP_HINT = 'This page is open inside another app\'s browser, and those usually cannot use your location. Tap the menu (three dots) and choose "Open in Chrome", then try again.';
+
+const positionHint = () => (detectInAppBrowser()
+  ? IN_APP_HINT
+  : (POSITION_HINT[detectDeviceKind()] || POSITION_HINT.desktop));
 
 /**
  * Turn a geolocation failure into something the person can act on.
@@ -116,10 +154,15 @@ const positionHint = () => POSITION_HINT[detectDeviceKind()] || POSITION_HINT.de
  */
 export const describeGeolocationError = (error, { device = detectDeviceKind() } = {}) => {
   const code = Number(error?.code);
-  const hint = POSITION_HINT[device] || POSITION_HINT.desktop;
-  const slowHint = TIMEOUT_HINT[device] || TIMEOUT_HINT.desktop;
+  // An in-app browser is the one case where no setting on the device is the
+  // answer, so it overrides the per-platform advice instead of being appended
+  // to it. See detectInAppBrowser.
+  const inApp = detectInAppBrowser();
+  const hint = inApp ? IN_APP_HINT : (POSITION_HINT[device] || POSITION_HINT.desktop);
+  const slowHint = inApp ? IN_APP_HINT : (TIMEOUT_HINT[device] || TIMEOUT_HINT.desktop);
   // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
   if (code === 1) {
+    if (inApp) return IN_APP_HINT;
     return 'Location is blocked for this site. Open the padlock (or the info icon) in the address bar, set Location to Allow, then try again.';
   }
   if (code === 2) {
@@ -256,6 +299,75 @@ const requestBrowserPosition = (options) => new Promise((resolve, reject) => {
   }
 });
 
+/**
+ * A third, patient attempt: watch instead of ask once.
+ *
+ * `getCurrentPosition` gives up at its own `timeout` and reports TIMEOUT even
+ * when a fix is seconds away - the request is closed, not the search. On a
+ * phone indoors the first fix often lands at 16-25 s, which is exactly the
+ * window a single-shot call throws away, and the trainee is told the device
+ * "could not get a position" while it was actively acquiring one.
+ *
+ * `watchPosition` keeps the search open and hands over the first reading that
+ * arrives, so this rescues the slow case without loosening anything: the fix
+ * still has to pass the same accuracy gate and the same 100 m fence. It is
+ * tried only after both single-shot attempts have failed, and it is bounded, so
+ * a device with no provider still fails - just later and for the last time.
+ */
+const watchForPosition = (options, maxWaitMs = 12000) => new Promise((resolve, reject) => {
+  if (typeof navigator === 'undefined' || !navigator.geolocation?.watchPosition) {
+    reject(Object.assign(new Error(`This browser cannot report a position. ${positionHint()}`), { code: 2 }));
+    return;
+  }
+
+  let settled = false;
+  let watchId = null;
+  let timer = null;
+
+  const finish = (settle, value) => {
+    if (settled) return;
+    settled = true;
+    if (timer) clearTimeout(timer);
+    if (watchId !== null) {
+      try { navigator.geolocation.clearWatch(watchId); } catch (error) { /* already gone */ }
+    }
+    settle(value);
+  };
+
+  timer = setTimeout(() => finish(reject, Object.assign(
+    new Error(describeGeolocationError({ code: 3 })),
+    { code: 3 }
+  )), maxWaitMs);
+
+  try {
+    watchId = navigator.geolocation.watchPosition(
+      (position) => finish(resolve, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        source: options.enableHighAccuracy ? 'gps' : 'coarse'
+      }),
+      (geoError) => finish(reject, Object.assign(
+        new Error(describeGeolocationError(geoError)),
+        { code: geoError?.code, geoName: geoError?.name }
+      )),
+      options
+    );
+    // A cached fix can arrive before `watchPosition` even returns its id, in
+    // which case `finish` ran with `watchId === null` and could not stop the
+    // watch. Release it now that the id exists, or the GPS stays awake.
+    if (settled && watchId !== null) {
+      try { navigator.geolocation.clearWatch(watchId); } catch (error) { /* already gone */ }
+    }
+  } catch (thrown) {
+    const detail = thrown?.message ? ` ${thrown.message}` : '';
+    finish(reject, Object.assign(
+      new Error(`The browser refused the location request.${detail}`),
+      { syncThrow: true, cause: thrown }
+    ));
+  }
+});
+
 const fetchWithTimeout = async (url, timeoutMs) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -327,12 +439,28 @@ export const getCoordinatesWithFallback = async (
       return await requestBrowserPosition(fallbackOptions);
     } catch (retryError) {
       if (retryError?.code === 1) throw retryError;
+      // Third attempt: stop asking once and start watching. A single-shot
+      // request closes at its timeout even when a fix is a few seconds away,
+      // which is the ordinary case on a phone indoors.
+      //
+      // Skipped entirely when the browser has no `watchPosition`, so a stub or
+      // an old WebView still reports the real reason for the failure instead of
+      // a manufactured "this browser cannot report a position".
+      let lastError = retryError;
+      if (typeof navigator !== 'undefined' && navigator.geolocation?.watchPosition) {
+        try {
+          return await watchForPosition(GEOLOCATION_WATCH_OPTIONS);
+        } catch (watchError) {
+          if (watchError?.code === 1) throw watchError;
+          lastError = watchError;
+        }
+      }
       // With the fence enforced the caller refuses an IP fix outright - it is
       // city-level accuracy and can never prove 100 m - so spending another
       // 10-20 s on two lookups only delays the error and then blames the
       // network for it. Fail now, with the real reason.
       if (GEOFENCE_ENFORCEMENT_ENABLED) {
-        throw withDiagnostics(retryError, await permissionPromise);
+        throw withDiagnostics(lastError, await permissionPromise);
       }
       return fetchIpCoordinates();
     }

@@ -364,9 +364,17 @@ export function describeGeofenceFailure(result, { action = 'clock in' } = {}) {
 
   if (result.reason === 'imprecise') {
     const accuracy = result.accuracy != null ? Math.round(result.accuracy) : null;
+    // The distance is still known and still useful: "you are 40 m from HYT
+    // Building, but the fix is only good to 300 m" tells the person they are
+    // in the right place and the phone is the problem. The old wording said
+    // only "too rough", which reads as "the app cannot find me at all" - and
+    // that is what got reported back, three times, as "walang GPS".
+    const where = result.distance != null && result.location
+      ? ` You appear to be ${Math.round(result.distance)} meters from ${result.location}, but the reading is not precise enough to confirm it.`
+      : '';
     return accuracy != null
-      ? `Your location is only accurate to about ${accuracy} meters, which is too rough to confirm you are on site. Move somewhere with a clearer view of the sky and try again.`
-      : `Your location is too rough to confirm you are on site. Try again with location services on.`;
+      ? `Your location is only accurate to about ${accuracy} meters, which is too rough to confirm you are on site.${where} Move somewhere with a clearer view of the sky and try again.`
+      : `Your location is too rough to confirm you are on site.${where} Try again with location services on.`;
   }
 
   if (result.reason === 'invalid') {
