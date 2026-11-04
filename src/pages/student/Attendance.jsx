@@ -28,7 +28,7 @@ import {
   uploadAttendancePhoto
 } from '../../services/supabaseService';
 import { checkGeofence, describeGeofenceFailure, GEOFENCE_MAX_ACCURACY_METERS, GEOFENCE_RADIUS_METERS, GEOFENCE_ENFORCEMENT_ENABLED, GEOFENCE_DEV_BYPASS, DEV_BYPASS_FIX, OFFICE_LOCATIONS, snapToNearestOffice } from '../../utils/geofence';
-import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates, isGeolocationError } from '../../utils/location';
+import { describeGeolocationError as describeLocationError, getCoordinatesWithFallback, getQuickCoordinates } from '../../utils/location';
 import { stampPhotoBlob } from '../../utils/attendancePhoto';
 import { buildStampLines } from '../../utils/stampLines';
 import { formatDate, formatHours, formatTime } from '../../utils/helpers';
@@ -527,9 +527,15 @@ export function AttendanceNew() {
       // vanished before it could be acted on. 15 s is still not enough for the
       // desktop message, which names a Windows setting, so the same sentence is
       // also pinned inside the card until the next attempt.
-      const message = isGeolocationError(error)
-        ? describeLocationError(error)
-        : error.message || 'Could not confirm your location.';
+      // The error ALREADY carries the diagnosis. `requestBrowserPosition`,
+      // `watchForPosition` and `fetchIpCoordinates` each build their sentence
+      // from the real geolocation code, so re-deriving it here threw that away:
+      // any error whose `code` was 0 or missing came back out as the generic
+      // "We could not determine your location", which is the one sentence that
+      // says nothing at all. That is how a specific failure kept being reported
+      // as the same useless message.
+      const message = String(error?.message || '').trim()
+        || 'Could not confirm your location.';
       setLocationError({
         message,
         // Deliberately visible, and deliberately temporary. Every branch of the

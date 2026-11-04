@@ -93,7 +93,13 @@ const POSITION_HINT = {
   // who has already switched Location on - and still gets this message - has
   // hit the second switch, so it has to be named.
   phone: 'Allow Chrome itself to use Location - Settings > Apps > Chrome > Permissions > Location - and make sure Location is switched on. Then try again.',
-  desktop: 'Keep Wi-Fi on and allow this site to use your location - a laptop has no GPS and locates itself from nearby networks.'
+  // "Keep Wi-Fi on" was here, and it is the sentence that got reported back as
+  // an insult: Wi-Fi was on, and Wi-Fi is not the switch that decides this.
+  // Windows has a MASTER location switch (HKLM ...\ConsentStore\location) that
+  // overrides both the per-app consent and the Geolocation Service. When it is
+  // "Deny" the service can be running and every app can be allowed, and Chrome
+  // still gets nothing. That is the switch to name.
+  desktop: 'A laptop has no GPS - it gets its position from Windows. Turn on Settings > Privacy & security > Location > "Location services", then try again.'
 };
 
 /**
@@ -113,7 +119,7 @@ const POSITION_HINT = {
  */
 const TIMEOUT_HINT = {
   phone: 'Getting your location took too long. Move near a window or step outside, then try again.',
-  desktop: 'This laptop could not get a position in time, so we cannot confirm you are on site. A laptop has no GPS - it locates itself from Wi-Fi and from Windows Location Services. Turn on Settings > Privacy & security > Location, allow Chrome to use it, keep Wi-Fi on, then try again.'
+  desktop: 'This laptop could not get a position in time, so we cannot confirm you are on site. A laptop has no GPS - it gets its position from Windows. Turn on Settings > Privacy & security > Location > "Location services", then try again.'
 };
 
 /**

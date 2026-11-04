@@ -36,10 +36,17 @@ describe('describeGeolocationError', () => {
     expect(text).not.toMatch(/wi-fi/i);
   });
 
-  it('tells a LAPTOP about Wi-Fi, because that is how it locates itself', () => {
+  it('tells a LAPTOP to switch Windows Location on, and never blames Wi-Fi', () => {
+    // Reported, verbatim: "Keep Wi-Fi on and allow this site to use your
+    // location - a laptop has no GPS and locates itself from nearby networks."
+    // Wi-Fi was on. Wi-Fi was never the switch. Windows has a MASTER location
+    // switch that overrides both the per-app consent and the Geolocation
+    // Service - it can be "Deny" while the service is running and every app is
+    // allowed, and Chrome still gets nothing.
     const text = describeGeolocationError(geoError(2), { device: 'desktop' });
-    expect(text).toMatch(/wi-fi/i);
     expect(text).toMatch(/laptop/i);
+    expect(text).toMatch(/location services/i);
+    expect(text).not.toMatch(/wi-fi/i);
     expect(text).not.toMatch(/settings > apps > chrome/i);
   });
 
@@ -71,8 +78,9 @@ describe('describeGeolocationError', () => {
     // Services. Sending someone to a window instead of to that setting is how a
     // location bug gets reported twice.
     const text = describeGeolocationError(geoError(3), { device: 'desktop' });
-    expect(text).toMatch(/windows location services/i);
+    expect(text).toMatch(/location services/i);
     expect(text).not.toMatch(/move near a window|step outside/i);
+    expect(text).not.toMatch(/wi-fi/i);
   });
 
   it('keeps the window advice for a phone, where it is true', () => {
