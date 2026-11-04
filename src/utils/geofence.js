@@ -346,6 +346,16 @@ export function checkGeofence(
 export const APPROVED_SITE_NAMES = OFFICE_LOCATIONS.map((office) => office.name).join(' or ');
 
 /**
+ * `850 m` / `3.4 km` - the same rule the photo stamp uses, so a distance never
+ * reads as "3365 meters" in one place and "3.4 km" in another.
+ */
+function formatDistance(meters) {
+  const value = Number(meters);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return value < 1000 ? `${Math.round(value)} m` : `${(value / 1000).toFixed(1)} km`;
+}
+
+/**
  * The sentence the student actually reads when the fence says no.
  *
  * Kept here rather than in the page because clock-in and clock-out both need
@@ -353,37 +363,41 @@ export const APPROVED_SITE_NAMES = OFFICE_LOCATIONS.map((office) => office.name)
  * was hard-coded in two places and would have kept saying 100 after the radius
  * changed to 20.
  *
- * The names of the two approved sites are in every sentence. "An approved HYT
- * location" left the person guessing which ones counted, and the honest answer
- * - "you are 6.4 km from the nearest one" - is much easier to act on when it
- * also says where the nearest one is.
+ * ## Short on purpose
+ *
+ * This used to be three sentences that explained the mechanism - "the reading
+ * is not precise enough to confirm it", "move somewhere with a clearer view of
+ * the sky", "the nearest approved office". Reported back, reasonably, as too
+ * long to read in a toast, and it only ever named the ONE nearest site, so a
+ * trainee 3.4 km from HYT Building was never told that Atlanta San Juan
+ * Building is also accepted.
+ *
+ * What is left is the number and the rule: how far you are, and where you have
+ * to be. Both sites are always named, because "the nearest office" is not a
+ * place anyone can walk to.
  */
 export function describeGeofenceFailure(result, { action = 'clock in' } = {}) {
   const radius = GEOFENCE_RADIUS_METERS;
-  if (!result) return `You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
+  const within = `You must be within ${radius} m of ${APPROVED_SITE_NAMES} to ${action}.`;
 
-  if (result.reason === 'imprecise') {
-    const accuracy = result.accuracy != null ? Math.round(result.accuracy) : null;
-    // The distance is still known and still useful: "you are 40 m from HYT
-    // Building, but the fix is only good to 300 m" tells the person they are
-    // in the right place and the phone is the problem. The old wording said
-    // only "too rough", which reads as "the app cannot find me at all" - and
-    // that is what got reported back, three times, as "walang GPS".
-    const where = result.distance != null && result.location
-      ? ` You appear to be ${Math.round(result.distance)} meters from ${result.location}, but the reading is not precise enough to confirm it.`
-      : '';
-    return accuracy != null
-      ? `Your location is only accurate to about ${accuracy} meters, which is too rough to confirm you are on site.${where} Move somewhere with a clearer view of the sky and try again.`
-      : `Your location is too rough to confirm you are on site.${where} Try again with location services on.`;
-  }
+  if (!result) return within;
 
   if (result.reason === 'invalid') {
     return 'We could not read your location. Turn on location services and try again.';
   }
 
-  if (result.distance != null) {
-    return `You are currently ${Math.round(result.distance)} meters away from the nearest approved office. You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
+  const away = formatDistance(result.distance);
+  if (!away) return within;
+
+  if (result.reason === 'imprecise') {
+    const accuracy = formatDistance(result.accuracy);
+    // The accuracy still earns its place: it is the reason a person standing
+    // at the door was refused, and without it "you are 40 m away" looks like a
+    // bug rather than a vague reading.
+    return accuracy
+      ? `You are ${away} away, and your location is only accurate to ±${accuracy}. ${within}`
+      : `You are ${away} away. ${within}`;
   }
 
-  return `You must be within ${radius} meters of ${APPROVED_SITE_NAMES} to ${action}.`;
+  return `You are ${away} away. ${within}`;
 }

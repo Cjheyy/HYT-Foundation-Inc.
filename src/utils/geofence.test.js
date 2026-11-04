@@ -205,14 +205,38 @@ describe('checkGeofence - enforced', () => {
 describe('describeGeofenceFailure', () => {
   it('names the distance and the radius', () => {
     const message = describeGeofenceFailure(atOffice(150, 5), { action: 'clock in' });
-    expect(message).toMatch(/15\d meters away/);
+    expect(message).toMatch(/150 m away/);
     expect(message).toContain(String(GEOFENCE_RADIUS_METERS));
+  });
+
+  it('always names BOTH sites, not just the nearest one', () => {
+    // Reported: a trainee 3.4 km from HYT Building was told only that, and had
+    // no way to know Atlanta San Juan Building was also accepted. "The nearest
+    // approved office" is not a place anyone can walk to.
+    const message = describeGeofenceFailure(atOffice(3365, 178), { action: 'clock in' });
+    for (const office of OFFICE_LOCATIONS) {
+      expect(message).toContain(office.name);
+    }
+    expect(message).not.toMatch(/nearest approved office/i);
+  });
+
+  it('reads kilometres, not thousands of metres', () => {
+    expect(describeGeofenceFailure(atOffice(3365, 20), { action: 'clock in' }))
+      .toMatch(/3\.4 km away/);
   });
 
   it('does not claim a distance when the fix is merely vague', () => {
     const message = describeGeofenceFailure(atOffice(0, GEOFENCE_MAX_ACCURACY_METERS + 140), { action: 'clock in' });
-    expect(message).toMatch(/accurate to about 240 meters/i);
+    expect(message).toMatch(/±240 m/);
     expect(message).not.toMatch(/meters away/);
+  });
+
+  it('stays short enough to read in a toast', () => {
+    // Three sentences explaining the mechanism was reported as too long. The
+    // number and the rule are the whole message. (A period count would trip
+    // over "3.4 km", hence the length check.)
+    const message = describeGeofenceFailure(atOffice(3365, 178), { action: 'clock in' });
+    expect(message.length).toBeLessThan(170);
   });
 
   it('asks for location services when there are no coordinates', () => {

@@ -1,5 +1,6 @@
 import { supabase, toCamelCase, toSnakeCase } from '../config/supabase';
 import {
+  describeGeofenceFailure,
   GEOFENCE_ENFORCEMENT_ENABLED,
   GEOFENCE_RADIUS_METERS,
   OFFICE_LOCATIONS,
@@ -1857,11 +1858,14 @@ export const clockIn = async (userId, latitude, longitude, accuracy = null, sour
   // from the shared constant so this check cannot drift away from the one the
   // Attendance page shows the student.
   if (GEOFENCE_ENFORCEMENT_ENABLED && (!nearest || nearest.distance > GEOFENCE_RADIUS_METERS)) {
-    throw new Error(
-      nearest
-        ? `You are currently ${Math.round(nearest.distance)} meters away from the nearest approved office. You must be within ${GEOFENCE_RADIUS_METERS} meters to clock in.`
-        : `You must be within ${GEOFENCE_RADIUS_METERS} meters of an approved HYT location to clock in.`
-    );
+    // Same sentence as the Attendance page, from the same function. This used
+    // to be a second, longer copy that named "the nearest approved office" -
+    // a place nobody can walk to - and read differently from the refusal the
+    // page shows a second earlier.
+    throw new Error(describeGeofenceFailure(
+      nearest ? { reason: 'outside', distance: nearest.distance, location: nearest.name } : null,
+      { action: 'clock in' }
+    ));
   }
 
   const params = {
